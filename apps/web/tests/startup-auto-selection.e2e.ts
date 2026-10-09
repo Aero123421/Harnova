@@ -42,14 +42,31 @@ describe('web e2e: startup auto-selection', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-first-workspace-stable-tree'))
     await page.locator(`${ROOT_PHASE}[data-phase="hero"]`).waitFor({ timeout: 15_000 })
     const headline = page.getByText('Into the Unknown', { exact: true })
-    // The headline text sits in its own span inside the title group; the fish
+    // The headline text sits in its own span inside the title group; the mark
     // hitbox precedes the group, not the text span.
-    const fishHitbox = headline.locator('xpath=../preceding-sibling::span[1]')
-    const fish = fishHitbox.locator('svg')
-    expect(await fish.evaluate(node => getComputedStyle(node).color))
+    const markHitbox = headline.locator('xpath=../preceding-sibling::span[1]')
+    const mark = markHitbox.locator('svg')
+    expect(await mark.evaluate(node => getComputedStyle(node).color))
       .toBe(await headline.evaluate(node => getComputedStyle(node).color))
-    await fishHitbox.hover()
-    expect(await fish.evaluate(node => getComputedStyle(node).animationName)).not.toBe('none')
+    expect(await mark.getAttribute('viewBox')).toBe('32 32 192 192')
+    expect(await mark.locator('path').count()).toBe(2)
+    const paths = await mark.locator('path').evaluateAll(nodes => nodes.map(node => node.getAttribute('d')))
+    try {
+      for (const media of [
+        { reducedMotion: 'no-preference', forcedColors: 'none' },
+        { reducedMotion: 'reduce', forcedColors: 'none' },
+        { reducedMotion: 'no-preference', forcedColors: 'active' },
+      ] as const) {
+        await page.emulateMedia(media)
+        await markHitbox.hover()
+        expect(await mark.isVisible()).toBe(true)
+        expect(await mark.evaluate(node => getComputedStyle(node).animationName)).toBe('none')
+        expect(await mark.locator('animate').count()).toBe(0)
+        expect(await mark.locator('path').evaluateAll(nodes => nodes.map(node => node.getAttribute('d')))).toEqual(paths)
+      }
+    } finally {
+      await page.emulateMedia({ reducedMotion: null, forcedColors: null })
+    }
     await page.evaluate(() => {
       const refs = {
         root: document.querySelector('div[data-phase="hero"]'),
