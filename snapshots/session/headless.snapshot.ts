@@ -156,6 +156,23 @@ function records(log: string): JsonObject[] {
     .map(line => JSON.parse(line) as JsonObject)
 }
 
+/** Adapt only these retained scenarios' home paths; committed Session generations stay unchanged. */
+function harnovaScenarioExpectation(name: string, snapshot: string): string {
+  switch (name) {
+    case 'read-image-attachment-path':
+    case 'ptc-read-image-attachment-path':
+      return snapshot.replaceAll('{{cwd}}/.dsh/attachments/', '{{cwd}}/.harnova/attachments/')
+    case 'skill-load':
+      return snapshot
+        .replaceAll('{{cwd}}/.dsh/skills/', '{{cwd}}/.harnova/skills/')
+        .replaceAll('$DSH_HOME/.agent-presets/', '$HARNOVA_HOME/.agent-presets/')
+    case 'windows-acl-skill':
+      return snapshot.replaceAll('{{cwd}}/.dsh/skills/', '{{cwd}}/.harnova/skills/')
+    default:
+      return snapshot
+  }
+}
+
 /** Compare deterministic recorded tool output with raw writer fields; only message ids are volatile. */
 function verifyToolResultWriterParity(fixture: string, actual: string): void {
   expect(sessionHeaderVersion(fixture, 'retained tool-result input')).toBe(3)
@@ -1267,7 +1284,7 @@ describe('headless recorded-session snapshots', () => {
             expectedSnapshots[index] as string,
             sessionHeaderVersion(expected[index] as string, 'session-reference-spill fixture'),
           )
-          : records(expectedSnapshots[index] as string)
+          : records(harnovaScenarioExpectation(scenario.name, expectedSnapshots[index] as string))
         expect(actualRecords, `${scenario.name}: session ${index}`).toEqual(expectedRecords)
       }
       await verifyHeaders(scenario, actualLogs, actualContext)

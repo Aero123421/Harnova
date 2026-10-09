@@ -62,6 +62,7 @@ export function prepareDevelopmentApp(options: DevelopmentAppOptions): string {
 export function developmentLauncher(options: DevelopmentAppOptions, bundle: string): string {
   const environment = {
     HARNOVA_HOME: options.home,
+    HARNOVA_DESKTOP_USER_DATA_DIR: options.userData,
     HARNOVA_DESKTOP_DEV_APP: '1',
     HARNOVA_DESKTOP_HOST_INSPECT_PORT: String(options.hostPort),
     HARNOVA_DESKTOP_OPEN_DEVTOOLS: options.openDevtools,

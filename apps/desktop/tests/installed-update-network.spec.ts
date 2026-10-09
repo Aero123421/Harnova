@@ -30,8 +30,10 @@ describe('installed update network plan', () => {
   it('binds an exclusive local plan to verified original application bytes without network changes', async () => {
     await fixture(async (manifest, executable, receipt) => {
       const plan = await prepareInstalledUpdateNetwork(manifest, executable, receipt)
+      const run = JSON.parse(await readFile(manifest, 'utf8')) as { id: string }
       expect(JSON.parse(await readFile(plan, 'utf8'))).toMatchObject({ executable: await realpath(executable),
-        sha512Hex: Buffer.from(await installedUpdateFileHash(executable), 'base64').toString('hex').toUpperCase(), networkChanged: false })
+        sha512Hex: Buffer.from(await installedUpdateFileHash(executable), 'base64').toString('hex').toUpperCase(),
+        ruleName: `Harnova-Update-Qualification-${run.id}`, networkChanged: false })
       await expect(prepareInstalledUpdateNetwork(manifest, executable, receipt)).rejects.toMatchObject({ code: 'EEXIST' })
     })
   })

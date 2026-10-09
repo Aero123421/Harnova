@@ -142,7 +142,7 @@ export function resolveLanTrust(bindHost: string, extra: readonly string[]): Web
   return { lanAddresses, trustedHosts: [...lanAddresses, ...extra] }
 }
 
-/** Model-visible orientation and acceptance boundary for sessions created through `dsh web`. */
+/** Model-visible orientation and acceptance boundary for sessions created through `harnova web`. */
 function webSurfacePrompt(webUrl: string): string {
   const updateContract = 'The client-plugin HMR receiver is active, but client-plugin changes reload without a refresh only while '
     + '`pnpm run dev:web` is also running from this same checkout to rebuild their bundles; verify that watcher before promising automatic updates. '
@@ -152,7 +152,7 @@ function webSurfacePrompt(webUrl: string): string {
     + 'The browser provides no implicit DOM, route, or screenshot context. '
     + updateContract
     + 'Starting another server does not update this GUI. '
-    + 'The apps/web Vite entry builds the shell but is not a standalone application because only dsh web injects window.__DSH_BOOT__. '
+    + 'The apps/web Vite entry builds the shell but is not a standalone application because only harnova web injects window.__DSH_BOOT__. '
     + 'Do not start a replacement server unless the user asks; if one is needed, use a managed background job and verify its exact URL.'
 }
 

@@ -172,7 +172,7 @@ describe('model-facing image access', () => {
     const attachment = image(1).attachment
     const attachments = {
       imageHostPath: () => '/host/.harnova/attachments/object',
-    } as unknown as AttachmentStore
+    } as AttachmentStore
     const mapped = (hostPath: string): string | undefined => hostPath === '/host/.harnova/attachments/object'
       ? '/workspace/.attachments/object'
       : undefined
@@ -187,7 +187,7 @@ describe('model-facing image access', () => {
       attachment,
     )).toBeUndefined()
     expect(resolveImageAttachmentAccess(
-      { imageHostPath: () => undefined } as unknown as AttachmentStore,
+      { imageHostPath: () => undefined } as AttachmentStore,
       mapped,
       attachment,
     )).toBeUndefined()
