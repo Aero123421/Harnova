@@ -1,88 +1,14 @@
 ---
-description: "Official DeepSeek Harness brand occupants for the sidebar, active only in official builds; for users and maintainers choosing or replacing brand presentation."
-kind: "package-reference"
+description: "Harnova sidebar brand artwork for release-profile builds, retaining the existing package name."
+kind: package-reference
 ---
 
 # @deepseek-ai/dsh-client-ui-brand-official
 
-## Summary
+This package occupies `sidebar.brand.mark` and `sidebar.brand.name` with the approved Harnova mark and outlined wordmark when `DSH_CLIENT_BUILD_PROFILE` is `official`. The existing package name and build-profile selector remain compatible. Other builds use the sidebar's Harnova mark and localized local-build label. The conversation hero uses the same static Harnova mark through its owning package's fallback.
 
-This package gives an `official` client build the DeepSeek Harness mark and name in the sidebar. Other build profiles keep the shell's fish mark and local-build label, while the conversation hero always uses the animated fish. Choose it for deployments branded as DeepSeek Harness; deployments with another identity should provide a replacement brand package. It has no runtime state and does not affect model requests.
+The host entry is inert. The browser entry waits for the two sidebar declarations with nested `ctx.slots.inject()` calls and withdraws both occupants when their owner or plugin is disposed. It has no runtime state and does not change model requests.
 
-## Table of Contents
+A deployment with its own identity can replace the sidebar slots and `conversation.hero.brand.mark`. Document titles belong to `DSH_CLIENT_TITLE`, outside the slots. Artwork paths are generated from the approved SVGs by `pnpm branding:generate`; see [branding assets](../../../assets/branding/README.md).
 
-- [Use this package](#use-this-package)
-- [Understand the implementation](#understand-the-implementation)
-- [Further Exploration](#further-exploration)
-- [Model Experience](#model-experience)
-- [Known Limitations and Deferred Work](#known-limitations-and-deferred-work)
-- [Dev Note](#dev-note)
-
------
-
-<a id="use-this-package"></a>
-## Use this package
-
-Mount this plugin in the browser roster of a deployment whose identity is DeepSeek's own, then build the client with the `official` profile so the occupants register.
-
-### Choosing the profile
-
-`DSH_CLIENT_BUILD_PROFILE` selects which brand renders. An `official` build shows the official mark and name in the sidebar; any other value leaves the shell fallbacks — the fish mark and the local-build label — in place. The conversation hero shows the animated hero fish from `dsh-client-ui-conversation` regardless of profile, because that fallback is already the official mark. The plugin still loads and validates in both cases; only the registration is profile-gated.
-
-### Replacing the brand
-
-A deployment with its own identity leaves this package out and composes another package that occupies the sidebar slots — and the hero slot, which this package leaves on its fallback. Occupying a slot is the only composition route; there is no brand configuration surface here.
-
------
-
-<a id="understand-the-implementation"></a>
-## Understand the implementation
-
-<details>
-<summary>Implementation internals — click to expand</summary>
-
-The two occupants install as one declaration-aware registration set: nested `ctx.slots.inject()` calls wait on the sidebar declaration, so the set works whether this row activates before or after the declarer, withdraws both occupants when the declaration collapses, and leaves no partial brand mix during HMR. The browser half is [`src/client/index.ts`](src/client/index.ts); the node half is an empty Loader seat. The browser title is a build-environment concern (`DSH_CLIENT_TITLE`), outside the slot system.
-
-</details>
-
------
-
-<a id="further-exploration"></a>
-## Further Exploration
-
-Read these pages when the brand surface is not enough. They move from the slots this package occupies to the shell that renders them.
-
-- [ui-sidebar](../ui-sidebar/README.md) — declares `sidebar.brand.mark` and `sidebar.brand.name` and renders their fallbacks.
-- [ui-conversation](../ui-conversation/README.md) — declares `conversation.hero.brand.mark` in the hero.
-- [Web client architecture](../../../docs/subsystems/web-client.md) — how browser plugin rows load and register slots.
-
------
-
-<a id="model-experience"></a>
-## Model Experience
-
-None, as the package contributes browser presentation only; nothing here reaches a model request.
-
-#### KV Cache effect
-
-None; this package neither assembles nor sends a provider request.
-
-## Known Limitations and Deferred Work
-
-<a id="known-limitations-and-deferred-work"></a>
-
-
-These limits define how brand presentation is supplied. They are current package constraints, not a brand-design comparison or a task backlog.
-
-- **One occupant set** — alternative presentation belongs in another Cordis package occupying the same slots.
-- **The browser title is independent** — `DSH_CLIENT_TITLE` selects title text at build time rather than through a UI slot.
-
-<a id="dev-note"></a>
-### Dev Note
-
-<details>
-<summary>Working context for maintainers — click to expand</summary>
-
-None.
-
-</details>
+See [sidebar](../ui-sidebar/README.md), [conversation](../ui-conversation/README.md), and [Web Client slots](../../../docs/subsystems/slots.md).

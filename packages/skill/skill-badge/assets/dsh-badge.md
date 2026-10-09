@@ -1,31 +1,15 @@
-# dsh Badge
+# Harnova Badge
 
-Add the official “powered by dsh” badge without recreating or restyling it.
+Add a “powered by Harnova” badge when the user requests attribution.
 
 ## Assets
 
-- Local PNG: [`dsh-badge.png`](dsh-badge.png), 726×120 source image; render at 121×20
-- Shields.io image URL: `https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white`
-- Project URL: `https://github.com/deepseek-ai/deepseek-harness`
+- Local PNG: [`dsh-badge.png`](dsh-badge.png), 726×120 source; render at 121×20.
+- Remote image: `https://raw.githubusercontent.com/Aero123421/Harnova/main/packages/skill/skill-badge/assets/dsh-badge.png`.
+- Project link: `https://github.com/Aero123421/Harnova`.
 
-## Markdown
-
-Use this linked badge in Markdown:
+Use the packaged PNG for documents that cannot import remote images. Preserve its aspect ratio. Place it where the user requests; omit it when attribution is not requested. The existing `dsh-badge` skill name remains available for compatibility.
 
 ```markdown
-[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+[![Powered by Harnova](https://raw.githubusercontent.com/Aero123421/Harnova/main/packages/skill/skill-badge/assets/dsh-badge.png)](https://github.com/Aero123421/Harnova)
 ```
-
-If attribution should not be linked, use:
-
-```markdown
-![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)
-```
-
-## Usage rules
-
-- For GitHub or GitLab Markdown, use the Shields.io URL and link it to the project URL unless the user asks for an unlinked image.
-- For Feishu and other systems that import remote images unreliably, upload `dsh-badge.png` from this skill directory instead of generating another badge.
-- Preserve the badge's 121×20 dimensions and aspect ratio.
-- Place the badge at the end of the attributed document or section unless the user specifies another position.
-- Do not substitute another color, logo, label, or project URL.

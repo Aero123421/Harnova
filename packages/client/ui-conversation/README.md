@@ -176,3 +176,5 @@ None; Conversation assembly and browser input state do not alter provider-side p
 None.
 
 </details>
+
+The blank-session hero uses the shared Harnova mark as its brand-slot fallback. It preserves the approved paths at rest and on hover; the former whale swim morph is removed.

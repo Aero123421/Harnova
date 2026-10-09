@@ -4,6 +4,11 @@ import type { InspectorJsonValue } from '../../shared/json.ts'
 import type { InspectorPublisher } from '../../shared/bridge/publisher.ts'
 import { FETCH_TOPICS } from '../../shared/bridge/messages/network.ts'
 
+// Undici weakly links the intermediate Request's controller to its caller.
+// A live response body (including a locked reader) must retain that Request,
+// even after capture or observation stops; collected bodies release it.
+const responseRequests = new WeakMap<ReadableStream<Uint8Array>, Request>()
+
 /** Observation topics published by the Host network adapter. */
 export const NETWORK_TOPICS: readonly string[] = FETCH_TOPICS
 
@@ -135,6 +140,7 @@ export function installFetchObserver(
         responseCaptureError: renderError(error),
       })
     }
+    if (response.body !== null) responseRequests.set(response.body, request)
     return response
   }
 

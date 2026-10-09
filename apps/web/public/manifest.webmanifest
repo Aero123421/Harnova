@@ -1,6 +1,6 @@
 {
-  "name": "DeepSeek Harness",
-  "short_name": "DSH",
+  "name": "Harnova",
+  "short_name": "Harnova",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

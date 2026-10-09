@@ -75,10 +75,14 @@ describe('experimental Inspector real Worker', () => {
     cdp = undefined
     await secondCdp?.close()
     secondCdp = undefined
+    if (server !== undefined) {
+      const closed = new Promise<void>((resolve) => { server!.close(() => { resolve() }) })
+      server.closeAllConnections()
+      await closed
+    }
+    server = undefined
     await inspector?.close()
     inspector = undefined
-    if (server !== undefined) await new Promise<void>((resolve) => { server!.close(() => { resolve() }) })
-    server = undefined
   })
 
   it('limits an embedded connection to its Client while direct connections retain every Client', async (test) => {
