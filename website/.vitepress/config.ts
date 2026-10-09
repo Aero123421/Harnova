@@ -1,6 +1,6 @@
 /** VitePress configuration for the locally projected documentation site. */
 
-import { writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { DefaultTheme, PageData, SiteConfig } from 'vitepress'
 import type { ViteDevServer } from 'vite'
@@ -214,14 +214,17 @@ const scrollbarScript = `
 `
 
 /**
- * Navigation-bar title: the DeepSeek wordmark and the release-stage tag.
+ * Navigation-bar title: the Harnova wordmark and the release-stage tag.
  * VitePress renders `siteTitle` as HTML.
  *
  * @param previewTag - Localized release-stage label.
  * @returns Markup placed beside the navigation-bar home link.
  */
 function siteTitle(previewTag: string): string {
-  return `<span class="dsh-lockup">Harnova<span class="dsh-tag">${previewTag}</span></span>`
+  const artwork = readFileSync(new URL('../public/wordmark.svg', import.meta.url), 'utf8')
+    .replace('<svg ', '<svg class="dsh-wordmark" role="img" aria-label="Harnova" ')
+    .replace('fill="#172028"', 'fill="currentColor"')
+  return `<span class="dsh-lockup">${artwork}<span class="dsh-tag">${previewTag}</span></span>`
 }
 
 export default withMermaid({

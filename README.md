@@ -21,7 +21,7 @@ Security Mode selects agent capabilities; SSH selects the execution environment.
 
 Harnova uses standard GitHub Actions runners for Linux, Windows, and macOS. Pull requests and changes to `main` run checks without provider API keys; live-provider E2E runs are started manually. Package builds also verify installation from local tarballs.
 
-Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and UI branding. Desktop installers require independent application identity, signing, update endpoints, and Linux packaging before they can be distributed.
+Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and use Harnova branding. Desktop installers require independent application identity, signing, update endpoints, and Linux packaging before they can be distributed.
 
 Development instructions are in [AGENTS.md](AGENTS.md). Chinese documentation copies and translation bookkeeping are removed; English reference documentation remains. Browser GIF recording is optional, using [record-browser-gif](.agents/skills/record-browser-gif/SKILL.md). Product UI locale dictionaries are separate from documentation.
 

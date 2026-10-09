@@ -15,26 +15,26 @@ describe('dsh-skill-badge', () => {
 
     expect(await ctx.skills.list()).toEqual([{
       name: 'dsh-badge',
-      description: 'Add the official “powered by dsh” badge to documents, pull requests, merge requests, and other content produced with DeepSeek Harness. Use whenever creating a pull request or merge request. Also use when the user asks for a dsh badge, powered-by-dsh attribution, or a reusable dsh badge asset or snippet.',
+      description: 'Add a powered-by-Harnova badge when the user requests attribution or a reusable badge asset.',
       invocation: { modelInvocable: true, userInvocable: true },
       provider: 'dsh-badge',
       source: 'bundled',
       resourceBase: { kind: 'directory', path: resourcePath },
     }])
     const loaded = await ctx.skills.get('dsh-badge')
-    expect(loaded?.content).toContain('Preserve the badge\'s 121×20 dimensions')
+    expect(loaded?.content).toContain('Preserve its aspect ratio')
     expect(loaded?.resourceBase).toEqual({ kind: 'directory', path: resourcePath })
 
     await fiber.dispose()
     expect(await ctx.skills.list()).toEqual([])
   })
 
-  it('ships the official 726×120 PNG unchanged', async () => {
+  it('ships the generated 726×120 Harnova PNG', async () => {
     const image = await readFile(new URL('../assets/dsh-badge.png', import.meta.url))
     expect(image.readUInt32BE(16)).toBe(726)
     expect(image.readUInt32BE(20)).toBe(120)
     expect(createHash('sha256').update(image).digest('hex')).toBe(
-      'f2c4f5ec9cbe847c0c763545c4d839efa8485bc74203733d0a0e8259f233c653',
+      '2b0a6f95c3e0daad6b1cf25a38d55ad2658d3c5bff24f53ca0b7ccdbbf769da4',
     )
   })
 })

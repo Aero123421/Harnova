@@ -1,5 +1,5 @@
 ---
-description: "The bundled 'powered by dsh' badge skill for users and maintainers enabling, using, or debugging the optional badge provider."
+description: "The bundled 'powered by Harnova' badge skill for users and maintainers enabling, using, or debugging the optional badge provider."
 kind: "package-reference"
 ---
 
@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-Agents can load the official "powered by dsh" badge skill from this bundled provider and follow its instructions for adding attribution badges to documents, PRs, and other content produced with DeepSeek Harness. The provider has no configuration, and the shipped CLI composition includes the plugin disabled, so deployments enable it explicitly. The skill ships both Markdown snippets and a packaged PNG for systems that cannot reliably import remote images.
+Agents can load the "powered by Harnova" badge skill from this bundled provider when the user requests attribution. The provider has no configuration, and the shipped CLI composition includes the plugin disabled, so deployments enable it explicitly. The skill ships both Markdown snippets and a packaged PNG for systems that cannot reliably import remote images.
 
 ## Table of Contents
 
@@ -23,11 +23,11 @@ Agents can load the official "powered by dsh" badge skill from this bundled prov
 <a id="use-this-package"></a>
 ## Use this package
 
-Enable the plugin to make the `dsh-badge` skill available in the session skill catalog; the model can then load it like any other skill and follow its instructions for adding a "powered by dsh" badge.
+Enable the plugin to make the `dsh-badge` skill available in the session skill catalog; the model can then load it like any other skill and follow its instructions for adding a "powered by Harnova" badge.
 
 ### When to choose it
 
-Choose this provider when content produced with DeepSeek Harness should carry official attribution badges, and the deployment wants the badge skill available to agents without storing it in a local skill directory. Skip it when the badge is irrelevant to the deployment — the plugin is disabled by default and adds nothing until enabled.
+Choose this provider when users request Harnova attribution badges and the deployment wants the badge skill available to agents without storing it in a local skill directory. The plugin is disabled by default and adds nothing until enabled.
 
 ### Enable the plugin
 
@@ -37,11 +37,11 @@ The plugin has no configuration. Add its composition row to a composition; the s
 - name: '@deepseek-ai/dsh-skill-badge'
 ```
 
-After enabling, `dsh-badge` appears in the available skills of the session catalog. The skill covers remote Markdown badges (Shields.io-based) and a packaged PNG badge asset for targets that cannot fetch remote images reliably.
+After enabling, `dsh-badge` appears in the available skills of the session catalog. The skill covers remote Markdown badges (served from the Harnova repository) and a packaged PNG badge asset for targets that cannot fetch remote images reliably.
 
 ### What the badge skill provides
 
-- **Markdown snippets.** Instructions for embedding the official badge markup in documents, PRs, and merge requests.
+- **Markdown snippets.** Instructions for embedding the Harnova badge markup in documents, PRs, and merge requests.
 - **Packaged PNG asset.** A `dsh-badge.png` resource (726×120 source, rendered at 121×20) that works where remote images cannot be imported.
 
 ### Observable success and failures
@@ -101,7 +101,7 @@ Disabled by default, the plugin changes no request. When enabled, its catalog en
 These limits define what the bundled provider does not do. They are current package constraints, not a task backlog.
 
 - **One fixed skill, no runtime customization** — the provider contributes exactly the `dsh-badge` skill; deployments that need another badge variant author their own skill instead.
-- **Remote Markdown relies on Shields.io** — the remote badge markup embeds a Shields.io image; use the packaged PNG when the target cannot fetch remote images reliably.
+- **Remote Markdown requires repository access** — the remote badge markup uses the Harnova repository's PNG; use the packaged PNG when the target cannot fetch remote images reliably.
 
 <a id="dev-note"></a>
 ### Dev Note
@@ -112,3 +112,5 @@ These limits define what the bundled provider does not do. They are current pack
 None.
 
 </details>
+
+The legacy `dsh-badge` skill name is retained. Attribution is added only on user request; the base bundle keeps this plugin disabled. The PNG is generated with the product artwork by `pnpm branding:generate`.

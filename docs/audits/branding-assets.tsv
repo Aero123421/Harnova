@@ -1,0 +1,28 @@
+path	format	viewBox_or_dimensions	animation_or_ico_sizes	consumer
+apps/desktop/installer/assets/brand-2x.png	PNG	1200x392	1 frame(s)	installer brand; prepare-windows-installer.ps1 で BMP 生成
+apps/desktop/installer/assets/brand-dark-2x.png	PNG	1200x392	1 frame(s)	installer brand; prepare-windows-installer.ps1 で BMP 生成
+apps/desktop/installer/assets/brand-dark.png	PNG	600x196	1 frame(s)	installer brand; prepare-windows-installer.ps1 で BMP 生成
+apps/desktop/installer/assets/brand.png	PNG	600x196	1 frame(s)	installer brand; prepare-windows-installer.ps1 で BMP 生成
+apps/desktop/installer/assets/uninstaller-sidebar.png	PNG	164x314	1 frame(s)	installer / uninstaller sidebar; BMP 生成
+apps/desktop/renderer/assets/welcome-brand.svg	SVG	0 0 472 40		desktop welcome img; renderer に同梱
+apps/desktop/resources/icon-macos.png	PNG	1024x1024	1 frame(s)	macOS app / Dock
+apps/desktop/resources/icon-macos.svg	SVG	0 0 1024 1024		macOS PNG の原画
+apps/desktop/resources/icon-windows.png	PNG	1024x1024	1 frame(s)	Windows app; About / quit の共通 resource
+apps/desktop/resources/icon-windows.svg	SVG	0 0 1024 1024		Windows PNG の原画; トレイ ICO 生成元
+apps/desktop/resources/icon.png	PNG	1104x1104	1 frame(s)	旧原画; 実行時参照なし
+apps/desktop/resources/icon.svg	SVG	0 0 1104 1104		旧原画; 実行時参照なし
+apps/desktop/resources/tray-windows.ico	ICO	64x64	ICO sizes: 16, 20, 24, 32, 40, 48, 64	Windows tray; packaged tray.ico
+apps/web/public/favicon-dark.svg	SVG	0 0 50 50		Web dark favicon
+apps/web/public/favicon.svg	SVG	0 0 50 50		Web light favicon; PWA icon
+packages/client/ui-chat/src/client/chat/running-whale@2x.png	PNG	28x28	60 frame(s); 50.0ms/frame	実行中の APNG mask; ビルド時 CSS 埋め込み
+packages/client/ui-settings-account/src/client/assets/onboarding-recharge-dark.png	PNG	1785x1530	1 frame(s)	公式 account / credit 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-recharge-zh-dark.png	PNG	1785x1530	1 frame(s)	公式 account / credit 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-recharge-zh.png	PNG	1785x1530	1 frame(s)	公式 account / credit 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-recharge.png	PNG	1782x1527	1 frame(s)	公式 account / credit 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-welcome-dark.png	PNG	3993x2481	1 frame(s)	welcome 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-welcome-zh-dark.png	PNG	3993x2481	1 frame(s)	welcome 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-welcome-zh.png	PNG	3993x2481	1 frame(s)	welcome 説明画像; 英中・明暗の variant
+packages/client/ui-settings-account/src/client/assets/onboarding-welcome.png	PNG	3993x2480	1 frame(s)	welcome 説明画像; 英中・明暗の variant
+packages/skill/skill-badge/assets/dsh-badge.png	PNG	726x120	1 frame(s)	任意の文書バッジ Skill; base では disabled
+website/public/favicon.svg	SVG	0 0 50 50		docs site favicon
+website/public/wordmark.svg	SVG	0 0 143 23		サイトソース参照なし; public の配布素材
