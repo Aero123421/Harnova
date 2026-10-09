@@ -12,7 +12,7 @@ async function fixture(body: (manifest: string, executable: string, receipt: str
   const root = await mkdtemp(join(tmpdir(), 'dsh-network-plan-试验-'))
   try {
     const run = await createInstalledUpdateRun(root, ['0.1.6-nightly.20260914.1', '0.1.6-nightly.20260914.2'],
-      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
+      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
     const executable = join(root, `${run.productName}.exe`)
     await writeFile(executable, 'inert app fixture, never executed')
     const directory = join(run.root, run.versions[0], 'verification/check-fixture')
@@ -30,8 +30,10 @@ describe('installed update network plan', () => {
   it('binds an exclusive local plan to verified original application bytes without network changes', async () => {
     await fixture(async (manifest, executable, receipt) => {
       const plan = await prepareInstalledUpdateNetwork(manifest, executable, receipt)
+      const run = JSON.parse(await readFile(manifest, 'utf8')) as { id: string }
       expect(JSON.parse(await readFile(plan, 'utf8'))).toMatchObject({ executable: await realpath(executable),
-        sha512Hex: Buffer.from(await installedUpdateFileHash(executable), 'base64').toString('hex').toUpperCase(), networkChanged: false })
+        sha512Hex: Buffer.from(await installedUpdateFileHash(executable), 'base64').toString('hex').toUpperCase(),
+        ruleName: `Harnova-Update-Qualification-${run.id}`, networkChanged: false })
       await expect(prepareInstalledUpdateNetwork(manifest, executable, receipt)).rejects.toMatchObject({ code: 'EEXIST' })
     })
   })

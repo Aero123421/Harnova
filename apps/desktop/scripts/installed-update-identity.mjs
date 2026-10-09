@@ -12,16 +12,17 @@ import { join } from 'node:path'
  */
 export function configureInstalledUpdateIdentity(app, run, metadata, environment) {
   if (!/^[a-f0-9]{24}$/u.test(run.id) || run.versions.length !== 2
-    || metadata.dshDesktopAppId !== `com.deepseek.dsh.qualification.q${run.id}`
+    || metadata.dshDesktopAppId !== `io.github.aero123421.harnova.qualification.q${run.id}`
     || !run.versions.includes(metadata.version)) {
     throw new Error('installed update: qualification package identity does not match its bootstrap')
   }
-  const root = join(app.getPath('appData'), 'dsh-update-qualification', run.id)
+  const root = join(app.getPath('appData'), 'harnova-update-qualification', run.id)
   const paths = { root, userData: join(root, 'user-data'), harnessHome: join(root, 'dsh-home'), journals: join(root, 'journals') }
   for (const directory of [paths.userData, paths.harnessHome, paths.journals]) mkdirSync(directory, { recursive: true })
   app.setPath('userData', paths.userData)
   app.setPath('sessionData', paths.userData)
-  environment.DSH_HOME = paths.harnessHome
-  environment.DSH_DESKTOP_UPDATE_JOURNAL_DIR = paths.journals
+  environment.HARNOVA_HOME = paths.harnessHome
+  environment.HARNOVA_DESKTOP_USER_DATA_DIR = paths.userData
+  environment.HARNOVA_DESKTOP_UPDATE_JOURNAL_DIR = paths.journals
   return paths
 }

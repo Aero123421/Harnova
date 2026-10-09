@@ -1,8 +1,8 @@
 /**
  * Profile discovery, initialization, and patch-layer composition for the
- * `dsh --profile` launcher family.
+ * `harnova --profile` launcher family.
  *
- * A profile is a directory under `$DSH_HOME/profiles/<name>` holding a
+ * A profile is a directory under `$HARNOVA_HOME/profiles/<name>` holding a
  * `package.json` (out-of-tree plugin dependencies plus the profile manifest
  * `dsh.profile` with its ordered `bundles` list) and a `cordis.patch.yml`
  * (the user's own patch layer, applied after every bundle layer). Bundles are
@@ -162,7 +162,7 @@ export interface RuntimeResolution {
 
 /**
  * Resolve a profile's directory under the Harness home.
- * @param name - the profile name (`dsh --profile <name>`).
+ * @param name - the profile name (`harnova --profile <name>`).
  * @param home - the Harness home; defaults to {@link resolveDshHome}.
  * @returns the absolute profile directory (which may not exist yet).
  */
@@ -209,7 +209,7 @@ const RETIRED_BUNDLES: ReadonlySet<string> = new Set([
   '@deepseek-ai/dsh-experimental-schedule-bundle',
 ])
 
-/** The bundle list a `dsh plugin` init uses for a name with no shipped template. */
+/** The bundle list a `harnova plugin` init uses for a name with no shipped template. */
 export const DEFAULT_PROFILE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base']
 
 /**
@@ -712,7 +712,7 @@ export function resolveBundleDir(
   }
   throw new Error(
     `${binName}: cannot resolve profile bundle ${JSON.stringify(packageName)} from the dsh installation or ${profileDir}; `
-    + `run 'dsh plugin --profile ${basename(profileDir)} install' if its dependency is not installed`,
+    + `run 'harnova plugin --profile ${basename(profileDir)} install' if its dependency is not installed`,
   )
 }
 
@@ -787,7 +787,7 @@ export function loadProfile(
     const template = PROFILE_TEMPLATES[name]
     if (template === undefined) {
       throw new Error(
-        `${binName}: profile ${JSON.stringify(name)} does not exist; create it with 'dsh plugin --profile ${name} add <package>'`,
+        `${binName}: profile ${JSON.stringify(name)} does not exist; create it with 'harnova plugin --profile ${name} add <package>'`,
       )
     }
     initProfile(dir, template.bundles)

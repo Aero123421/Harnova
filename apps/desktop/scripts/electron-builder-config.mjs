@@ -1,4 +1,5 @@
 import { officePackageDirectories } from '../../../scripts/libreoffice-packages.mjs'
+import { HARNOVA_PACKAGE_NAME, HARNOVA_PROTOCOL } from './desktop-identity.mjs'
 import { X509Certificate } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -52,13 +53,13 @@ export function createElectronBuilderConfig(
 ) {
   const appId = resolveDesktopAppId(env)
   const policy = resolveDesktopPolicyEnvironment(env)
-  const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
+  const targetPlatform = env.HARNOVA_DESKTOP_TARGET_PLATFORM
   const resolvedPlatform = targetPlatform ?? hostPlatform
-  const resolvedArch = env.DSH_DESKTOP_TARGET_ARCH ?? hostArch
-  if (env.DSH_DESKTOP_UNSIGNED !== undefined && !['0', '1'].includes(env.DSH_DESKTOP_UNSIGNED)) {
-    throw new Error('desktop package: DSH_DESKTOP_UNSIGNED must be 0 or 1')
+  const resolvedArch = env.HARNOVA_DESKTOP_TARGET_ARCH ?? hostArch
+  if (env.HARNOVA_DESKTOP_UNSIGNED !== undefined && !['0', '1'].includes(env.HARNOVA_DESKTOP_UNSIGNED)) {
+    throw new Error('desktop package: HARNOVA_DESKTOP_UNSIGNED must be 0 or 1')
   }
-  const unsigned = env.DSH_DESKTOP_UNSIGNED === '1'
+  const unsigned = env.HARNOVA_DESKTOP_UNSIGNED === '1'
   if (unsigned && resolvedPlatform !== 'win32') throw new Error('desktop package: unsigned builds require Windows')
   const packagesMacOS = targetPlatform === 'darwin' || (targetPlatform === undefined && hostPlatform === 'darwin')
   const packagesWindows = resolvedPlatform === 'win32'
@@ -73,14 +74,14 @@ export function createElectronBuilderConfig(
     `**/node_modules/@deepseek-ai/libreoffice-kit-${resolvedPlatform}-${resolvedArch}/**/*`]
   const windowsSigner = packagesWindows && !unsigned
     ? createWindowsTokenSigner({
-        certificateFile: env.DSH_DESKTOP_WINDOWS_CER_FILE,
-        signTool: env.DSH_DESKTOP_WINDOWS_SIGNTOOL,
-        tokenPin: env.DSH_DESKTOP_WINDOWS_TOKEN_PIN,
-        keyContainer: env.DSH_DESKTOP_WINDOWS_KEY_CONTAINER,
+        certificateFile: env.HARNOVA_DESKTOP_WINDOWS_CER_FILE,
+        signTool: env.HARNOVA_DESKTOP_WINDOWS_SIGNTOOL,
+        tokenPin: env.HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN,
+        keyContainer: env.HARNOVA_DESKTOP_WINDOWS_KEY_CONTAINER,
         preserveSignature: async path => {
           for (const [sourceRoot, destinationRoot] of [[join(buildPaths.runtime, 'primary-runtime'), primaryRuntimeDestination], [buildPaths.dsh, dshDestination]]) {
             if (destinationRoot !== undefined && await preserveWindowsRuntimeSignature(path, {
-              sourceRoot, destinationRoot, runDirectory: env.DSH_DESKTOP_PACKAGING_RUN_DIR,
+              sourceRoot, destinationRoot, runDirectory: env.HARNOVA_DESKTOP_PACKAGING_RUN_DIR,
             })) return true
           }
           return false
@@ -99,8 +100,9 @@ export function createElectronBuilderConfig(
   const packaged = resolveDesktopBuildCommit(env)
   return {
     appId,
-    protocols: [{ name: 'Harnova', schemes: ['dsh'] }],
+    protocols: [{ name: 'Harnova', schemes: [HARNOVA_PROTOCOL] }],
     extraMetadata: {
+      name: HARNOVA_PACKAGE_NAME,
       dshDesktopAppId: appId,
       dshMandatoryUpdatePolicy: policy,
       ...buildVersion === productVersion ? {} : { version: buildVersion },
@@ -198,9 +200,9 @@ export function createElectronBuilderConfig(
     afterSign: async context => {
       if (windowsSigner !== undefined) {
         await signWindowsCode(context.appOutDir, {
-          thumbprint: new X509Certificate(await readFile(env.DSH_DESKTOP_WINDOWS_CER_FILE)).fingerprint.replaceAll(':', ''),
+          thumbprint: new X509Certificate(await readFile(env.HARNOVA_DESKTOP_WINDOWS_CER_FILE)).fingerprint.replaceAll(':', ''),
           sign: windowsSigner,
-          record: event => recordPackagingEvent(env.DSH_DESKTOP_PACKAGING_RUN_DIR, event),
+          record: event => recordPackagingEvent(env.HARNOVA_DESKTOP_PACKAGING_RUN_DIR, event),
         })
         await verifyWindowsAsarUnpack(buildPaths.dsh, context.packager.getResourcesDir(context.appOutDir), windowsCode)
       }
@@ -225,7 +227,7 @@ export function createElectronBuilderConfig(
       forceCodeSigning: !unsigned,
       signtoolOptions: {
         sign: windowsSigner,
-        publisherName: windowsSigner === undefined ? undefined : resolveWindowsUpdatePublisher(env.DSH_DESKTOP_WINDOWS_CER_FILE),
+        publisherName: windowsSigner === undefined ? undefined : resolveWindowsUpdatePublisher(env.HARNOVA_DESKTOP_WINDOWS_CER_FILE),
         signingHashAlgorithms: ['sha256'],
       },
       target: ['nsis'],

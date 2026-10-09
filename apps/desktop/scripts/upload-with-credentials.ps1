@@ -74,12 +74,12 @@ try {
     $startInfo.RedirectStandardError = $true
     foreach ($name in @($startInfo.EnvironmentVariables.Keys)) {
         # Node preload hooks and unrelated release secrets must not reach this credential-bearing process.
-        if ($name -match 'KEY|SECRET|TOKEN|PASSWORD|^NODE_OPTIONS$|^DSH_DESKTOP_WINDOWS_|^APPLE_|^CSC_') {
+        if ($name -match 'KEY|SECRET|TOKEN|PASSWORD|^NODE_OPTIONS$|^HARNOVA_DESKTOP_WINDOWS_|^APPLE_|^CSC_') {
             $startInfo.EnvironmentVariables.Remove($name)
         }
     }
     $stage = 'prepare-credentials'
-    $prefix = if ($Environment -eq 'production') { 'DOWNLOAD_PROD_COS' } else { 'DOWNLOAD_TEST_COS' }
+    $prefix = if ($Environment -eq 'production') { 'HARNOVA_DOWNLOAD_PROD_COS' } else { 'HARNOVA_DOWNLOAD_TEST_COS' }
     $secretId = [Net.NetworkCredential]::new('', $credentials.SecretId).Password
     $secretKey = [Net.NetworkCredential]::new('', $credentials.SecretKey).Password
     if ([string]::IsNullOrWhiteSpace($secretId) -or [string]::IsNullOrWhiteSpace($secretKey)) {
@@ -87,7 +87,7 @@ try {
     }
     $startInfo.EnvironmentVariables["${prefix}_SECRET_ID"] = $secretId
     $startInfo.EnvironmentVariables["${prefix}_SECRET_KEY"] = $secretKey
-    $startInfo.EnvironmentVariables['DSH_DESKTOP_AUTO_UPDATE_ENV'] = $Environment
+    $startInfo.EnvironmentVariables['HARNOVA_DESKTOP_AUTO_UPDATE_ENV'] = $Environment
     if ($Upload) {
         $startInfo.EnvironmentVariables["${prefix}_BUCKET"] = $Bucket
         $startInfo.Arguments = "--import tsx/esm apps/desktop/scripts/upload-target.ts $Target --credential-launcher --environment $Environment --bucket $Bucket"

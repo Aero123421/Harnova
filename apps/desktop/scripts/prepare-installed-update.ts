@@ -2,6 +2,8 @@
 import { execFileSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { loadDesktopPackageEnvironment } from './desktop-package-environment.mjs'
+import { resolveDesktopUploadConfig } from './desktop-auto-update-environment.mjs'
 import { collectInstalledUpdateJournals, createInstalledUpdateRun, inspectInstalledUpdateJournals } from './installed-update-qualification.ts'
 import { prepareInstalledUpdateBootstrap } from './prepare-installed-update-bootstrap.ts'
 import { prepareInstalledUpdateRuntime } from './prepare-installed-update-runtime.ts'
@@ -45,10 +47,12 @@ async function main(): Promise<void> {
   }
   const metadata = JSON.parse(await readFile(resolve(repository, 'package.json'), 'utf8')) as { version: string }
   const git = (args: string[]): string => execFileSync('git', args, { cwd: repository, encoding: 'utf8', windowsHide: true }).trim()
+  const destination = resolveDesktopUploadConfig(loadDesktopPackageEnvironment('win32'), 'win32', 'x64')
+  if (destination.environment !== 'test') throw new Error('qualification requires test deployment')
   const run = await createInstalledUpdateRun(resolve(repository, 'apps/desktop/.desktop-build/qualification'), [original, successor], {
     version: metadata.version, commit: git(['rev-parse', 'HEAD']),
     dirtyFiles: git(['status', '--porcelain=v1', '--untracked-files=normal']).split('\n').filter(Boolean),
-  })
+  }, destination)
   console.log(JSON.stringify({ manifest: resolve(run.root, 'run.json'), appId: run.appId,
     versions: run.versions, feedUrl: `${run.origin}/${run.feedKey}`, artifactsPrepared: false, published: false }, null, 2))
 }

@@ -91,7 +91,7 @@ async function remoteVersions(options: DesktopBuildVersionSuggestionOptions): Pr
   const arch = options.target === 'mac-arm64' ? 'arm64' : 'x64'
   // An unconfigured destination has nothing to be unique against; an invalid one must not be mistaken for it.
   if (options.environment[DESKTOP_AUTO_UPDATE_ENV] === undefined
-    && options.environment.DOWNLOAD_TEST_ORIGIN === undefined) return undefined
+    && options.environment.HARNOVA_DOWNLOAD_TEST_ORIGIN === undefined) return undefined
   const update = resolveDesktopUploadConfig(options.environment, platform, arch)
   const secretId = options.environment[update.secretIdEnvName]?.trim()
   const secretKey = options.environment[update.secretKeyEnvName]?.trim()

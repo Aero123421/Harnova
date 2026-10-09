@@ -55,7 +55,7 @@ function cleanEnvironment(root: string, dshHome: string): NodeJS.ProcessEnv {
   return {
     ...env,
     DSH_AGENTS_HOME: join(root, '.agents'),
-    DSH_HOME: dshHome,
+    HARNOVA_HOME: dshHome,
     DSH_TELEMETRY_DISABLED: '1',
     NODE_NO_WARNINGS: '1',
     SSH_CONNECTION: '',
@@ -154,7 +154,7 @@ function describeSettings(port: number, host: string, cookie?: string): Promise<
 describe('dsh web authentication through the real CLI', () => {
   it('rejects a forged loopback Host and preserves the browser cookie across restart', { timeout: 180_000 }, async () => {
     const root = await mkdtemp(join(tmpdir(), 'dsh-web-auth-real-cli-'))
-    const dshHome = join(root, '.dsh')
+    const dshHome = join(root, '.harnova')
     const port = await freePort()
     let first: RunningWeb | undefined
     let second: RunningWeb | undefined

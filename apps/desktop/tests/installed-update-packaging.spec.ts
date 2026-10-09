@@ -45,7 +45,7 @@ async function fixture(body: (manifest: string, root: string) => Promise<void>):
   try {
     state.home = root
     state.loads = 0
-    const run = await createInstalledUpdateRun(root, versions, { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
+    const run = await createInstalledUpdateRun(root, versions, { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
     const certificate = join(root, 'certificate.cer')
     const tool = join(root, 'signtool.exe')
     await writeFile(certificate, 'inert public certificate fixture')
@@ -56,8 +56,8 @@ async function fixture(body: (manifest: string, root: string) => Promise<void>):
     await writeFile(join(run.root, versions[0], 'dsh/desktop-runtime.json'), '{}')
     state.settings = { ...Object.fromEntries(Object.entries(process.env)
       .filter(([name]) => !/KEY|SECRET|TOKEN|PASSWORD|^NODE_OPTIONS$/iu.test(name))),
-    DSH_DESKTOP_WINDOWS_CER_FILE: certificate, DSH_DESKTOP_WINDOWS_SIGNTOOL: tool,
-    DSH_DESKTOP_WINDOWS_TOKEN_PIN: 'fixture-secret-pin', DSH_DESKTOP_WINDOWS_KEY_CONTAINER: 'fixture-container' }
+    HARNOVA_DESKTOP_WINDOWS_CER_FILE: certificate, HARNOVA_DESKTOP_WINDOWS_SIGNTOOL: tool,
+    HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN: 'fixture-secret-pin', HARNOVA_DESKTOP_WINDOWS_KEY_CONTAINER: 'fixture-container' }
     await body(join(run.root, 'run.json'), root)
   } finally { Object.assign(state, previous); await rm(root, { recursive: true, force: true }) }
 }
@@ -65,8 +65,8 @@ async function fixture(body: (manifest: string, root: string) => Promise<void>):
 describe('operator-driven packaging entry', () => {
   it('refuses the interlock before loading credentials, confirmation, or child allocation and preserves it byte-for-byte', async () => {
     await fixture(async (manifest, root) => {
-      const lock = join(root, '.dsh-desktop-signing/attempt.json')
-      await mkdir(join(root, '.dsh-desktop-signing'))
+      const lock = join(root, '.harnova-desktop-signing/attempt.json')
+      await mkdir(join(root, '.harnova-desktop-signing'))
       await writeFile(lock, 'retained incident record')
       const confirm = vi.fn(async () => true)
       await expect(packageInstalledUpdate(manifest, versions[0], { execute: true, confirm })).rejects.toThrow('interlock exists')
@@ -79,11 +79,11 @@ describe('operator-driven packaging entry', () => {
   })
 
   it('strips unrelated secrets and preload overrides while retaining signing inputs and the Windows archive filter', () => {
-    expect(installedUpdatePackagingEnvironment({ DSH_DESKTOP_TARGET_PLATFORM: 'win32', PATH: 'tool-path',
-      DSH_DESKTOP_WINDOWS_TOKEN_PIN: 'pin', DSH_DESKTOP_WINDOWS_KEY_CONTAINER: 'container',
-      DEEPSEEK_API_KEY: 'llm', DOWNLOAD_TEST_COS_SECRET_KEY: 'cos', NODE_OPTIONS: 'preload', NODE_PATH: 'injected' }))
-      .toEqual({ DSH_DESKTOP_TARGET_PLATFORM: 'win32', PATH: 'tool-path', DSH_DESKTOP_WINDOWS_TOKEN_PIN: 'pin',
-        DSH_DESKTOP_WINDOWS_KEY_CONTAINER: 'container', DSH_DESKTOP_UNSIGNED: '0', ELECTRON_BUILDER_7Z_FILTER: 'BCJ' })
+    expect(installedUpdatePackagingEnvironment({ HARNOVA_DESKTOP_TARGET_PLATFORM: 'win32', PATH: 'tool-path',
+      HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN: 'pin', HARNOVA_DESKTOP_WINDOWS_KEY_CONTAINER: 'container',
+      DEEPSEEK_API_KEY: 'llm', HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'cos', NODE_OPTIONS: 'preload', NODE_PATH: 'injected' }))
+      .toEqual({ HARNOVA_DESKTOP_TARGET_PLATFORM: 'win32', PATH: 'tool-path', HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN: 'pin',
+        HARNOVA_DESKTOP_WINDOWS_KEY_CONTAINER: 'container', HARNOVA_DESKTOP_UNSIGNED: '0', ELECTRON_BUILDER_7Z_FILTER: 'BCJ' })
   })
 
   it('checks without confirmation or allocating a packaging directory', async () => {
@@ -122,8 +122,8 @@ describe('operator-driven packaging entry', () => {
       await expect(packageInstalledUpdate(manifest, versions[0], { execute: true, confirm: async () => false }))
         .rejects.toThrow('did not confirm')
       await expect(packageInstalledUpdate(manifest, versions[0], { execute: true, confirm: async () => {
-        await mkdir(join(root, '.dsh-desktop-signing'))
-        await writeFile(join(root, '.dsh-desktop-signing/attempt.json'), 'another operation acquired the token')
+        await mkdir(join(root, '.harnova-desktop-signing'))
+        await writeFile(join(root, '.harnova-desktop-signing/attempt.json'), 'another operation acquired the token')
         return true
       } })).rejects.toThrow('interlock exists')
       expect(await readdir(join(manifest, '..', versions[0]))).toEqual(['dsh'])

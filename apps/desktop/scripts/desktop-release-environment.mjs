@@ -1,16 +1,17 @@
 /** Resolve public release identifiers supplied by the packaging environment. */
+import { HARNOVA_APP_ID } from './desktop-identity.mjs'
 
 /** Environment variable that supplies the Electron application identifier. */
-export const DESKTOP_APP_ID_ENV = 'DSH_DESKTOP_APP_ID'
+export const DESKTOP_APP_ID_ENV = 'HARNOVA_DESKTOP_APP_ID'
 
 /** Environment variable that supplies electron-builder's macOS certificate qualifier. */
-export const MACOS_SIGNING_IDENTITY_ENV = 'DSH_DESKTOP_MACOS_SIGNING_IDENTITY'
+export const MACOS_SIGNING_IDENTITY_ENV = 'HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY'
 
 /** Environment variable that supplies the expected Apple Developer Team ID. */
-export const MACOS_TEAM_ID_ENV = 'DSH_DESKTOP_MACOS_TEAM_ID'
+export const MACOS_TEAM_ID_ENV = 'HARNOVA_DESKTOP_MACOS_TEAM_ID'
 
 /** Environment variable that selects the npm registry used for the bundled runtime install. */
-export const NPM_REGISTRY_ENV = 'DSH_DESKTOP_NPM_REGISTRY'
+export const NPM_REGISTRY_ENV = 'HARNOVA_DESKTOP_NPM_REGISTRY'
 
 const DEFAULT_NPM_REGISTRY = 'https://registry.npmjs.org/'
 
@@ -61,9 +62,12 @@ export function resolveNpmRegistry(env) {
  * @returns {string} Reverse-DNS application identifier.
  */
 export function resolveDesktopAppId(env) {
-  const appId = requireEnvironmentValue(env, DESKTOP_APP_ID_ENV)
+  const appId = env[DESKTOP_APP_ID_ENV]?.trim() || HARNOVA_APP_ID
   if (!/^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/u.test(appId)) {
     throw new Error(`desktop release environment: ${DESKTOP_APP_ID_ENV} must be a reverse-DNS identifier`)
+  }
+  if (/^com\.deepseek(?:\.|$)/iu.test(appId)) {
+    throw new Error(`desktop release environment: ${DESKTOP_APP_ID_ENV} must not use DeepSeek's application namespace`)
   }
   return appId
 }

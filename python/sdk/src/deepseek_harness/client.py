@@ -471,11 +471,11 @@ class HarnessClient:
         if self.config.dsh_home is not None:
             if not self.config.dsh_home.strip():
                 raise ValueError("HarnessConfig requires a non-empty dsh_home")
-            env["DSH_HOME"] = str(Path(self.config.dsh_home).expanduser().resolve())
-        elif not env.get("DSH_HOME", "").strip():
+            env["HARNOVA_HOME"] = str(Path(self.config.dsh_home).expanduser().resolve())
+        elif not env.get("HARNOVA_HOME", "").strip():
             raise ValueError(
-                "HarnessConfig requires an explicit dsh_home or non-empty DSH_HOME; "
-                "the Python SDK never uses ~/.dsh implicitly"
+                "HarnessConfig requires an explicit dsh_home or non-empty HARNOVA_HOME; "
+                "the Python SDK never uses ~/.harnova implicitly"
             )
 
         patches = tuple(

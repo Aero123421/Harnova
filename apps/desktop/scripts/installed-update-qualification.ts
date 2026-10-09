@@ -3,6 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { gt, valid } from 'semver'
+import { resolveDesktopAutoUpdateConfig } from './desktop-auto-update-environment.mjs'
 
 /** Source identifiers exclude file contents, configuration values, and credentials. */
 export interface InstalledUpdateSource {
@@ -24,6 +25,7 @@ export interface InstalledUpdateRun {
   readonly environment: 'test'
   readonly origin: string
   readonly bucket: string
+  readonly destinationDigest: string
   readonly feedKey: string
   readonly binPrefix: string
 }
@@ -33,27 +35,42 @@ export interface InstalledUpdateRun {
  * @param parent Ignored material directory; each invocation acquires a separate child atomically.
  * @param versions Explicit original and successor test versions, in increasing order.
  * @param source Source version, Git commit, and dirty-file list captured before material preparation.
+ * @param destination Explicit Harnova test origin and bucket, without credentials.
  * @returns The retained run manifest; no package or publication is implied by its presence.
  */
 export async function createInstalledUpdateRun(
   parent: string, versions: readonly [string, string], source: InstalledUpdateSource,
+  destination: { readonly origin: string; readonly bucket: string },
 ): Promise<InstalledUpdateRun> {
   validateVersions(versions)
   if (valid(source.version) === null || !/^[a-f0-9]{40,64}$/u.test(source.commit)) {
     throw new Error('installed update: valid source version and Git commit are required')
   }
+  validateDestination(destination)
   await mkdir(parent, { recursive: true })
   const root = await mkdtemp(join(resolve(parent), 'installed-update-'))
   const id = randomBytes(12).toString('hex')
   const run: InstalledUpdateRun = {
     schemaVersion: 1, id, root, createdAt: new Date().toISOString(), source, versions,
-    appId: `com.deepseek.dsh.qualification.q${id}`, productName: `DSH Update Test ${id}`,
-    environment: 'test', origin: 'https://download-test.deepseek.com', bucket: 'bj-toc-download-test-1320056602',
-    feedKey: `dsh-desk/feeds/qualification/${id}/win-x64/nightly.yml`,
-    binPrefix: `dsh-desk/bin/qualification/${id}/win-x64`,
+    appId: `io.github.aero123421.harnova.qualification.q${id}`, productName: `Harnova Update Test ${id}`,
+    environment: 'test', origin: destination.origin, bucket: destination.bucket,
+    destinationDigest: destinationDigest(destination),
+    feedKey: `harnova-desktop/feeds/qualification/${id}/win-x64/nightly.yml`,
+    binPrefix: `harnova-desktop/bin/qualification/${id}/win-x64`,
   }
   await writeFile(join(root, 'run.json'), `${JSON.stringify(run, null, 2)}\n`, { flag: 'wx', mode: 0o600, flush: true })
   return run
+}
+
+function destinationDigest(destination: { readonly origin: string; readonly bucket: string }): string {
+  return createHash('sha256').update(JSON.stringify([destination.origin, destination.bucket])).digest('hex')
+}
+
+function validateDestination(destination: { readonly origin: string; readonly bucket: string }): void {
+  const update = resolveDesktopAutoUpdateConfig({ HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'production', HARNOVA_DOWNLOAD_PROD_ORIGIN: destination.origin }, 'win32', 'x64')
+  if (update.origin !== destination.origin || !/^[a-z0-9][a-z0-9-]*$/u.test(destination.bucket)) {
+    throw new Error('installed update: normalized Harnova test origin and bucket are required')
+  }
 }
 
 function validateVersions(versions: readonly [string, string]): void {
@@ -75,13 +92,16 @@ export async function readInstalledUpdateRun(path: string): Promise<InstalledUpd
   const row = value as Record<string, unknown>
   if (row.schemaVersion !== 1 || typeof row.id !== 'string' || !/^[a-f0-9]{24}$/u.test(row.id)
     || row.root !== resolve(dirname(path)) || row.environment !== 'test'
-    || row.origin !== 'https://download-test.deepseek.com' || row.bucket !== 'bj-toc-download-test-1320056602'
-    || row.appId !== `com.deepseek.dsh.qualification.q${row.id}` || row.productName !== `DSH Update Test ${row.id}`
-    || row.feedKey !== `dsh-desk/feeds/qualification/${row.id}/win-x64/nightly.yml`
-    || row.binPrefix !== `dsh-desk/bin/qualification/${row.id}/win-x64`
+    || typeof row.origin !== 'string' || typeof row.bucket !== 'string'
+    || row.appId !== `io.github.aero123421.harnova.qualification.q${row.id}` || row.productName !== `Harnova Update Test ${row.id}`
+    || row.feedKey !== `harnova-desktop/feeds/qualification/${row.id}/win-x64/nightly.yml`
+    || row.binPrefix !== `harnova-desktop/bin/qualification/${row.id}/win-x64`
     || !Array.isArray(row.versions) || row.versions.length !== 2 || row.versions.some(version => typeof version !== 'string')) {
     throw new Error('installed update: manifest identity, location, versions, or test destination changed')
   }
+  const destination = { origin: row.origin as string, bucket: row.bucket as string }
+  validateDestination(destination)
+  if (row.destinationDigest !== destinationDigest(destination)) throw new Error('installed update: retained destination changed')
   validateVersions(row.versions as [string, string])
   if (typeof row.source !== 'object' || row.source === null || Array.isArray(row.source)) {
     throw new Error('installed update: missing source version and commit')
@@ -250,7 +270,7 @@ function inspectJournalRuns(runs: readonly JournalRun[], versions: readonly [str
  */
 export async function collectInstalledUpdateJournals(manifest: string, directory: string): Promise<string> {
   const run = await readInstalledUpdateRun(manifest)
-  if (!resolve(directory).replaceAll('\\', '/').endsWith(`/dsh-update-qualification/${run.id}/journals`)) {
+  if (!resolve(directory).replaceAll('\\', '/').endsWith(`/harnova-update-qualification/${run.id}/journals`)) {
     throw new Error('installed update: matching installed-app journal directory is required')
   }
   const snapshots = await readJournalRuns(directory, run.versions)

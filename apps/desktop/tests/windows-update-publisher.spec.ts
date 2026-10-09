@@ -49,11 +49,11 @@ async function withCertificate(subject: unknown, action: (file: string, signTool
 
 describe('Windows update publisher', () => {
   beforeAll(() => {
-    vi.stubEnv('DSH_DESKTOP_APP_ID', 'com.example.publisher-test')
-    vi.stubEnv('DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN', 'https://policy.example.com')
-    vi.stubEnv('DSH_DESKTOP_MANDATORY_UPDATE_CONFIG', JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }))
-    vi.stubEnv('DSH_DESKTOP_TARGET_PLATFORM', 'win32')
-    vi.stubEnv('DSH_DESKTOP_UNSIGNED', '1')
+    vi.stubEnv('HARNOVA_DESKTOP_APP_ID', 'com.example.publisher-test')
+    vi.stubEnv('HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN', 'https://policy.example.com')
+    vi.stubEnv('HARNOVA_DESKTOP_MANDATORY_UPDATE_CONFIG', JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }))
+    vi.stubEnv('HARNOVA_DESKTOP_TARGET_PLATFORM', 'win32')
+    vi.stubEnv('HARNOVA_DESKTOP_UNSIGNED', '1')
   })
   afterAll(() => vi.unstubAllEnvs())
 
@@ -79,15 +79,16 @@ describe('Windows update publisher', () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
     await withCertificate({ CN: 'Publisher', O: 'Company', C: 'CN' }, async (file, signTool) => {
       const config = createElectronBuilderConfig({
-        DSH_DESKTOP_APP_ID: 'com.example.publisher-test',
-        DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
-        DSH_DESKTOP_MANDATORY_UPDATE_PROD_ORIGIN: 'https://policy.example.com',
-        ...(explicitTarget ? { DSH_DESKTOP_TARGET_PLATFORM: 'win32' } : {}),
-        DSH_DESKTOP_WINDOWS_CER_FILE: file,
-        DSH_DESKTOP_WINDOWS_SIGNTOOL: signTool,
-        DSH_DESKTOP_WINDOWS_KEY_CONTAINER: 'test-container',
-        DSH_DESKTOP_WINDOWS_TOKEN_PIN: 'test-pin',
-        DSH_DESKTOP_AUTO_UPDATE_ENV: 'production',
+        HARNOVA_DESKTOP_APP_ID: 'com.example.publisher-test',
+        HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
+        HARNOVA_DESKTOP_MANDATORY_UPDATE_PROD_ORIGIN: 'https://policy.example.com',
+        ...(explicitTarget ? { HARNOVA_DESKTOP_TARGET_PLATFORM: 'win32' } : {}),
+        HARNOVA_DESKTOP_WINDOWS_CER_FILE: file,
+        HARNOVA_DESKTOP_WINDOWS_SIGNTOOL: signTool,
+        HARNOVA_DESKTOP_WINDOWS_KEY_CONTAINER: 'test-container',
+        HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN: 'test-pin',
+        HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'production',
+        HARNOVA_DOWNLOAD_PROD_ORIGIN: 'https://updates.harnova.example',
       }, 'win32', 'x64')
       expect(config.win.forceCodeSigning).toBe(true)
       expect(config.artifactName).toBe('harnova-${version}-${os}-${arch}.${ext}')

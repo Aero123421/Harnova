@@ -253,7 +253,7 @@ describe('headless stream-json snapshots', () => {
         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),
       },
       inspect: async (cwd) => {
-        const logs = await persistedLogs(cwd, join(cwd, '.dsh', 'sessions'))
+        const logs = await persistedLogs(cwd, join(cwd, '.harnova', 'sessions'))
         expect(logs).toHaveLength(1)
         const actual = logs[0]
         if (actual === undefined) throw new Error('the headless profile did not persist its session')
@@ -364,7 +364,7 @@ describe('headless stream-json snapshots', () => {
         tsconfigPath,
         env,
         inspect: async (inspected) => {
-          const logs = await persistedLogs(inspected, join(inspected, '.dsh', 'sessions'))
+          const logs = await persistedLogs(inspected, join(inspected, '.harnova', 'sessions'))
           expect(logs).toHaveLength(1)
           const content = logs[0]?.content ?? ''
           expect(content).toContain(firstTask)
@@ -479,7 +479,7 @@ describe('headless stream-json snapshots', () => {
       binArgs: [credentialsConfigPath, 'say pong'],
       tsconfigPath,
       env: {
-        // First-run posture: no key in the environment, none under ./.dsh.
+        // First-run posture: no key in the environment, none under ./.harnova.
         DEEPSEEK_API_KEY: '',
         DEEPSEEK_BASE_URL: '',
         NODE_OPTIONS: [process.env.NODE_OPTIONS, '--disable-warning=ExperimentalWarning'].filter(Boolean).join(' '),

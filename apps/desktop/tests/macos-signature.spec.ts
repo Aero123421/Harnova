@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import type { NotarizeOptions } from '@electron/notarize'
 import {
   resolveDesktopAppId,
@@ -13,17 +14,17 @@ import {
 } from '../scripts/verify-macos-signature.mjs'
 
 const RELEASE_ENVIRONMENT = {
-  DSH_DESKTOP_APP_ID: 'com.example.desktop',
-  DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
-  DSH_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
-  DSH_DESKTOP_TARGET_PLATFORM: 'darwin',
-  DSH_DESKTOP_TARGET_ARCH: 'arm64',
-  DSH_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
-  DSH_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
+  HARNOVA_DESKTOP_APP_ID: 'com.example.desktop',
+  HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
+  HARNOVA_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
+  HARNOVA_DESKTOP_TARGET_PLATFORM: 'darwin',
+  HARNOVA_DESKTOP_TARGET_ARCH: 'arm64',
+  HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
+  HARNOVA_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
   APPLE_API_KEY: '/private/credentials/AuthKey_TEST123456.p8',
   APPLE_API_KEY_ID: 'TEST123456',
   APPLE_API_ISSUER: '11111111-2222-3333-4444-555555555555',
-  DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com', DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
+  HARNOVA_DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com', HARNOVA_DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
 }
 
 function portablePath(value: string): string {
@@ -42,7 +43,13 @@ describe('desktop macOS release signature', () => {
   it('loads release identifiers from the environment and requires code signing', async () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
     const config = createElectronBuilderConfig(RELEASE_ENVIRONMENT, 'darwin', 'arm64')
-    expect(config.protocols).toEqual([{ name: 'Harnova', schemes: ['dsh'] }])
+    const { AppInfo } = createRequire(import.meta.url)('app-builder-lib/out/appInfo.js') as {
+      AppInfo: new (info: { metadata: Record<string, unknown>; config: object }) => { name: string; updaterCacheDirName: string }
+    }
+    const appInfo = new AppInfo({ config, metadata: { name: '@deepseek-ai/dsh-desktop', version: '1.0.0', ...config.extraMetadata } })
+    expect(appInfo.name).toBe('harnova-desktop')
+    expect(appInfo.updaterCacheDirName).toBe('harnova-desktop-updater')
+    expect(config.protocols).toEqual([{ name: 'Harnova', schemes: ['harnova'] }])
     expect(portablePath(config.directories.output)).toContain('/.desktop-build/targets/mac-arm64/artifacts')
     expect(config.mac.extendInfo.NSMicrophoneUsageDescription).toContain('microphone')
     expect(config.mac.entitlementsInherit).toBe(config.mac.entitlements)
@@ -67,9 +74,9 @@ describe('desktop macOS release signature', () => {
       '**/@vscode/ripgrep-*/bin/rg',
     ]))
     expect(config).toMatchObject({
-      appId: RELEASE_ENVIRONMENT.DSH_DESKTOP_APP_ID,
+      appId: RELEASE_ENVIRONMENT.HARNOVA_DESKTOP_APP_ID,
       mac: {
-        identity: RELEASE_ENVIRONMENT.DSH_DESKTOP_MACOS_SIGNING_IDENTITY,
+        identity: RELEASE_ENVIRONMENT.HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY,
         forceCodeSigning: true,
         notarize: true,
         signIgnore: ['/Contents/Resources/app\\.asar\\.unpacked/dsh(?:/|$)', '/Contents/Resources/runtime/primary-runtime(?:/|$)', '\\.pak$'],
@@ -80,7 +87,7 @@ describe('desktop macOS release signature', () => {
       },
       publish: [{
         provider: 'generic',
-        url: 'https://desktop-updates.example.com/dsh-desk/0123456789abcdef0123456789abcdef/feeds/mac-arm64/',
+        url: 'https://desktop-updates.example.com/harnova-desktop/0123456789abcdef0123456789abcdef/feeds/mac-arm64/',
         channel: 'nightly',
       }],
     })
@@ -105,21 +112,21 @@ describe('desktop macOS release signature', () => {
   it('validates Windows signing without requiring macOS identifiers for a Windows target', async () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
     expect(() => createElectronBuilderConfig({
-      DSH_DESKTOP_APP_ID: RELEASE_ENVIRONMENT.DSH_DESKTOP_APP_ID,
-      DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
-      DSH_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
-      DSH_DESKTOP_TARGET_PLATFORM: 'win32',
-    }, 'win32')).toThrow(/DSH_DESKTOP_WINDOWS_CER_FILE/u)
+      HARNOVA_DESKTOP_APP_ID: RELEASE_ENVIRONMENT.HARNOVA_DESKTOP_APP_ID,
+      HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
+      HARNOVA_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
+      HARNOVA_DESKTOP_TARGET_PLATFORM: 'win32',
+    }, 'win32')).toThrow(/HARNOVA_DESKTOP_WINDOWS_CER_FILE/u)
   })
 
   it('isolates unsigned Windows artifacts and omits updater metadata without release credentials', async () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
     const config = createElectronBuilderConfig({
-      DSH_DESKTOP_APP_ID: RELEASE_ENVIRONMENT.DSH_DESKTOP_APP_ID,
-      DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
-      DSH_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
-      DSH_DESKTOP_TARGET_PLATFORM: 'win32',
-      DSH_DESKTOP_UNSIGNED: '1',
+      HARNOVA_DESKTOP_APP_ID: RELEASE_ENVIRONMENT.HARNOVA_DESKTOP_APP_ID,
+      HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN: 'https://policy.example.com',
+      HARNOVA_DESKTOP_MANDATORY_UPDATE_CONFIG: JSON.stringify({ allowedAuthOrigins: ['https://login.example.com'] }),
+      HARNOVA_DESKTOP_TARGET_PLATFORM: 'win32',
+      HARNOVA_DESKTOP_UNSIGNED: '1',
     }, 'win32', 'x64')
     expect(portablePath(config.directories.output)).toContain('/targets/win-x64/unsigned-artifacts')
     expect(portablePath(config.nsis.include)).toMatch(/\/scripts\/installer\.nsh$/u)
@@ -131,9 +138,9 @@ describe('desktop macOS release signature', () => {
 
   it('rejects unsigned macOS builds and malformed signing modes', async () => {
     const { createElectronBuilderConfig } = await import('../electron-builder.config.mjs')
-    expect(() => createElectronBuilderConfig({ ...RELEASE_ENVIRONMENT, DSH_DESKTOP_UNSIGNED: '1' }))
+    expect(() => createElectronBuilderConfig({ ...RELEASE_ENVIRONMENT, HARNOVA_DESKTOP_UNSIGNED: '1' }))
       .toThrow(/unsigned builds require Windows/u)
-    expect(() => createElectronBuilderConfig({ ...RELEASE_ENVIRONMENT, DSH_DESKTOP_UNSIGNED: 'yes' }))
+    expect(() => createElectronBuilderConfig({ ...RELEASE_ENVIRONMENT, HARNOVA_DESKTOP_UNSIGNED: 'yes' }))
       .toThrow(/must be 0 or 1/u)
   })
 
@@ -184,17 +191,19 @@ describe('desktop macOS release signature', () => {
     }).toThrow(`TeamIdentifier=${expected.teamId}`)
   })
 
-  it('rejects missing and malformed release identifiers', () => {
-    expect(() => resolveDesktopAppId({})).toThrow(/DSH_DESKTOP_APP_ID/u)
-    expect(() => resolveDesktopAppId({ DSH_DESKTOP_APP_ID: 'not-a-bundle-id' })).toThrow(/reverse-DNS/u)
-    expect(() => resolveMacOSSigningEnvironment({})).toThrow(/DSH_DESKTOP_MACOS_SIGNING_IDENTITY/u)
+  it('defaults to Harnova and rejects malformed or upstream release identifiers', () => {
+    expect(resolveDesktopAppId({})).toBe('io.github.aero123421.harnova')
+    expect(resolveDesktopAppId({ DSH_DESKTOP_APP_ID: 'com.deepseek.harness' })).toBe('io.github.aero123421.harnova')
+    expect(() => resolveDesktopAppId({ HARNOVA_DESKTOP_APP_ID: 'com.deepseek.harness' })).toThrow(/DeepSeek/u)
+    expect(() => resolveDesktopAppId({ HARNOVA_DESKTOP_APP_ID: 'not-a-bundle-id' })).toThrow(/reverse-DNS/u)
+    expect(() => resolveMacOSSigningEnvironment({})).toThrow(/HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY/u)
     expect(() => resolveMacOSSigningEnvironment({
-      DSH_DESKTOP_MACOS_SIGNING_IDENTITY: 'Developer ID Application: Example Company (TEAMID1234)',
-      DSH_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
+      HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY: 'Developer ID Application: Example Company (TEAMID1234)',
+      HARNOVA_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
     })).toThrow(/must omit/u)
     expect(() => resolveMacOSSigningEnvironment({
-      DSH_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
-      DSH_DESKTOP_MACOS_TEAM_ID: 'short',
+      HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
+      HARNOVA_DESKTOP_MACOS_TEAM_ID: 'short',
     })).toThrow(/10 uppercase/u)
   })
 

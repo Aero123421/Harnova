@@ -88,7 +88,7 @@ export function indexWorkspacePackages(repoRoot: string): Map<string, string> {
  * Compose one profile through the real CLI dump path, leaving `!!js`
  * unevaluated. The dump runs against a throwaway Harness home, so the
  * profile's own layer is the freshly initialized empty patch file and the
- * machine's `$DSH_HOME` — its profile manifest with locally installed
+ * machine's `$HARNOVA_HOME` — its profile manifest with locally installed
  * bundles, and its patch files — would otherwise leak this machine's plugins
  * into the image and break the same-tree-same-bytes guarantee.
  * @param repoRoot - Absolute repository root.

@@ -1,9 +1,9 @@
 # Publish the Web UI behind a reverse proxy
 
-`dsh --profile web` serves the GUI over plain HTTP on a loopback port, so a browser on another machine cannot reach it, and the process knows nothing about the address you do use. A reverse proxy in front of it owns that external leg — the public host name, TLS, and the path prefix it strips before forwarding to the listener — and `--public-url` tells DSH which address browsers use:
+`harnova --profile web` serves the GUI over plain HTTP on a loopback port, so a browser on another machine cannot reach it, and the process knows nothing about the address you do use. A reverse proxy in front of it owns that external leg — the public host name, TLS, and the path prefix it strips before forwarding to the listener — and `--public-url` tells DSH which address browsers use:
 
 ```sh
-dsh --profile web --public-url https://app.example/ui/ --trusted-host app.example
+harnova --profile web --public-url https://app.example/ui/ --trusted-host app.example
 ```
 
 ## What `--public-url` advertises

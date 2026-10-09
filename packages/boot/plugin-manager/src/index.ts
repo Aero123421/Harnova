@@ -1,4 +1,4 @@
-/** Current-profile plugin and bundle management over shared dsh plugin operations. */
+/** Current-profile plugin and bundle management over shared harnova plugin operations. */
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { readFile, rm } from 'node:fs/promises'
@@ -38,7 +38,7 @@ export { InvalidInstallSpecError, parseInstallSpec, type ParsedInstallSpec } fro
 
 /** The pnpm executable, registries, and limits for diagnostics, lookups and connection checks. */
 export interface Config {
-  /** The pnpm executable name or path; resolved through `PATH` like the `dsh plugin` command. */
+  /** The pnpm executable name or path; resolved through `PATH` like the `harnova plugin` command. */
   pnpmCommand?: string
   /** Maximum retained package-operation diagnostic bytes. */
   outputBytes?: number
@@ -459,7 +459,7 @@ export class PluginManager extends TypertRemoteService {
   }
 
   /**
-   * Install a package using the same pnpm implementation as dsh plugin. GitHub
+   * Install a package using the same pnpm implementation as harnova plugin. GitHub
    * repositories get a connection check bounded by githubConnectionTimeoutMs before pnpm starts;
    * only network failures or timeouts stop installation, while pnpm owns authentication and transport fallback. A run
    * that fails, is cancelled, or adds a package without a bundle patch restores
@@ -608,7 +608,7 @@ export class PluginManager extends TypertRemoteService {
     return { status: 'cancelled' }
   }
 
-  /** Unload and remove a profile-owned bundle dependency through dsh plugin's pnpm path; a selected name no
+  /** Unload and remove a profile-owned bundle dependency through harnova plugin's pnpm path; a selected name no
    * dependency holds is only deselected.
    * @param name Installed dependency or selected bundle name.
    * @returns Removal diagnostics and the remaining profile state.

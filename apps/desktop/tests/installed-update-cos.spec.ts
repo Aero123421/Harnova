@@ -13,9 +13,9 @@ const state = vi.hoisted(() => ({
 }))
 
 vi.mock('../scripts/desktop-package-environment.mjs', () => ({ loadDesktopPackageEnvironment: () => ({
-  DSH_DESKTOP_AUTO_UPDATE_ENV: state.settings, DOWNLOAD_TEST_ORIGIN: 'https://download-test.deepseek.com',
-  DOWNLOAD_TEST_COS_BUCKET: 'bj-toc-download-test-1320056602', DOWNLOAD_TEST_COS_SECRET_ID: 'fixture-id',
-  DOWNLOAD_TEST_COS_SECRET_KEY: 'fixture-key', DSH_DESKTOP_WINDOWS_TOKEN_PIN: 'fixture-pin-not-for-sdk',
+  HARNOVA_DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef', HARNOVA_DESKTOP_AUTO_UPDATE_ENV: state.settings, HARNOVA_DOWNLOAD_TEST_ORIGIN: 'https://download-test.harnova.example',
+  HARNOVA_DOWNLOAD_TEST_COS_BUCKET: 'harnova-qualification-test-1250000000', HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID: 'fixture-id',
+  HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'fixture-key', HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN: 'fixture-pin-not-for-sdk',
 }) }))
 
 vi.mock('../scripts/desktop-cos.ts', async (original) => {
@@ -42,15 +42,15 @@ afterEach(async () => {
   finally { await Promise.all(paths.map(path => rm(path, { recursive: true, force: true }))) }
 })
 
-const BUCKET = 'bj-toc-download-test-1320056602'
-const key = `dsh-desk/bin/qualification/${'a'.repeat(24)}/win-x64/package.exe`
+const BUCKET = 'harnova-qualification-test-1250000000'
+const key = `harnova-desktop/bin/qualification/${'a'.repeat(24)}/win-x64/package.exe`
 
 /** Store whose SDK client sends every request to a fresh loopback origin. */
 async function store(responder: CosLoopbackResponder) {
   const loopback = await startCosLoopback(responder)
   loopbacks.push(loopback)
   state.redirect = (cos) => { loopback.redirect(cos) }
-  return { store: createInstalledUpdateCos(), loopback }
+  return { store: createInstalledUpdateCos({ origin: 'https://download-test.harnova.example', bucket: BUCKET }), loopback }
 }
 
 function expectedHost(): string {
@@ -58,6 +58,11 @@ function expectedHost(): string {
 }
 
 describe('qualification COS transport with real SDK serialization over a loopback origin', () => {
+  it('rejects a retained destination that differs from the file-owned settings before connecting', () => {
+    expect(() => createInstalledUpdateCos({ origin: 'https://unrelated.example', bucket: BUCKET })).toThrow(/retained destination/u)
+    expect(() => createInstalledUpdateCos({ origin: 'https://download-test.harnova.example', bucket: 'unrelated' })).toThrow(/retained destination/u)
+  })
+
   it('sends one streamed PUT with explicit length, MD5, no-store policy and a signed non-overwrite header', async () => {
     const { store: cos, loopback } = await store((_request, response) => {
       answer(response, 200, '', { 'x-cos-request-id': 'fixture-request' })
@@ -177,12 +182,12 @@ describe('qualification COS transport with real SDK serialization over a loopbac
     const fetch = vi.fn(async () => new Response('public bytes'))
     vi.stubGlobal('fetch', fetch)
     const { store: cos } = await store((_request, response) => { answer(response) })
-    const url = `https://download-test.deepseek.com/${key}`
+    const url = `https://download-test.harnova.example/${key}`
     expect(await cos.publicRead(url)).toEqual({ size: 12, sha512: createHash('sha512').update('public bytes').digest('base64') })
     expect(fetch).toHaveBeenCalledWith(url, expect.objectContaining({ redirect: 'error', cache: 'no-store' }))
     await expect(cos.publicRead(`${url}?fresh=1`)).rejects.toThrow('exact test public URL')
     await expect(cos.publicRead(url.replace('download-test', 'download'))).rejects.toThrow('exact test public URL')
-    await expect(cos.read('dsh-desk/feeds/nightly.yml')).rejects.toThrow('qualification namespace')
+    await expect(cos.read('harnova-desktop/feeds/nightly.yml')).rejects.toThrow('qualification namespace')
   })
 
   it('refuses production settings without creating a request', async () => {
@@ -190,7 +195,7 @@ describe('qualification COS transport with real SDK serialization over a loopbac
     const loopback = await startCosLoopback((_request, response) => { answer(response) })
     loopbacks.push(loopback)
     state.redirect = (cos) => { loopback.redirect(cos) }
-    expect(() => createInstalledUpdateCos()).toThrow('test upload settings')
+    expect(() => createInstalledUpdateCos({ origin: 'https://download-test.harnova.example', bucket: BUCKET })).toThrow('test upload settings')
     expect(loopback.requests).toHaveLength(0)
   })
 

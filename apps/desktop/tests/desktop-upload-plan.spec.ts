@@ -52,13 +52,13 @@ async function fixture(
   const base = `harnova-${version}-${os}-${arch}`
   const origin = environment === 'test'
     ? TEST_ORIGIN
-    : 'https://download.deepseek.com'
+    : 'https://updates.harnova.example'
   await writeFile(join(artifactsRoot, `${target}-release.json`), `${JSON.stringify({
     schemaVersion: 1,
     target,
     version,
     environment,
-    publicUrl: `${origin}/dsh-desk/${environment === 'test' ? `${RELEASE_ID}/` : ''}feeds/${target}/`,
+    publicUrl: `${origin}/harnova-desktop/${environment === 'test' ? `${RELEASE_ID}/` : ''}feeds/${target}/`,
   })}\n`)
 
   if (os === 'mac') {
@@ -93,14 +93,15 @@ async function fixture(
     artifactsRoot,
     environment: environment === 'test'
       ? {
-        DSH_DESKTOP_AUTO_UPDATE_ENV: 'test',
-        DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
-        DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID,
-        DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
+        HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'test',
+        HARNOVA_DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
+        HARNOVA_DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID,
+        HARNOVA_DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
       }
       : {
-        DSH_DESKTOP_AUTO_UPDATE_ENV: 'production',
-        DOWNLOAD_PROD_COS_BUCKET: PRODUCTION_BUCKET,
+        HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'production',
+        HARNOVA_DOWNLOAD_PROD_ORIGIN: 'https://updates.harnova.example',
+        HARNOVA_DOWNLOAD_PROD_COS_BUCKET: PRODUCTION_BUCKET,
       },
   }
 }
@@ -152,7 +153,7 @@ describe('desktop upload plan', () => {
     expect(plan.artifacts).toHaveLength(1)
     expect(plan.artifacts[0]).toMatchObject({
       path: join(paths.artifactsRoot, 'harnova-1.2.3-alpha.4-win-x64.exe'),
-      key: 'desktop/dsh-latest-windows-x64.exe', channelMetadata: false,
+      key: 'desktop/harnova-latest-windows-x64.exe', channelMetadata: false,
     })
   })
 
@@ -160,8 +161,8 @@ describe('desktop upload plan', () => {
     const paths = await fixture('win-x64', '1.2.3', 'production')
     if (failure === 'completion') await rm(join(paths.artifactsRoot, 'win-x64-release.json'))
     if (failure === 'deployment') Object.assign(paths.environment, {
-      DSH_DESKTOP_AUTO_UPDATE_ENV: 'test', DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
-      DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID, DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
+      HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'test', HARNOVA_DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
+      HARNOVA_DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID, HARNOVA_DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
     })
     if (failure === 'checksum') {
       const path = join(paths.artifactsRoot, 'harnova-1.2.3-win-x64.exe')
@@ -175,15 +176,15 @@ describe('desktop upload plan', () => {
     const paths = await fixture('win-x64', '1.2.3', 'production')
     const plan = await createDesktopUploadPlan('win-x64', paths)
     expect(plan.artifacts.map(artifact => artifact.key)).toEqual([
-      'dsh-desk/bin/win-x64/harnova-1.2.3-win-x64.exe',
-      'dsh-desk/bin/win-x64/harnova-1.2.3-win-x64.exe.blockmap',
-      'dsh-desk/feeds/win-x64/nightly.yml',
-      'dsh-desk/feeds/win-x64/latest.yml',
+      'harnova-desktop/bin/win-x64/harnova-1.2.3-win-x64.exe',
+      'harnova-desktop/bin/win-x64/harnova-1.2.3-win-x64.exe.blockmap',
+      'harnova-desktop/feeds/win-x64/nightly.yml',
+      'harnova-desktop/feeds/win-x64/latest.yml',
     ])
     expect(load(plan.artifacts[2]!.contents!)).toMatchObject({
       version: '1.2.3',
       files: [{
-        url: 'https://download.deepseek.com/dsh-desk/bin/win-x64/harnova-1.2.3-win-x64.exe',
+        url: 'https://updates.harnova.example/harnova-desktop/bin/win-x64/harnova-1.2.3-win-x64.exe',
         sha512: digest('signed NSIS executable fixture'),
       }],
     })
@@ -197,7 +198,7 @@ describe('desktop upload plan', () => {
     expect(plan).toMatchObject({
       environment: 'test',
       version: '1.2.3',
-      publicUrl: `https://desktop-updates.example.com/dsh-desk/${RELEASE_ID}/feeds/mac-arm64/`,
+      publicUrl: `https://desktop-updates.example.com/harnova-desktop/${RELEASE_ID}/feeds/mac-arm64/`,
       bucket: TEST_BUCKET,
     })
     expect(plan.artifacts.map(artifact => artifact.filename)).toEqual([
@@ -215,7 +216,7 @@ describe('desktop upload plan', () => {
   it.each(['mac-arm64', 'mac-x64', 'win-x64'] as const)('publishes every %s object and YAML reference inside the test release directory', async (target) => {
     const paths = await fixture(target)
     const plan = await createDesktopUploadPlan(target, paths)
-    const prefix = `dsh-desk/${RELEASE_ID}`
+    const prefix = `harnova-desktop/${RELEASE_ID}`
     const payload = plan.artifacts.find(artifact => artifact.filename.endsWith(target === 'win-x64' ? '.exe' : '.zip'))!
     for (const artifact of plan.artifacts) {
       expect(artifact.key).toBe(`${prefix}/${artifact.channelMetadata ? 'feeds' : 'bin'}/${target}/${artifact.filename}`)
@@ -233,11 +234,11 @@ describe('desktop upload plan', () => {
   it('rejects a changed or missing release ID before uploading a completed package', async () => {
     const paths = await fixture('mac-arm64')
     await expect(createDesktopUploadPlan('mac-arm64', {
-      ...paths, environment: { ...paths.environment, DOWNLOAD_TEST_RELEASE_ID: 'a'.repeat(32) },
+      ...paths, environment: { ...paths.environment, HARNOVA_DOWNLOAD_TEST_RELEASE_ID: 'a'.repeat(32) },
     })).rejects.toThrow(/completion record/u)
     await expect(createDesktopUploadPlan('mac-arm64', {
-      ...paths, environment: { ...paths.environment, DOWNLOAD_TEST_RELEASE_ID: undefined },
-    })).rejects.toThrow(/DOWNLOAD_TEST_RELEASE_ID/u)
+      ...paths, environment: { ...paths.environment, HARNOVA_DOWNLOAD_TEST_RELEASE_ID: undefined },
+    })).rejects.toThrow(/HARNOVA_DOWNLOAD_TEST_RELEASE_ID/u)
   })
 
   it('uploads the prerelease channel metadata emitted by electron-builder', async () => {
@@ -261,7 +262,7 @@ describe('desktop upload plan', () => {
       'latest.yml',
     ])
     expect(plan).toMatchObject({
-      publicUrl: 'https://download.deepseek.com/dsh-desk/feeds/win-x64/',
+      publicUrl: 'https://updates.harnova.example/harnova-desktop/feeds/win-x64/',
       bucket: PRODUCTION_BUCKET,
     })
   })
@@ -284,10 +285,10 @@ describe('desktop upload plan', () => {
     await expect(createDesktopUploadPlan('mac-x64', {
       ...productionPaths,
       environment: {
-        DSH_DESKTOP_AUTO_UPDATE_ENV: 'test',
-        DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
-        DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID,
-        DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
+        HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'test',
+        HARNOVA_DOWNLOAD_TEST_ORIGIN: TEST_ORIGIN,
+        HARNOVA_DOWNLOAD_TEST_RELEASE_ID: RELEASE_ID,
+        HARNOVA_DOWNLOAD_TEST_COS_BUCKET: TEST_BUCKET,
       },
     })).rejects.toThrow(/completion record.*test/u)
   })

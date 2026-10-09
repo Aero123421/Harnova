@@ -33,6 +33,8 @@ import { DESKTOP_IPC, SCHEME, assertDesktopSender, type DesktopUpdateState } fro
 import { readDeviceInfo } from './device-info.ts'
 import { desktopUpdateReadyConfirmation, formatDesktopMessage, resolveDesktopLocale, resolveDesktopStartupLocale } from './locale.ts'
 import { claimDesktopSingleInstance } from './single-instance.ts'
+import { initializeDesktopIdentity } from './identity.ts'
+import { HARNOVA_PROTOCOL } from './desktop-identity.ts'
 import { DesktopUpdateCoordinator } from './update-coordinator.ts'
 import { DesktopCommandManager } from './command-management.ts'
 import { serveWebDocument, authenticateWebHost, forwardWebRequest } from './web-document.ts'
@@ -80,6 +82,7 @@ const rendererConsole = new RendererConsoleTail()
 
 // Platform-conventional logs directory (macOS ~/Library/Logs/<name>, otherwise under userData);
 // set before ready so the first fatal report already resolves under it.
+initializeDesktopIdentity(app)
 app.setAppLogsPath()
 
 function currentDesktopLocale(): ReturnType<typeof resolveDesktopLocale> {
@@ -152,28 +155,28 @@ function runtimeResources(): RuntimeResources {
   const development = !app.isPackaged
   const node = process.execPath
   const nodeBin = development ? join(app.getAppPath(), 'scripts', 'node-bin') : join(process.resourcesPath, 'runtime', 'bin')
-  const pnpm = (development ? process.env.DSH_DESKTOP_PNPM_ENTRY : undefined)
+  const pnpm = (development ? process.env.HARNOVA_DESKTOP_PNPM_ENTRY : undefined)
     ?? (development ? join(app.getAppPath(), 'node_modules', 'pnpm', 'bin', 'pnpm.mjs')
       : join(process.resourcesPath, 'runtime', 'pnpm', 'bin', 'pnpm.mjs'))
-  const dsh = (development ? process.env.DSH_DESKTOP_DSH_DIR : undefined)
+  const dsh = (development ? process.env.HARNOVA_DESKTOP_DSH_DIR : undefined)
     ?? (development ? join(app.getAppPath(), '.desktop-build', 'development', 'project') : join(app.getAppPath(), 'dsh'))
   return { node, nodeBin, pnpm, dsh }
 }
 
 function developmentPrimaryRuntime(): string {
-  const directory = process.env.DSH_DESKTOP_PRIMARY_RUNTIME_DIR
+  const directory = process.env.HARNOVA_DESKTOP_PRIMARY_RUNTIME_DIR
   if (directory === undefined || directory === '') {
-    throw new Error('dsh desktop: DSH_DESKTOP_PRIMARY_RUNTIME_DIR is required for an unpackaged launch')
+    throw new Error('dsh desktop: HARNOVA_DESKTOP_PRIMARY_RUNTIME_DIR is required for an unpackaged launch')
   }
   return directory
 }
 
 function developmentHostInspectPort(enabled: boolean): number | undefined {
-  const configured = process.env.DSH_DESKTOP_HOST_INSPECT_PORT
+  const configured = process.env.HARNOVA_DESKTOP_HOST_INSPECT_PORT
   if (!enabled || configured === undefined || configured === '') return undefined
   const port = Number(configured)
   if (!Number.isSafeInteger(port) || port < 1 || port > 65_535) {
-    throw new Error('dsh desktop: DSH_DESKTOP_HOST_INSPECT_PORT must be an integer from 1 through 65535')
+    throw new Error('dsh desktop: HARNOVA_DESKTOP_HOST_INSPECT_PORT must be an integer from 1 through 65535')
   }
   return port
 }
@@ -314,7 +317,7 @@ function createWindow(preload: string, show = false, primary = false): BrowserWi
 
 async function main(): Promise<void> {
   void pruneCrashReports(app.getPath('logs'))
-  const journalDirectory = process.env.DSH_DESKTOP_UPDATE_JOURNAL_DIR
+  const journalDirectory = process.env.HARNOVA_DESKTOP_UPDATE_JOURNAL_DIR
   const updateJournal = journalDirectory === undefined ? undefined : new DesktopUpdateJournal(journalDirectory, app.getVersion())
   const resources = runtimeResources()
   const paths = resolveDesktopPaths()
@@ -1128,7 +1131,7 @@ async function main(): Promise<void> {
       window.moveTop()
       window.focus()
     }
-    if (activate && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
+    if (activate && development && process.env.HARNOVA_DESKTOP_OPEN_DEVTOOLS !== '0') {
       window.webContents.openDevTools({ mode: 'detach' })
     }
   }
@@ -1225,10 +1228,11 @@ async function main(): Promise<void> {
     window.focus()
   }
 
-  if (app.isPackaged || process.env.DSH_DESKTOP_DEV_APP === '1') app.setAsDefaultProtocolClient('dsh')
+  const launchScheme = process.env.HARNOVA_DESKTOP_DEV_APP === '1' ? 'harnova-dev' : HARNOVA_PROTOCOL
+  if (app.isPackaged || process.env.HARNOVA_DESKTOP_DEV_APP === '1') app.setAsDefaultProtocolClient(launchScheme)
   app.on('open-url', (event, url) => {
     event.preventDefault()
-    if (url === 'dsh://open' || url === 'dsh://open/') focusPrimaryWindow()
+    if (url === `${launchScheme}://open` || url === `${launchScheme}://open/`) focusPrimaryWindow()
   })
 
   app.on('activate', (_event, hasVisibleWindows) => {
@@ -1283,7 +1287,7 @@ async function main(): Promise<void> {
   mainWindow = createMainWindow()
   const manifest: unknown = JSON.parse(await readFile(join(app.getAppPath(), 'package.json'), 'utf8'))
   if (typeof manifest !== 'object' || manifest === null) throw new Error('desktop policy: invalid application manifest')
-  const developmentPolicy = app.isPackaged ? undefined : process.env.DSH_DESKTOP_MANDATORY_UPDATE_CONFIG
+  const developmentPolicy = app.isPackaged ? undefined : process.env.HARNOVA_DESKTOP_MANDATORY_UPDATE_CONFIG
   const policyInput: unknown = app.isPackaged
     ? ('dshMandatoryUpdatePolicy' in manifest ? manifest.dshMandatoryUpdatePolicy : undefined)
     : developmentPolicy === undefined ? undefined : JSON.parse(developmentPolicy) as unknown
@@ -1327,7 +1331,7 @@ async function main(): Promise<void> {
   // Window lifecycle callbacks run while backend startup is pending.
   if (isQuitting()) return
   const window = currentMainWindow()
-  if (window !== undefined && development && process.env.DSH_DESKTOP_OPEN_DEVTOOLS !== '0') {
+  if (window !== undefined && development && process.env.HARNOVA_DESKTOP_OPEN_DEVTOOLS !== '0') {
     window.webContents.openDevTools({ mode: 'detach' })
   }
   publishUpdate(updateState)
@@ -1338,7 +1342,7 @@ const ownsDesktopInstance = claimDesktopSingleInstance(app, () => { focusPrimary
 if (ownsDesktopInstance) void app.whenReady().then(main).catch(async (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error)
   console.error(error)
-  const diagnosticFile = process.env.DSH_DESKTOP_DIAGNOSTIC_FILE
+  const diagnosticFile = process.env.HARNOVA_DESKTOP_DIAGNOSTIC_FILE
   if (diagnosticFile !== undefined) {
     await writeFile(diagnosticFile, `${error instanceof Error ? error.stack ?? message : message}\n`).catch(() => undefined)
   }

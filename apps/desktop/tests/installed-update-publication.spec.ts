@@ -46,7 +46,7 @@ async function fixture(body: (context: {
   try {
     vi.spyOn(console, 'log').mockImplementation(() => undefined)
     const run = await createInstalledUpdateRun(parent, ['0.1.6-nightly.20260914.1', '0.1.6-nightly.20260914.2'],
-      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
+      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
     const manifest = join(run.root, 'run.json')
     const receipts: string[] = []
     for (const version of run.versions) {
@@ -67,7 +67,7 @@ async function fixture(body: (context: {
       await writeFile(join(check, 'inputs.json'), JSON.stringify({ manifestSha512: await installedUpdateFileHash(manifest), distribution }))
       receipts.push(receipt)
     }
-    const journals = join(parent, 'dsh-update-qualification', run.id, 'journals')
+    const journals = join(parent, 'harnova-update-qualification', run.id, 'journals')
     await mkdir(journals, { recursive: true })
     const time = new Date(Date.now() - 60_000).toISOString()
     await writeFile(join(journals, '1-00000000-0000-0000-0000-000000000000.jsonl'), ['started', 'workspace-ready']

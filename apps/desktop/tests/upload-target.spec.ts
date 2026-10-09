@@ -27,12 +27,12 @@ describe('desktop upload command', () => {
     { environment: 'test', latest: false, tagged: false },
   ] as const)('uploads $environment latest=$latest with tagged=$tagged', async ({ environment, latest, tagged }) => {
     vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-    const credentials = { DOWNLOAD_TEST_COS_SECRET_ID: 'fixture-id', DOWNLOAD_TEST_COS_SECRET_KEY: 'fixture-key' }
+    const credentials = { HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID: 'fixture-id', HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'fixture-key' }
     const plan: DesktopUploadPlan = {
       environment, target: 'win-x64', version: '1.2.3-alpha.4',
-      publicUrl: 'https://desktop-updates.example.com/desktop/dsh-latest-windows-x64.exe',
-      bucket: 'fixture-bucket', secretIdEnvName: 'DOWNLOAD_TEST_COS_SECRET_ID',
-      secretKeyEnvName: 'DOWNLOAD_TEST_COS_SECRET_KEY', artifacts: [], commit: '0'.repeat(40), dirty: false,
+      publicUrl: 'https://desktop-updates.example.com/desktop/harnova-latest-windows-x64.exe',
+      bucket: 'fixture-bucket', secretIdEnvName: 'HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID',
+      secretKeyEnvName: 'HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY', artifacts: [], commit: '0'.repeat(40), dirty: false,
     }
     vi.mocked(loadDesktopPackageEnvironment).mockReturnValue(credentials)
     vi.mocked(createDesktopUploadPlan).mockResolvedValue(plan)

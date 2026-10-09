@@ -1466,8 +1466,8 @@ def smoke_sdk_profile_plugin(base_url: str) -> None:
             "insert": [{"id": "python-sdk-blackbox-plugin", "name": "dsh-python-blackbox-plugin"}],
         }], indent=2))
 
-        dsh = Path(sysconfig.get_path("scripts")) / ("dsh.exe" if IS_WINDOWS else "dsh")
-        environment = {**os.environ, "DSH_HOME": str(dsh_home)}
+        dsh = Path(sysconfig.get_path("scripts")) / ("harnova.exe" if IS_WINDOWS else "harnova")
+        environment = {**os.environ, "HARNOVA_HOME": str(dsh_home)}
         installed = subprocess.run(
             [str(dsh), "plugin", "--profile", "sdk", "add", f"file:{plugin}"],
             cwd=root,
@@ -1775,7 +1775,7 @@ def smoke_direct(base_url: str, executable: Path) -> None:
         patch = write_profile_patch(root, "direct.patch.yml", sessions, [])
         environment = {
             **os.environ,
-            "DSH_HOME": str(dsh_home),
+            "HARNOVA_HOME": str(dsh_home),
             "DSH_PERMISSION_MODE": "danger-full-access",
             "DSH_TELEMETRY_DISABLED": "1",
             "DEEPSEEK_API_KEY": "sk-keyless-smoke",

@@ -1,4 +1,4 @@
-/** Fixed test-COS transport; callers authorize writes separately from local planning. */
+/** Configured Harnova test-COS transport; callers authorize writes separately from local planning. */
 import { createReadStream } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { Readable, Writable } from 'node:stream'
@@ -6,9 +6,7 @@ import { cosOperation } from './cos-operation.ts'
 import { createDesktopCos, DESKTOP_COS_REGION } from './desktop-cos.ts'
 import { loadDesktopPackageEnvironment } from './desktop-package-environment.mjs'
 import type { InstalledUpdatePublicationStore, InstalledUpdateRemoteObject } from './installed-update-publication.ts'
-
-const BUCKET = 'bj-toc-download-test-1320056602'
-const ORIGIN = 'https://download-test.deepseek.com'
+import { resolveDesktopUploadConfig } from './desktop-auto-update-environment.mjs'
 
 /** COS reports a missing key through this error code; no other status means absence. */
 function isMissingObject(error: unknown): boolean {
@@ -23,23 +21,27 @@ async function hashStream(stream: AsyncIterable<Uint8Array>): Promise<InstalledU
 }
 
 /**
- * Create a fixed test transport from .env.windows, passing only test upload credentials to the SDK.
+ * Create an explicitly configured test transport from .env.windows, passing only test upload credentials to the SDK.
  * Version queries have a 30-second total deadline; object reads and PUTs have 15 minutes.
  * Expiration aborts HTTP requests and waits for closure before releasing the publication operation.
+ * @param destination Retained test destination; file-owned settings must match it.
  * @returns Store whose writes are streamed and therefore cannot be repeated by the SDK.
  */
-export function createInstalledUpdateCos(): InstalledUpdatePublicationStore {
+export function createInstalledUpdateCos(
+  destination: { readonly origin: string; readonly bucket: string },
+): InstalledUpdatePublicationStore {
   const environment = loadDesktopPackageEnvironment('win32')
-  if (environment.DSH_DESKTOP_AUTO_UPDATE_ENV !== 'test' || environment.DOWNLOAD_TEST_ORIGIN !== ORIGIN
-    || environment.DOWNLOAD_TEST_COS_BUCKET !== BUCKET || !environment.DOWNLOAD_TEST_COS_SECRET_ID?.trim()
-    || !environment.DOWNLOAD_TEST_COS_SECRET_KEY?.trim()) throw new Error('installed update: complete test upload settings are required')
+  if (environment.HARNOVA_DESKTOP_AUTO_UPDATE_ENV !== 'test' || !environment.HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID?.trim()
+    || !environment.HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY?.trim()) throw new Error('installed update: complete test upload settings are required')
+  const { origin: ORIGIN, bucket: BUCKET } = resolveDesktopUploadConfig(environment, 'win32', 'x64')
+  if (ORIGIN !== destination.origin || BUCKET !== destination.bucket) throw new Error('installed update: test upload settings differ from the retained destination')
   const credentials = {
-    secretId: environment.DOWNLOAD_TEST_COS_SECRET_ID,
-    secretKey: environment.DOWNLOAD_TEST_COS_SECRET_KEY,
+    secretId: environment.HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID,
+    secretKey: environment.HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY,
   }
   const client = () => createDesktopCos(credentials)
   const keyAllowed = (key: string): void => {
-    if (!/^dsh-desk\/(?:bin|feeds)\/qualification\/[a-f0-9]{24}\/win-x64\/[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(key)) {
+    if (!/^harnova-desktop\/(?:bin|feeds)\/qualification\/[a-f0-9]{24}\/win-x64\/[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(key)) {
       throw new Error('installed update: COS key must stay in the Windows qualification namespace')
     }
   }

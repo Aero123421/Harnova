@@ -1345,7 +1345,7 @@ describe('the model-facing bash tool builds its request from named args only (no
     })
 
     expect(bash.requests[0]?.dshEnv).toEqual({
-      DSH_HOME: recordingDshHome,
+      HARNOVA_HOME: recordingDshHome,
       DSH_SESSION_ID: 'request-fg',
       DSH_SHELL: '1',
     })
@@ -1371,7 +1371,7 @@ describe('the model-facing bash tool builds its request from named args only (no
 
     expect(bash.requests[0]?.env).toBeUndefined()
     expect(bash.requests[0]?.dshEnv).toEqual({
-      DSH_HOME: recordingDshHome,
+      HARNOVA_HOME: recordingDshHome,
       DSH_SESSION_ID: 'request-bg',
       DSH_SHELL: '1',
     })
@@ -1394,12 +1394,12 @@ describe('the model-facing bash tool builds its request from named args only (no
 
     expect(bash.requests.map(request => request.dshEnv)).toEqual([
       {
-        DSH_HOME: recordingDshHome,
+        HARNOVA_HOME: recordingDshHome,
         DSH_SESSION_ID: 'request-parent',
         DSH_SHELL: '1',
       },
       {
-        DSH_HOME: recordingDshHome,
+        HARNOVA_HOME: recordingDshHome,
         DSH_SESSION_ID: 'request-child',
         DSH_SHELL: '1',
       },

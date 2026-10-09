@@ -25,7 +25,7 @@ vi.mock('node:fs/promises', async (importOriginal) => {
     await barrier.afterStat?.(args[0], result.isFile())
     return result
   }, rename: async (...args: Parameters<typeof actual.rename>) => {
-    if (barrier.failReceipt && String(args[1]).endsWith('.dsh-desktop-command.json')) {
+    if (barrier.failReceipt && String(args[1]).endsWith('.harnova-desktop-command.json')) {
       throw Object.assign(new Error('No space for receipt'), { code: 'ENOSPC' })
     }
     await actual.rename(...args)
@@ -43,7 +43,7 @@ async function fixture() {
   onTestFinished(() => rm(root, { recursive: true, force: true }))
   const launcher = join(root, 'desktop-launcher')
   await writeFile(launcher, 'desktop\n', { mode: 0o755 })
-  return { root, options: { destination: join(root, 'dsh'), launcher, linkHelper: join(compiled, 'link-entry') } }
+  return { root, options: { destination: join(root, 'harnova'), launcher, linkHelper: join(compiled, 'link-entry') } }
 }
 
 describe.skipIf(process.platform === 'win32')('macOS command entry ownership', () => {
@@ -61,6 +61,19 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
     await removeFileCommand(f.options, installed.fingerprint)
     await expect(lstat(f.options.destination)).rejects.toMatchObject({ code: 'ENOENT' })
     expect(await readFile(f.options.launcher, 'utf8')).toBe('desktop\n')
+  })
+
+  it('never adopts or removes an upstream command or receipt beside its own entry', async () => {
+    const f = await fixture()
+    const upstream = join(f.root, 'dsh')
+    const receipt = join(f.root, '.dsh-desktop-command.json')
+    await writeFile(upstream, 'upstream command\n', { mode: 0o755 })
+    await writeFile(receipt, 'upstream receipt\n')
+    const installed = await installFileCommand(f.options, (await inspectFileCommand(f.options)).fingerprint)
+    expect(installed.backup).toBeUndefined()
+    await removeFileCommand(f.options, installed.fingerprint)
+    expect(await readFile(upstream, 'utf8')).toBe('upstream command\n')
+    expect(await readFile(receipt, 'utf8')).toBe('upstream receipt\n')
   })
 
   it('preserves the raw target of an existing relative npm link and restores it', async () => {
@@ -113,7 +126,7 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
   it.each(['install', 'remove'] as const)('preserves a replacement arriving during %s after the approved entry was read', async (operation) => {
     const f = await fixture()
     const installed = await installFileCommand(f.options, (await inspectFileCommand(f.options)).fingerprint)
-    const receipt = join(f.root, '.dsh-desktop-command.json')
+    const receipt = join(f.root, '.harnova-desktop-command.json')
     const originalReceipt = await readFile(receipt, 'utf8')
     barrier.afterRead = async (path) => {
       if (path !== receipt) return
@@ -184,7 +197,7 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
     const f = await fixture()
     const installed = await installFileCommand(f.options, (await inspectFileCommand(f.options)).fingerprint)
     barrier.beforeUnlink = (path) => {
-      if (path !== join(f.root, '.dsh-desktop-command.json')) return
+      if (path !== join(f.root, '.harnova-desktop-command.json')) return
       barrier.afterStat = async () => { throw Object.assign(new Error('Restoration denied'), { code: 'EPERM' }) }
       throw Object.assign(new Error('Receipt removal denied'), { code: 'EACCES' })
     }
@@ -195,7 +208,7 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
     expect(failure.errors).toMatchObject([{ code: 'EACCES' }, { code: 'EPERM' }])
     expect(failure.message).toContain('The Desktop command link is preserved at ')
     barrier.beforeUnlink = undefined; barrier.afterStat = undefined
-    const preserved = (await readdir(f.root)).filter(name => name.startsWith('.dsh-command-backup-'))
+    const preserved = (await readdir(f.root)).filter(name => name.startsWith('.harnova-command-backup-'))
     expect(preserved).toHaveLength(1)
     expect(await readlink(join(f.root, preserved[0]!))).toBe(f.options.launcher)
   })
@@ -205,12 +218,12 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
     await symlink('previous-command', f.options.destination)
     const installed = await installFileCommand(f.options, (await inspectFileCommand(f.options)).fingerprint)
     barrier.beforeUnlink = (path) => {
-      if (path === join(f.root, '.dsh-desktop-command.json')) throw Object.assign(new Error('Receipt removal denied'), { code: 'EACCES' })
+      if (path === join(f.root, '.harnova-desktop-command.json')) throw Object.assign(new Error('Receipt removal denied'), { code: 'EACCES' })
     }
     onTestFinished(() => { barrier.beforeUnlink = undefined })
     await expect(removeFileCommand(f.options, installed.fingerprint)).rejects.toMatchObject({ code: 'EACCES' })
     expect(await readlink(f.options.destination)).toBe('previous-command')
-    expect((await readdir(f.root)).filter(name => name.startsWith('.dsh-command-backup-'))).toEqual([])
+    expect((await readdir(f.root)).filter(name => name.startsWith('.harnova-command-backup-'))).toEqual([])
     barrier.beforeUnlink = undefined
     const retried = await installFileCommand(f.options, (await inspectFileCommand(f.options)).fingerprint)
     expect(retried.preservedBackup).toBeUndefined()
@@ -245,7 +258,7 @@ describe.skipIf(process.platform === 'win32')('macOS command entry ownership', (
 
   it('rejects linked receipts and backup paths outside the command directory', async () => {
     const f = await fixture()
-    const receipt = join(f.root, '.dsh-desktop-command.json')
+    const receipt = join(f.root, '.harnova-desktop-command.json')
     await symlink(f.options.launcher, receipt)
     await expect(inspectFileCommand(f.options)).rejects.toMatchObject({ code: 'EOWNERSHIP' })
     await unlink(receipt)

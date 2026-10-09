@@ -14,10 +14,10 @@ import { desktopElectronBuilderArguments, resolveDesktopPackageTarget } from '..
 import { writeMacOSAppUpdateConfig } from '../scripts/macos-app-update-config.mjs'
 
 const environment = {
-  DSH_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
-  DSH_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
+  HARNOVA_DESKTOP_MACOS_SIGNING_IDENTITY: 'Example Company (TEAMID1234)',
+  HARNOVA_DESKTOP_MACOS_TEAM_ID: 'TEAMID1234',
   APPLE_KEYCHAIN_PROFILE: 'fixture-profile',
-  DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com', DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
+  HARNOVA_DOWNLOAD_TEST_ORIGIN: 'https://desktop-updates.example.com', HARNOVA_DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
 }
 
 function barrier() {
@@ -33,7 +33,7 @@ async function fixture(arch: 'arm64' | 'x64' = 'arm64') {
   await mkdir(join(appPath, 'Contents', 'Resources'), { recursive: true })
   await writeFile(join(appPath, 'payload'), 'signed content')
   await writeMacOSAppUpdateConfig(join(appPath, 'Contents', 'Resources'), {
-    publicUrl: `https://desktop-updates.example.com/dsh-desk/0123456789abcdef0123456789abcdef/feeds/mac-${arch}/`,
+    publicUrl: `https://desktop-updates.example.com/harnova-desktop/0123456789abcdef0123456789abcdef/feeds/mac-${arch}/`,
   }, 'harnova-updater')
   const version = '1.2.3-alpha.1'
   const base = `harnova-${version}-mac-${arch}`
@@ -107,7 +107,7 @@ describe('parallel macOS artifacts', () => {
         .toEqual({ payload: 'signed content', appTicket: false })
       expect(await readFile(join(f.appPath, 'ticket'), 'utf8')).toBe('accepted')
       expect(await readFile(join(f.appPath, 'Contents', 'Resources', 'app-update.yml'), 'utf8'))
-        .toContain(`/dsh-desk/0123456789abcdef0123456789abcdef/feeds/mac-${arch}/`)
+        .toContain(`/harnova-desktop/0123456789abcdef0123456789abcdef/feeds/mac-${arch}/`)
       expect((await readdir(f.root)).sort()).toEqual(['artifacts'])
       expect(f.apple.verifySignature).toHaveBeenCalledTimes(4)
       expect(f.apple.verifyNotarization).toHaveBeenCalledTimes(1)

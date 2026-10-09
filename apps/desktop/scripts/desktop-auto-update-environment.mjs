@@ -3,22 +3,22 @@
 import { valid } from 'semver'
 
 /** Environment variable that selects the Desktop update deployment. */
-export const DESKTOP_AUTO_UPDATE_ENV = 'DSH_DESKTOP_AUTO_UPDATE_ENV'
+export const DESKTOP_AUTO_UPDATE_ENV = 'HARNOVA_DESKTOP_AUTO_UPDATE_ENV'
 
 const UPDATE_ENVIRONMENTS = {
   test: {
-    originEnvName: 'DOWNLOAD_TEST_ORIGIN',
+    originEnvName: 'HARNOVA_DOWNLOAD_TEST_ORIGIN',
     fixedOrigin: undefined,
-    bucketEnvName: 'DOWNLOAD_TEST_COS_BUCKET',
-    secretIdEnvName: 'DOWNLOAD_TEST_COS_SECRET_ID',
-    secretKeyEnvName: 'DOWNLOAD_TEST_COS_SECRET_KEY',
+    bucketEnvName: 'HARNOVA_DOWNLOAD_TEST_COS_BUCKET',
+    secretIdEnvName: 'HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID',
+    secretKeyEnvName: 'HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY',
   },
   production: {
-    originEnvName: undefined,
-    fixedOrigin: 'https://download.deepseek.com',
-    bucketEnvName: 'DOWNLOAD_PROD_COS_BUCKET',
-    secretIdEnvName: 'DOWNLOAD_PROD_COS_SECRET_ID',
-    secretKeyEnvName: 'DOWNLOAD_PROD_COS_SECRET_KEY',
+    originEnvName: 'HARNOVA_DOWNLOAD_PROD_ORIGIN',
+    fixedOrigin: undefined,
+    bucketEnvName: 'HARNOVA_DOWNLOAD_PROD_COS_BUCKET',
+    secretIdEnvName: 'HARNOVA_DOWNLOAD_PROD_COS_SECRET_ID',
+    secretKeyEnvName: 'HARNOVA_DOWNLOAD_PROD_COS_SECRET_KEY',
   },
 }
 
@@ -116,6 +116,9 @@ function httpsOrigin(value, name) {
     || parsed.hash !== '') {
     throw new Error(`desktop auto-update: ${name} must be an absolute HTTPS origin without a path, credentials, query, or fragment`)
   }
+  if (parsed.hostname === 'deepseek.com' || parsed.hostname.endsWith('.deepseek.com')) {
+    throw new Error(`desktop auto-update: ${name} must not use DeepSeek's update origin`)
+  }
   return parsed.origin
 }
 
@@ -137,11 +140,11 @@ export function resolveDesktopAutoUpdateConfig(env, platform, arch) {
     if (originEnvName === undefined) throw new Error('desktop auto-update: selected deployment has no origin')
     origin = httpsOrigin(requiredEnvironmentValue(env, originEnvName), originEnvName)
   }
-  let releasePrefix = 'dsh-desk'
+  let releasePrefix = 'harnova-desktop'
   if (environment === 'test') {
-    const releaseId = requiredEnvironmentValue(env, 'DOWNLOAD_TEST_RELEASE_ID')
+    const releaseId = requiredEnvironmentValue(env, 'HARNOVA_DOWNLOAD_TEST_RELEASE_ID')
     if (!/^[a-f0-9]{32}$/u.test(releaseId)) {
-      throw new Error('desktop auto-update: DOWNLOAD_TEST_RELEASE_ID must contain 32 lowercase hexadecimal characters')
+      throw new Error('desktop auto-update: HARNOVA_DOWNLOAD_TEST_RELEASE_ID must contain 32 lowercase hexadecimal characters')
     }
     releasePrefix += `/${releaseId}`
   }

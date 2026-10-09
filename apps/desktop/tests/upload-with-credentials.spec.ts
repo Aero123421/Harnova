@@ -27,11 +27,11 @@ async function check(mode: 'valid' | 'plaintext' | 'blank' | 'missing' | 'upload
     // Replace only the child uploader: this fixture must never contact real release storage.
     await writeFile(join(scripts, 'upload-target.ts'), `
       import assert from 'node:assert/strict'
-      assert.equal(process.env.DOWNLOAD_PROD_COS_SECRET_ID, 'fixture-id')
-      assert.equal(process.env.DOWNLOAD_PROD_COS_SECRET_KEY, 'fixture-secret')
-      assert.equal(process.env.DOWNLOAD_PROD_COS_BUCKET, 'fixture-bucket')
-      assert.equal(process.env.DOWNLOAD_TEST_COS_SECRET_KEY, undefined)
-      assert.equal(process.env.DSH_DESKTOP_WINDOWS_TOKEN_PIN, undefined)
+      assert.equal(process.env.HARNOVA_DOWNLOAD_PROD_COS_SECRET_ID, 'fixture-id')
+      assert.equal(process.env.HARNOVA_DOWNLOAD_PROD_COS_SECRET_KEY, 'fixture-secret')
+      assert.equal(process.env.HARNOVA_DOWNLOAD_PROD_COS_BUCKET, 'fixture-bucket')
+      assert.equal(process.env.HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY, undefined)
+      assert.equal(process.env.HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN, undefined)
       assert.equal(process.env.NODE_OPTIONS, undefined)
       assert.equal(process.argv[2], 'win-x64')
       assert.deepEqual(process.argv.slice(3), ['--credential-launcher', '--environment', 'production', '--bucket', 'fixture-bucket'${mode === 'upload-latest' ? ", '--latest'" : ''}])
@@ -50,19 +50,19 @@ async function check(mode: 'valid' | 'plaintext' | 'blank' | 'missing' | 'upload
   const script = `
     $ErrorActionPreference = 'Stop'
     ${setup}
-    $env:DOWNLOAD_PROD_COS_SECRET_ID = 'parent-sentinel'
-    $env:DOWNLOAD_TEST_COS_SECRET_KEY = 'unrelated-test-key'
-    $env:DSH_DESKTOP_WINDOWS_TOKEN_PIN = 'unrelated-signing-pin'
+    $env:HARNOVA_DOWNLOAD_PROD_COS_SECRET_ID = 'parent-sentinel'
+    $env:HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY = 'unrelated-test-key'
+    $env:HARNOVA_DESKTOP_WINDOWS_TOKEN_PIN = 'unrelated-signing-pin'
     $env:NODE_OPTIONS = '--require=missing-preload-must-not-run'
     $global:LASTEXITCODE = 0
     & ${quote(entry)} -CredentialFile ${quote(credentialPath)} -Environment ${quote(deployment)}${uploadArguments}
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    if ($env:DOWNLOAD_PROD_COS_SECRET_ID -ne 'parent-sentinel') { throw 'Parent environment changed' }
+    if ($env:HARNOVA_DOWNLOAD_PROD_COS_SECRET_ID -ne 'parent-sentinel') { throw 'Parent environment changed' }
     Write-Output 'parent environment unchanged'
   `
   // The child creates its own DPAPI file; real runner credentials never enter the fixture.
   const env = Object.fromEntries(Object.entries(process.env).filter(([name]) =>
-    !/KEY|SECRET|TOKEN|PASSWORD|^NODE_OPTIONS$|^DSH_DESKTOP_WINDOWS_|^APPLE_|^CSC_/iu.test(name),
+    !/KEY|SECRET|TOKEN|PASSWORD|^NODE_OPTIONS$|^HARNOVA_DESKTOP_WINDOWS_|^APPLE_|^CSC_/iu.test(name),
   ))
   const pathKey = Object.keys(env).find(name => name.toLowerCase() === 'path') ?? 'PATH'
   env[pathKey] = `${dirname(process.execPath)}${delimiter}${env[pathKey] ?? ''}`
@@ -86,17 +86,17 @@ afterEach(async () => {
 
 describe('credential launcher destination', () => {
   const fileEnvironment = {
-    DSH_DESKTOP_AUTO_UPDATE_ENV: 'test', DOWNLOAD_TEST_ORIGIN: 'https://download-test.example.com', DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
-    DOWNLOAD_TEST_COS_BUCKET: 'test-bucket', DOWNLOAD_TEST_COS_SECRET_ID: 'stale-id', DOWNLOAD_TEST_COS_SECRET_KEY: 'stale-key',
+    HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'test', HARNOVA_DOWNLOAD_TEST_ORIGIN: 'https://download-test.example.com', HARNOVA_DOWNLOAD_TEST_RELEASE_ID: '0123456789abcdef0123456789abcdef',
+    HARNOVA_DOWNLOAD_TEST_COS_BUCKET: 'test-bucket', HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID: 'stale-id', HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'stale-key',
   }
   const injectedEnvironment = {
-    DSH_DESKTOP_AUTO_UPDATE_ENV: 'test', DOWNLOAD_TEST_COS_BUCKET: 'test-bucket',
-    DOWNLOAD_TEST_COS_SECRET_ID: 'decrypted-id', DOWNLOAD_TEST_COS_SECRET_KEY: 'decrypted-key',
+    HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'test', HARNOVA_DOWNLOAD_TEST_COS_BUCKET: 'test-bucket',
+    HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID: 'decrypted-id', HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'decrypted-key',
   }
 
   it('uses decrypted credentials only for the matching packaged deployment and bucket', () => {
     expect(resolveCredentialUploadEnvironment(fileEnvironment, injectedEnvironment, 'test', 'test-bucket', 'win-x64'))
-      .toMatchObject({ DOWNLOAD_TEST_COS_SECRET_ID: 'decrypted-id', DOWNLOAD_TEST_COS_SECRET_KEY: 'decrypted-key' })
+      .toMatchObject({ HARNOVA_DOWNLOAD_TEST_COS_SECRET_ID: 'decrypted-id', HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: 'decrypted-key' })
     expect(() => resolveCredentialUploadEnvironment(fileEnvironment, injectedEnvironment, 'production', 'test-bucket', 'win-x64'))
       .toThrow(/differs from the packaged release destination/u)
     expect(() => resolveCredentialUploadEnvironment(fileEnvironment, injectedEnvironment, 'test', 'other-bucket', 'win-x64'))
@@ -105,11 +105,12 @@ describe('credential launcher destination', () => {
 
   it('rejects child credentials that do not match the explicit launcher selection', () => {
     expect(() => resolveCredentialUploadEnvironment(fileEnvironment, { ...injectedEnvironment,
-      DSH_DESKTOP_AUTO_UPDATE_ENV: 'production',
+      HARNOVA_DESKTOP_AUTO_UPDATE_ENV: 'production',
+      HARNOVA_DOWNLOAD_PROD_ORIGIN: 'https://updates.harnova.example',
     }, 'test', 'test-bucket', 'win-x64')).toThrow(/differs from its explicit arguments/u)
     expect(() => resolveCredentialUploadEnvironment(fileEnvironment, { ...injectedEnvironment,
-      DOWNLOAD_TEST_COS_SECRET_KEY: '',
-    }, 'test', 'test-bucket', 'win-x64')).toThrow(/DOWNLOAD_TEST_COS_SECRET_KEY/u)
+      HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY: '',
+    }, 'test', 'test-bucket', 'win-x64')).toThrow(/HARNOVA_DOWNLOAD_TEST_COS_SECRET_KEY/u)
   })
 })
 

@@ -62,7 +62,7 @@ export const apply = ctx => globalThis.__webStartupApply(ctx)
     '  config:',
     "    host: !!js ctx.webStartup.host ?? '127.0.0.1'",
     '    openBrowser: !!js ctx.webStartup.openBrowser',
-    '    port: !!js ctx.webStartup.port ?? 3080',
+    '    port: !!js ctx.webStartup.port ?? 3081',
     '    publicUrl: !!js ctx.webStartup.publicUrl',
     '    trustedHosts: !!js ctx.webStartup.trustedHosts',
     '- id: provider',
@@ -117,14 +117,14 @@ describe('web command-line provider', () => {
     expect(observed.readerConfig).toEqual({
       host: '127.0.0.1',
       openBrowser: true,
-      port: 3080,
+      port: 3081,
       trustedHosts: [],
     })
   })
 
   it('prints its own help and leaves the consumer pending', async () => {
     const { values, observed } = await bootProvider(['--help'])
-    expect(observed.out).toContain('dsh --profile web')
+    expect(observed.out).toContain('harnova --profile web')
     expect(observed.out).toContain('--no-open')
     expect(observed.out).toContain('--public-url')
     expect(observed.out).toContain('--trusted-host')
@@ -162,7 +162,7 @@ describe('web command-line provider', () => {
     expect(observed.readerConfig).toEqual({
       host: '127.0.0.1',
       openBrowser: true,
-      port: 3080,
+      port: 3081,
       publicUrl: 'https://web.example/ui',
       trustedHosts: ['lab.internal'],
     })

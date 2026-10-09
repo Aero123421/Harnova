@@ -12,7 +12,7 @@ const versions = ['0.1.6-nightly.20260914.1', '0.1.6-nightly.20260914.2'] as con
 async function fixture<T>(body: (manifest: string) => Promise<T>): Promise<T> {
   const directory = await mkdtemp(join(tmpdir(), 'dsh-update-distribution-'))
   try {
-    const run = await createInstalledUpdateRun(directory, versions, { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
+    const run = await createInstalledUpdateRun(directory, versions, { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
     for (const version of versions) {
       const output = join(run.root, version, 'installer')
       await mkdir(output, { recursive: true })
@@ -35,12 +35,12 @@ describe('qualification distribution file planning', () => {
       expect(old!.feed.sha512).not.toBe(next!.feed.sha512)
       expect(old!.binaries.map(file => file.key)).not.toEqual(next!.binaries.map(file => file.key))
       expect(next!.binaries).toHaveLength(2)
-      expect(next!.binaries.every(file => file.key.startsWith('dsh-desk/bin/qualification/'))).toBe(true)
-      expect(next!.feed.key).toMatch(/^dsh-desk\/feeds\/qualification\/[a-f0-9]{24}\/win-x64\/nightly.yml$/u)
+      expect(next!.binaries.every(file => file.key.startsWith('harnova-desktop/bin/qualification/'))).toBe(true)
+      expect(next!.feed.key).toMatch(/^harnova-desktop\/feeds\/qualification\/[a-f0-9]{24}\/win-x64\/nightly.yml$/u)
       expect(next!.publicationAuthorized).toBe(false)
       expect(next!.verified).toBe('file-integrity-only')
       expect(load(next!.feed.contents)).toMatchObject({ version: versions[1],
-        files: [{ url: `https://download-test.deepseek.com/${next!.binaries[0]!.key}` }] })
+        files: [{ url: `https://download-test.harnova.example/${next!.binaries[0]!.key}` }] })
     })
   })
 

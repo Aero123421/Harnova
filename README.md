@@ -1,6 +1,6 @@
 # Harnova
 
-Harnova is an independent open-source AI agent project based on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by [DeepSeek AI](https://deepseek.com). This checkout retains the upstream runtime, package names, and `dsh` command.
+Harnova is an independent open-source AI agent project based on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by [DeepSeek AI](https://deepseek.com). It retains the upstream plugin runtime and package names, and uses the `harnova` command and its own data directory.
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
@@ -15,29 +15,19 @@ Harnova-specific capabilities are development goals, not completed features:
 - SSH remote workspaces for file operations and command execution on a selected host.
 - Native Desktop distribution for Windows, macOS, and Linux. The upstream Desktop currently supports Windows and macOS releases; Linux packaging requires additional work.
 
-Security Mode selects agent capabilities; SSH selects the execution environment. They remain independent. Extensions use plugin APIs where possible so upstream updates remain manageable. Before distributing Harnova, its application IDs, signing, update endpoints, and branding must be independent of the upstream application.
+Security Mode selects agent capabilities; SSH selects the execution environment. They remain independent. Extensions use plugin APIs where possible so upstream updates remain manageable. Harnova has its own branding and application identity; signed distribution still requires its own signing credentials and update service.
 
 ## Development and distribution
 
 Harnova uses standard GitHub Actions runners for Linux, Windows, and macOS. Pull requests and changes to `main` run checks without provider API keys; live-provider E2E runs are started manually. Package builds also verify installation from local tarballs.
 
-Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and use Harnova branding. Desktop installers require independent application identity, signing, update endpoints, and Linux packaging before they can be distributed.
+Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and use Harnova branding. Desktop installers require signing credentials and an update service before distribution. Linux packaging needs additional work.
 
 Development instructions are in [AGENTS.md](AGENTS.md). Chinese documentation copies and translation bookkeeping are removed; English reference documentation remains. Browser GIF recording is optional, using [record-browser-gif](.agents/skills/record-browser-gif/SKILL.md). Product UI locale dictionaries are separate from documentation.
 
 Review the [safety notice](SAFETY.md) before running the project.
 
 ## Run
-
-### Run upstream from `npm`
-
-This command runs the upstream package, not a Harnova release. Install `Node.js`, then run:
-
-```sh
-npx @deepseek-ai/dsh web
-```
-
-The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch. An SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address. Pass `--no-open` to run the server without opening a browser. See [Web UI guide](docs/user/guide/index.md).
 
 ### Run from source
 
@@ -48,10 +38,12 @@ git clone https://github.com/Aero123421/Harnova.git
 cd Harnova
 pnpm install
 pnpm run build
-pnpm dsh web
+pnpm harnova web
 ```
 
-`pnpm run build` prepares the repository artifacts. `pnpm dsh web` uses those built artifacts without rebuilding.
+Harnova starts the Web UI at `http://127.0.0.1:3081` by default; use `--no-open` to suppress browser launch. Its user data lives in `~/.harnova`, or the explicit `HARNOVA_HOME` directory. Inherited `DSH_HOME` and existing `~/.dsh` data are ignored. See the [coexistence audit](docs/harnova-coexistence-audit.md).
+
+`pnpm run build` prepares the repository artifacts. `pnpm harnova web` uses those built artifacts without rebuilding.
 
 ## Contributing
 
