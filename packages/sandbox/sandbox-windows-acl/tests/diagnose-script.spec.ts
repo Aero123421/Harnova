@@ -408,14 +408,14 @@ Set-Acl -LiteralPath ${quote(path)} -AclObject $acl
       const target = makeDir(scratch, 'inherit-only')
       fixtureAcl(target)
       icacls(target, '/grant', '*S-1-5-32-545:(OI)(CI)(IO)(F)')
-      const inheritOnlyBefore = aclLines(target).filter(line => line.includes('(IO)'))
+      const inheritOnlyBefore = normalized(target, aclLines(target)).filter(line => line.includes('(IO)'))
       expect(inheritOnlyBefore).toHaveLength(1)
 
       const run = runScript(['-Path', target, '-AllowRoot', scratch, '-Out', join(scratch, 'out')])
       expect(run.code, run.output).toBe(0)
       expect(run.output).toContain(`GRANTED ${target} SID=${meSid}`)
       expect(reports(run)).toContainEqual(containingObject({ kind: 'verification', operation: 'grant', path: target, status: 'verified' }))
-      expect(aclLines(target).filter(line => line.includes('(IO)'))).toEqual(inheritOnlyBefore)
+      expect(normalized(target, aclLines(target)).filter(line => line.includes('(IO)'))).toEqual(inheritOnlyBefore)
       expect(aclLines(target).join('\n')).toMatch(/\(F\)/u)
     } finally {
       dispose(scratch)
