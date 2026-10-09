@@ -25,14 +25,14 @@ export type ImageAttachmentAccessResolver = (ref: ImageAttachmentRef) => ImageAt
  * Bridge one attachment provider's host object location into the mounted
  * tool execution world. The consumer supplies the current filesystem
  * provider's mapping without making attachment or LLM definitions depend on it.
- * @param attachments - provider that owns the normalized attachment object.
+ * @param attachments - host-path capability of the provider that owns the normalized attachment object.
  * @param mapHostPath - map one absolute host path into the current tool execution world.
  * @param ref - durable normalized attachment reference.
  * @returns a read-only execution-world path, or undefined when either provider exposes no mapping.
  * @throws an attachment error when the durable reference is invalid.
  */
 export function resolveImageAttachmentAccess(
-  attachments: AttachmentStore,
+  attachments: Pick<AttachmentStore, 'imageHostPath'>,
   mapHostPath: (hostPath: string) => string | undefined,
   ref: ImageAttachmentRef,
 ): ImageAttachmentAccess | undefined {

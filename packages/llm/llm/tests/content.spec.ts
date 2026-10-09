@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AttachmentId, ImageVariantId } from '@deepseek-ai/dsh-attachment'
-import type { AttachmentStore, ImageMediaType } from '@deepseek-ai/dsh-attachment'
+import type { ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import {
   ToolCallId,
   contentHasFile,
@@ -172,7 +172,7 @@ describe('model-facing image access', () => {
     const attachment = image(1).attachment
     const attachments = {
       imageHostPath: () => '/host/.harnova/attachments/object',
-    } as AttachmentStore
+    }
     const mapped = (hostPath: string): string | undefined => hostPath === '/host/.harnova/attachments/object'
       ? '/workspace/.attachments/object'
       : undefined
@@ -187,7 +187,7 @@ describe('model-facing image access', () => {
       attachment,
     )).toBeUndefined()
     expect(resolveImageAttachmentAccess(
-      { imageHostPath: () => undefined } as AttachmentStore,
+      { imageHostPath: () => undefined },
       mapped,
       attachment,
     )).toBeUndefined()
