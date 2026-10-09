@@ -54,7 +54,7 @@ describe.skipIf(!existsSync(join(repoRoot, 'apps/cli/lib/bin.js')))('dsh SOURCE 
         cwd: repoRoot,
         env: {
           ...clearedProxyEnv(),
-          DSH_HOME: join(root, 'home'),
+          HARNOVA_HOME: join(root, 'home'),
           DSH_AGENTS_HOME: join(root, 'agents'),
           DSH_TELEMETRY_DISABLED: '1',
           DSH_TOOLS_MODE: 'native',

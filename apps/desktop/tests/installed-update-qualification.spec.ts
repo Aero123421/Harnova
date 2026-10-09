@@ -38,14 +38,14 @@ function completeRetry(journal: DesktopUpdateJournal): void {
 describe('installed-update qualification materials', () => {
   it('allocates independent test-only namespaces and does not produce packages or overwrite an earlier manifest', async () => {
     await fixture(async (directory) => {
-      const [first, next] = await Promise.all([createInstalledUpdateRun(directory, versions, source),
-        createInstalledUpdateRun(directory, versions, source)])
+      const [first, next] = await Promise.all([createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' }),
+        createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })])
       expect(first.root).not.toBe(next.root)
       expect(first.appId).not.toBe(next.appId)
       expect(first.feedKey).not.toBe(next.feedKey)
-      expect(first.origin).toBe('https://download-test.deepseek.com')
+      expect(first.origin).toBe('https://download-test.harnova.example')
       expect(first.environment).toBe('test')
-      expect(first.feedKey).toBe(`dsh-desk/feeds/qualification/${first.id}/win-x64/nightly.yml`)
+      expect(first.feedKey).toBe(`harnova-desktop/feeds/qualification/${first.id}/win-x64/nightly.yml`)
       expect(JSON.parse(await readFile(join(first.root, 'run.json'), 'utf8'))).toEqual(first)
       expect(await readdir(first.root)).toEqual(['run.json'])
     })
@@ -55,7 +55,7 @@ describe('installed-update qualification materials', () => {
     ['garbage', versions[1]], ['0.1.6-nightly.abc', versions[1]], ['0.1.6-nightly.01', versions[1]]])(
     'rejects unusable version pair %s to %s before allocating material', async (old, next) => {
       await fixture(async (directory) => {
-        await expect(createInstalledUpdateRun(directory, [old, next], source)).rejects.toThrow('increasing')
+        await expect(createInstalledUpdateRun(directory, [old, next], source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })).rejects.toThrow('increasing')
         expect(await readdir(directory)).toEqual([])
       })
     },
@@ -64,14 +64,14 @@ describe('installed-update qualification materials', () => {
   it.each(['alpha.1', 'beta.2', 'rc.3', 'test'])('accepts dated %s versions', async (prefix) => {
     await fixture(async (directory) => {
       const pair = [`0.1.6-${prefix}.20260916.1`, `0.1.6-${prefix}.20260916.2`] as const
-      const run = await createInstalledUpdateRun(directory, pair, source)
+      const run = await createInstalledUpdateRun(directory, pair, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
       expect(run.versions).toEqual(pair)
     })
   })
 
   it('rejects an invalid source commit before allocating material', async () => {
     await fixture(async (directory) => {
-      await expect(createInstalledUpdateRun(directory, versions, { ...source, commit: 'unknown' })).rejects.toThrow('Git commit')
+      await expect(createInstalledUpdateRun(directory, versions, { ...source, commit: 'unknown' }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })).rejects.toThrow('Git commit')
       expect(await readdir(directory)).toEqual([])
     })
   })
@@ -177,8 +177,8 @@ describe('installed-update qualification materials', () => {
 
   it('collects exact validated journal bytes in independent snapshots without copying other files or declaring acceptance', async () => {
     await fixture(async (directory) => {
-      const run = await createInstalledUpdateRun(directory, versions, source)
-      const journals = join(directory, 'dsh-update-qualification', run.id, 'journals')
+      const run = await createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
+      const journals = join(directory, 'harnova-update-qualification', run.id, 'journals')
       const original = new DesktopUpdateJournal(journals, versions[0])
       failedDownload(original)
       await writeFile(join(journals, '.env'), 'private-value')
@@ -207,10 +207,10 @@ describe('installed-update qualification materials', () => {
 
   it('rejects invalid or wrong-run journals before allocating a collection', async () => {
     await fixture(async (directory) => {
-      const run = await createInstalledUpdateRun(directory, versions, source)
+      const run = await createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
       const manifest = join(run.root, 'run.json')
       await expect(collectInstalledUpdateJournals(manifest, directory)).rejects.toThrow('matching installed-app')
-      const journals = join(directory, 'dsh-update-qualification', run.id, 'journals')
+      const journals = join(directory, 'harnova-update-qualification', run.id, 'journals')
       await mkdir(journals, { recursive: true })
       await writeFile(join(journals, `1-${randomUUID()}.jsonl`), 'private-value\n')
       await expect(collectInstalledUpdateJournals(manifest, journals)).rejects.not.toThrow('private-value')
@@ -220,8 +220,8 @@ describe('installed-update qualification materials', () => {
 
   it.each(['file', 'snapshot'])('rejects an oversized %s before collecting bytes', async (variant) => {
     await fixture(async (directory) => {
-      const run = await createInstalledUpdateRun(directory, versions, source)
-      const journals = join(directory, 'dsh-update-qualification', run.id, 'journals')
+      const run = await createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
+      const journals = join(directory, 'harnova-update-qualification', run.id, 'journals')
       await mkdir(journals, { recursive: true })
       const record = JSON.stringify({ schemaVersion: 1, sequence: 0, pid: 1, time: '2026-09-14T00:00:00.000Z',
         version: versions[0], event: 'started' })
@@ -236,8 +236,8 @@ describe('installed-update qualification materials', () => {
 
   it('runs the documented source CLI and retains an incomplete report instead of claiming operator acceptance', async () => {
     await fixture(async (directory) => {
-      const run = await createInstalledUpdateRun(directory, versions, source)
-      const journals = join(directory, 'dsh-update-qualification', run.id, 'journals')
+      const run = await createInstalledUpdateRun(directory, versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
+      const journals = join(directory, 'harnova-update-qualification', run.id, 'journals')
       new DesktopUpdateJournal(journals, versions[0]).action('workspace-ready')
       // This test owns the documented source-script entry, not a built application or Cordis profile.
       const result = await promisify(execFile)(process.execPath, ['--import', 'tsx', 'apps/desktop/scripts/prepare-installed-update.ts',

@@ -18,7 +18,7 @@ Issues = "https://github.com/deepseek-ai/deepseek-harness/issues"
 Source = "https://github.com/deepseek-ai/deepseek-harness"
 
 [project.scripts]
-dsh = "deepseek_harness_runtime:main"
+harnova = "deepseek_harness_runtime:main"
 
 # Include the injected dsh executable and sidecars; exclude the dev-only node closure.
 [tool.hatch.build]

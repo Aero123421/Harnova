@@ -29,16 +29,6 @@ Review the [safety notice](SAFETY.md) before running the project.
 
 ## Run
 
-### Run upstream from `npm`
-
-This command runs the upstream package, not a Harnova release. Install `Node.js`, then run:
-
-```sh
-npx @deepseek-ai/dsh web
-```
-
-The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it in the default browser for a local launch. An SSH launch only prints the host URL because the SSH client or editor owns the local forwarded address. Pass `--no-open` to run the server without opening a browser. See [Web UI guide](docs/user/guide/index.md).
-
 ### Run from source
 
 To run from a repository checkout:
@@ -48,10 +38,12 @@ git clone https://github.com/Aero123421/Harnova.git
 cd Harnova
 pnpm install
 pnpm run build
-pnpm dsh web
+pnpm harnova web
 ```
 
-`pnpm run build` prepares the repository artifacts. `pnpm dsh web` uses those built artifacts without rebuilding.
+Harnova starts the Web UI at `http://127.0.0.1:3081` by default; use `--no-open` to suppress browser launch. Its user data lives in `~/.harnova`, or the explicit `HARNOVA_HOME` directory. Inherited `DSH_HOME` and existing `~/.dsh` data are ignored. See the [coexistence audit](docs/harnova-coexistence-audit.md).
+
+`pnpm run build` prepares the repository artifacts. `pnpm harnova web` uses those built artifacts without rebuilding.
 
 ## Contributing
 

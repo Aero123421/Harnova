@@ -78,7 +78,10 @@ describe('SubprocessRuntime seam', () => {
     await expect(ctx.plugin(SecondService)).rejects.toThrow(/service "subprocess" has been registered/)
   })
 
-  it('scrubbedParentEnv drops credential-shaped and DSH_ names (case-insensitively) but keeps PATH', () => {
+  it('scrubbedParentEnv drops credential-shaped and DSH_ and HARNOVA_ names (case-insensitively) but keeps PATH', () => {
+    const previousHome = process.env.HARNOVA_HOME
+    process.env.HARNOVA_HOME = '/upstream-home'
+    process.env.harnova_scrub_probe_lower = 'stale'
     process.env.DSH_SCRUB_PROBE = 'stale'
     process.env.dsh_scrub_probe_lower = 'stale'
     process.env.SCRUB_PROBE_TOKEN = 'secret'
@@ -86,6 +89,8 @@ describe('SubprocessRuntime seam', () => {
     process.env.SCRUB_PROBE_PLAIN = 'visible'
     try {
       const env = scrubbedParentEnv()
+      expect(env.HARNOVA_HOME).toBeUndefined()
+      expect(env.harnova_scrub_probe_lower).toBeUndefined()
       expect(env.DSH_SCRUB_PROBE).toBeUndefined()
       expect(env.dsh_scrub_probe_lower).toBeUndefined()
       expect(env.SCRUB_PROBE_TOKEN).toBeUndefined()
@@ -93,6 +98,9 @@ describe('SubprocessRuntime seam', () => {
       expect(env.SCRUB_PROBE_PLAIN).toBe('visible')
       expect(env.PATH).toBeDefined()
     } finally {
+      if (previousHome === undefined) delete process.env.HARNOVA_HOME
+      else process.env.HARNOVA_HOME = previousHome
+      delete process.env.harnova_scrub_probe_lower
       delete process.env.DSH_SCRUB_PROBE
       delete process.env.dsh_scrub_probe_lower
       delete process.env.SCRUB_PROBE_TOKEN

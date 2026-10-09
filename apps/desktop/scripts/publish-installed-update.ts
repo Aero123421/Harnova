@@ -31,7 +31,9 @@ async function main(): Promise<void> {
     confirmed = (await terminal.question(`请输入 ${expected}：`)) === expected
   } finally { terminal.close() }
   if (!confirmed) throw new Error('operator declined')
-  console.log(await executeInstalledUpdatePublication(manifest, version, receipt, action, createInstalledUpdateCos(), values.journals))
+  console.log(await executeInstalledUpdatePublication(
+    manifest, version, receipt, action, createInstalledUpdateCos(prepared.run), values.journals,
+  ))
 }
 
 main().catch(() => {

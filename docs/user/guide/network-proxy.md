@@ -9,7 +9,7 @@ export HTTPS_PROXY=http://127.0.0.1:7890
 export HTTP_PROXY=http://127.0.0.1:7890
 ```
 
-Put both lines in your shell profile so every `dsh` invocation inherits them, or in `$DSH_HOME/.env` (`~/.dsh/.env` by default) next to your API key; an exported variable always wins over that file. A project's own `.env` cannot set them: it arrives with `git clone`, and DSH refuses to start rather than let a repository decide where your traffic goes.
+Put both lines in your shell profile so every `dsh` invocation inherits them, or in `$HARNOVA_HOME/.env` (`~/.harnova/.env` by default) next to your API key; an exported variable always wins over that file. A project's own `.env` cannot set them: it arrives with `git clone`, and DSH refuses to start rather than let a repository decide where your traffic goes.
 
 A proxy that needs credentials takes them in the URL: `http://user:password@proxy.example:8080`. DSH never prints the URL back: a diagnostic names the variable it rejected, so neither the username nor the password appears anywhere.
 
@@ -73,7 +73,7 @@ Not every request DSH makes goes through the proxy:
 Ask the agent to fetch a page and watch your proxy application's connection log:
 
 ```sh
-dsh --profile headless "fetch https://example.com and tell me the page title"
+harnova --profile headless "fetch https://example.com and tell me the page title"
 ```
 
 If the request does not appear there, confirm the variables survive into DSH's own environment:

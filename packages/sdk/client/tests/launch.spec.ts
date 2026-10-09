@@ -57,7 +57,7 @@ describe('SDK dsh launch resolution', () => {
       patches: ['./first.yml', '../second.yml'],
       dshHome: './home',
       processCwd: './worker',
-      env: { PATH: '/bin', DSH_HOME: '/stale' },
+      env: { PATH: '/bin', HARNOVA_HOME: '/stale' },
       initializeTimeoutMs: 123,
       requestTimeoutMs: 456,
       shutdownTimeoutMs: 789,
@@ -80,7 +80,7 @@ describe('SDK dsh launch resolution', () => {
       disposeEofGraceMs: 12,
       disposeGraceMs: 34,
     })
-    expect(launch.environment()).toEqual({ PATH: '/bin', DSH_HOME: join(caller, 'home') })
+    expect(launch.environment()).toEqual({ PATH: '/bin', HARNOVA_HOME: join(caller, 'home') })
   })
 
   it('falls back to the same package source entry through an absolute tsx loader', () => {
@@ -158,12 +158,19 @@ describe('SDK dsh launch resolution', () => {
     expect(resolveDshBinFromManifests(pair.dshUrl, pair.clientUrl)).toBe(join(pair.root, 'bin.js'))
   })
 
+  it('selects the Harnova command and rejects an upstream-only bin map', () => {
+    const own = manifestPair({ version: '1.0.0', bin: { harnova: 'lib/bin.js', dsh: 'upstream.js' } }, { version: '1.0.0' })
+    expect(resolveDshBinFromManifests(own.dshUrl, own.clientUrl)).toBe(join(own.root, 'lib/bin.js'))
+    const upstream = manifestPair({ version: '1.0.0', bin: { dsh: 'upstream.js' } }, { version: '1.0.0' })
+    expect(() => resolveDshBinFromManifests(upstream.dshUrl, upstream.clientUrl)).toThrow('declares no harnova executable')
+  })
+
   it.each([null, {}, ''])(
     'rejects a manifest without a usable dsh executable (%j)',
     (bin) => {
       const pair = manifestPair({ version: '1.0.0', bin }, { version: '1.0.0' })
       expect(() => resolveDshBinFromManifests(pair.dshUrl, pair.clientUrl))
-        .toThrow('declares no dsh executable')
+        .toThrow('declares no harnova executable')
     },
   )
 })

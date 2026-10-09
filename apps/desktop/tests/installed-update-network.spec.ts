@@ -12,7 +12,7 @@ async function fixture(body: (manifest: string, executable: string, receipt: str
   const root = await mkdtemp(join(tmpdir(), 'dsh-network-plan-试验-'))
   try {
     const run = await createInstalledUpdateRun(root, ['0.1.6-nightly.20260914.1', '0.1.6-nightly.20260914.2'],
-      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] })
+      { version: '0.1.5-rc.2', commit: 'a'.repeat(40), dirtyFiles: [] }, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
     const executable = join(root, `${run.productName}.exe`)
     await writeFile(executable, 'inert app fixture, never executed')
     const directory = join(run.root, run.versions[0], 'verification/check-fixture')

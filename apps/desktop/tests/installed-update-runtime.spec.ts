@@ -22,7 +22,7 @@ describe('installed-update runtime preparation', () => {
       const original = join(directory, 'source')
       runtimeFixture(original, source.version)
       const before = await readFile(join(original, 'desktop-runtime.json'))
-      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source)
+      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
       const result = await prepareInstalledUpdateRuntime(join(run.root, 'run.json'), original)
       expect(result).toMatchObject({ signed: false, bootTested: false })
       for (const version of versions) {
@@ -46,7 +46,7 @@ describe('installed-update runtime preparation', () => {
     await fixture(async (directory) => {
       const original = join(directory, 'source')
       runtimeFixture(original, source.version)
-      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source)
+      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
       await mkdir(join(run.root, versions[1]))
       await writeFile(join(run.root, versions[1], 'owner.txt'), 'do not overwrite')
       await expect(prepareInstalledUpdateRuntime(join(run.root, 'run.json'), original)).rejects.toMatchObject({ code: 'EEXIST' })
@@ -63,7 +63,7 @@ describe('installed-update runtime preparation', () => {
       const original = join(directory, 'source')
       runtimeFixture(original, source.version)
       await writeFile(join(original, 'package.json'), '{}')
-      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source)
+      const run = await createInstalledUpdateRun(join(directory, 'runs'), versions, source, { origin: 'https://download-test.harnova.example', bucket: 'harnova-qualification-test-1250000000' })
       await expect(prepareInstalledUpdateRuntime(join(run.root, 'run.json'), original)).rejects.toThrow('integrity')
       expect((await readdir(run.root)).sort()).toEqual(['run.json', 'runtime-preparation'])
       expect(JSON.parse(await readFile(join(run.root, 'runtime-preparation/failed.json'), 'utf8')))
