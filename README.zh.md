@@ -1,12 +1,23 @@
-# DeepSeek Harness
+# Harnova
 
 [English](README.md) | 中文
 
-DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
+Harnova 是基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的独立开源 AI（人工智能）agent（智能体）项目，上游由 [DeepSeek AI](https://deepseek.com) 开发。本仓库保留上游运行时、软件包名称和 `dsh` 命令。
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
-文档：[https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
+上游文档：[https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
+
+## 计划功能
+
+Harnova 专属功能是开发目标，尚未完成：
+
+- 标准提供日语 UI 和日语 agent 交互。
+- Security Mode 用于源码审计、依赖检查和经授权的安全诊断。
+- SSH 远程工作区，用于在选定主机上操作文件和执行命令。
+- Windows、macOS 和 Linux 原生 Desktop 分发。上游 Desktop 目前支持 Windows 和 macOS 发布；Linux 打包需要额外开发。
+
+Security Mode 选择 agent 能力；SSH 选择执行环境，两者保持独立。扩展尽量使用插件 API，以便维护上游更新。发布 Harnova 前，其应用 ID、签名、更新端点和品牌必须独立于上游应用。
 
 ## 开发者预览
 
@@ -18,9 +29,9 @@ DeepSeek Harness 处于 _开发者预览_ 阶段，正在快速迭代。**未来
 
 ## 运行
 
-### 通过 `npm` 运行
+### 通过 `npm` 运行上游版本
 
-安装 `Node.js`，然后运行：
+此命令运行上游软件包，而非 Harnova 发布版本。安装 `Node.js`，然后运行：
 
 ```sh
 npx @deepseek-ai/dsh web
@@ -35,8 +46,8 @@ npx @deepseek-ai/dsh web
 如需从仓库源码运行：
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
+git clone https://github.com/Aero123421/Harnova.git
+cd Harnova
 pnpm install
 pnpm run build
 pnpm dsh web
@@ -46,7 +57,7 @@ pnpm dsh web
 
 ## 社区与支持
 
-- 通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
+- 通过 [GitHub Issues](https://github.com/Aero123421/Harnova/issues) 提交 Harnova 反馈或 bug 报告。
 - 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
 - 欢迎加入 DeepSeek Harness 企微群！扫描下方二维码填写入群问卷，小助手会定期发送入群邀请。
 

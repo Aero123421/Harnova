@@ -1,12 +1,23 @@
-# DeepSeek Harness
+# Harnova
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
+Harnova is an independent open-source AI agent project based on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by [DeepSeek AI](https://deepseek.com). This checkout retains the upstream runtime, package names, and `dsh` command.
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
-Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
+Upstream documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
+
+## Planned features
+
+Harnova-specific capabilities are development goals, not completed features:
+
+- Japanese UI and Japanese agent interaction as standard features.
+- Security Mode for source auditing, dependency checks, and authorized security diagnostics.
+- SSH remote workspaces for file operations and command execution on a selected host.
+- Native Desktop distribution for Windows, macOS, and Linux. The upstream Desktop currently supports Windows and macOS releases; Linux packaging requires additional work.
+
+Security Mode selects agent capabilities; SSH selects the execution environment. They remain independent. Extensions use plugin APIs where possible so upstream updates remain manageable. Before distributing Harnova, its application IDs, signing, update endpoints, and branding must be independent of the upstream application.
 
 ## Developer preview
 
@@ -16,9 +27,9 @@ Review the [safety notice](SAFETY.md) before running the project.
 
 ## Run
 
-### Run from `npm`
+### Run upstream from `npm`
 
-Install `Node.js`, then run:
+This command runs the upstream package, not a Harnova release. Install `Node.js`, then run:
 
 ```sh
 npx @deepseek-ai/dsh web
@@ -31,8 +42,8 @@ The command starts the Web UI at `http://127.0.0.1:3080` by default and opens it
 To run from a repository checkout:
 
 ```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
+git clone https://github.com/Aero123421/Harnova.git
+cd Harnova
 pnpm install
 pnpm run build
 pnpm dsh web
@@ -42,7 +53,7 @@ pnpm dsh web
 
 ## Community and support
 
-- Submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
+- Submit Harnova feedback or bug reports through [GitHub Issues](https://github.com/Aero123421/Harnova/issues).
 - Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
 - Join <a href="https://discord.gg/4MrtZUhpxg">DeepSeek Harness Discord community</a>.
 

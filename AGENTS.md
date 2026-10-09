@@ -2,6 +2,13 @@
 
 DeepSeek Harness is an all-plugin Cordis agent harness. Read [docs/architecture.md](docs/architecture.md) before changing `packages/`; follow [docs/AGENTS.md](docs/AGENTS.md) for documentation.
 
+## Harnova development
+
+- 開発目標は [README](README.md#planned-features) に従い、通常の開発機能と Windows・macOS・Linux 対応を維持する。未実装機能は開発予定として記載する。
+- 独自機能はプラグインを優先する。Security Mode と SSH の実行先選択は独立させる。
+- Push・PR 先は `Aero123421/Harnova`。`upstream` は更新取得専用とし、上流への Push・PR はユーザーの明示的な依頼が必要。
+- 配布前にアプリID・署名・更新先を独立させる。コミットとPRは日本語で作成する。
+
 ## Pre-stable APIs and released Session data
 
 Public APIs are pre-stable; update every consumer. Follow [version/status](docs/session-format-status.md) and [type acknowledgements](docs/cookbook/reviewing-persistence-type-changes.md). [Adjacent migration](.agents/notes/implemented/architecture/2026-08-31-released-session-format-migrations.md) may add a version-named successor but never move, overwrite, or delete committed generations; predecessors imply neither fallback nor downgrade support. SQLite uses monotonic `SCHEMA_VERSION`.
