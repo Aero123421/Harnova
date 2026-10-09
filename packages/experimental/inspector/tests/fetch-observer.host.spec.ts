@@ -1,6 +1,8 @@
 /** Host fetch observation behavior. */
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 import { installFetchObserver, type FetchObserver } from '../src/host/inspection/network.ts'
 import type { InspectorRecordInput } from '../src/shared/bridge/messages/observation.ts'
 import type { InspectorJsonValue } from '../src/shared/json.ts'
@@ -16,6 +18,18 @@ describe('full fetch observer', () => {
     if (originalDescriptor === undefined) Reflect.deleteProperty(globalThis, 'fetch')
     else Object.defineProperty(globalThis, 'fetch', originalDescriptor)
   })
+
+  it.each(['streaming', 'bounded', 'stopped'])('preserves caller cancellation after garbage collection (%s capture)', (mode) => {
+    const fixture = fileURLToPath(new URL('./fixtures/fetch-abort-gc.host.ts', import.meta.url))
+    const result = spawnSync(process.execPath, ['--expose-gc', '--import', 'tsx/esm', fixture, mode], {
+      encoding: 'utf8',
+      timeout: 15_000,
+    })
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(result.signal, result.stderr).toBeNull()
+    expect(result.status, result.stderr).toBe(0)
+    expect(result.stdout).toContain('caller abort and capture settled after GC')
+  }, 20_000)
 
   it('captures complete URL, headers, request body, response headers, and response body', async () => {
     const records: InspectorRecordInput[] = []
