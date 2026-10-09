@@ -1,0 +1,122 @@
+name: Draft developer release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing vX.Y.Z[-suffix] tag on main; run this workflow from main.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: draft-developer-release
+  cancel-in-progress: false
+
+env:
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate tag and main ancestry
+        id: tag
+        env:
+          TAG: ${{ inputs.tag }}
+          REPOSITORY: ${{ github.repository }}
+          WORKFLOW_REF: ${{ github.ref }}
+        run: |
+          set -euo pipefail
+          [[ "$REPOSITORY" == 'Aero123421/Harnova' && "$WORKFLOW_REF" == 'refs/heads/main' ]] || {
+            echo '::error::Run this workflow from main in Aero123421/Harnova.'
+            exit 1
+          }
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]] || {
+            echo '::error::Tag must have the form vX.Y.Z or vX.Y.Z-suffix.'
+            exit 1
+          }
+          commit=$(git rev-parse --verify "refs/tags/$TAG^{commit}")
+          git merge-base --is-ancestor "$commit" refs/remotes/origin/main
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.tag.outputs.commit }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run release:verify --family dsh
+      - run: pnpm run build:official
+      - run: pnpm run release:pack --family dsh --out dist/npm --concurrency 2
+      - run: pnpm run release:pack --family vendor --out dist/npm-vendor --concurrency 2
+      - run: pnpm run release:verify-packed-install --family vendor --from dist/npm-vendor
+      - name: Build and pack current-platform native packages
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -yq musl-tools
+          pnpm --dir native/system run build:ts
+          pnpm --dir native/system run build:native
+          pnpm --dir native/system exec node scripts/pack-release.mjs "$GITHUB_WORKSPACE/dist/npm-landlock" --current-platform-only
+          pnpm --dir native/system exec node scripts/verify-packed-install.mjs "$GITHUB_WORKSPACE/dist/npm-landlock" --current-platform-only
+      - run: pnpm run release:verify-packed-install --family dsh --from dist/npm --from dist/npm-vendor --from dist/npm-landlock
+      - uses: actions/upload-artifact@v7
+        with:
+          name: developer-packages
+          path: |
+            dist/npm/*.tgz
+            dist/npm-vendor/*.tgz
+            dist/npm-landlock/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: developer-packages
+          path: developer-packages
+      - name: Create draft with validated developer packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          COMMIT: ${{ needs.build.outputs.commit }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse --verify "refs/tags/$TAG^{commit}")" == "$COMMIT" ]] || {
+            echo '::error::Tag moved after the build; refusing to attach mismatched artifacts.'
+            exit 1
+          }
+          mapfile -d '' -t assets < <(find developer-packages -type f -name '*.tgz' -print0)
+          [[ "${#assets[@]}" -gt 0 ]]
+          cat > release-notes.md <<'NOTES'
+          開発者向けのローカルパッケージです。npmやPyPIには公開していません。
+          Windows・macOS・Linux向けデスクトップインストーラーは含みません。
+          ネイティブパッケージはLinux x64用です。
+          NOTES
+          gh release create "$TAG" "${assets[@]}" \
+            --repo Aero123421/Harnova --verify-tag --target "$COMMIT" \
+            --draft --title "Harnova $TAG 開発者向けパッケージ" --notes-file release-notes.md

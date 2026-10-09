@@ -23,5 +23,5 @@ These package-specific rules supplement the repo-wide [conventions](../AGENTS.md
 - `src/types.ts` contains only types — no runtime code.
 - Tests live at package level under `tests/`, not `src/__tests__/`.
 - Update package README and JSDoc contracts in the same commit as behavior, and verify them against code with [dsh-prose-standard](../.agents/skills/dsh-prose-standard/SKILL.md). Group READMEs declare subsystem ownership through a canonical English page link or justified [exemption](../scripts/verify-subsystem-pages.ts).
-- Package READMEs document model, token, and KV-cache effects using the [canonical Model Experience format](../docs/cookbook/adding-a-package.md#4-write-the-package-readme).
-- Package READMEs put durable consumer gaps and non-obvious maintainer constraints under `## Known Limitations and Deferred Work`; ordinary cleanup stays in its TODO or Agent Note. Packages with none use a justified [allowlist entry](../scripts/verify-package-readme-limitations.ts).
+- Package READMEs explain meaningful model, token, and cache effects; use the [README guidance](../docs/cookbook/adding-a-package.md#4-write-the-package-readme) when those effects matter to callers.
+- Package READMEs state durable limitations and non-obvious maintainer constraints when present. Ordinary cleanup stays in its source TODO; no limitations allowlist or mandatory empty section is required.

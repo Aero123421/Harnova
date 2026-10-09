@@ -1,9 +1,9 @@
 ---
 name: dsh-speed-up-perf
-description: 'Use when investigating or optimizing DeepSeek Harness performance, designing realistic synthetic benchmarks or CI performance gates, profiling long Sessions or Web responsiveness, or turning performance PR evidence into measured behavior-preserving fixes.'
+description: 'Use when investigating or optimizing Harnova performance, designing realistic synthetic benchmarks or CI performance gates, profiling long Sessions or Web responsiveness, or turning performance PR evidence into measured behavior-preserving fixes.'
 ---
 
-# Speed Up DeepSeek Harness
+# Speed Up Harnova
 
 Turn a broad “make it faster” request into reproducible user-path measurements and small, evidence-backed fixes. This is guidance, not a quota or a script: survey broadly, follow measured cost, and reject attractive changes that do not improve the workload users actually run.
 
@@ -77,7 +77,7 @@ Change one causal factor at a time. Re-run both the focused scenario and its end
 
 Performance measurements complement functional evidence; they do not replace it. Run or add the narrow owning tests for output, ordering, paging, stream indexes, errors, cancellation, concurrency, and disposal as applicable. Preserve model-visible/logged equivalence, released-generation immutability, atomic publication, required validation, and writable readiness. Do not silently truncate history, skip tool results, or change lifecycle semantics to reach a number.
 
-State any deliberate minor visible difference and verify it through the owning keyless snapshot. For a product-visible GUI change, include the required browser evidence/GIF. Keep functional expectations independent of benchmark internals; benchmark assertions need enough evidence to reach the real endpoint, not a second semantic test suite.
+State any deliberate minor visible difference and verify it through the owning keyless snapshot. For a product-visible GUI change, include relevant browser evidence; a GIF is optional. Keep functional expectations independent of benchmark internals; benchmark assertions need enough evidence to reach the real endpoint, not a second semantic test suite.
 
 Reject an optimization when gains disappear end-to-end, a typical workload regresses materially, complexity outweighs a small gain, or cancellation/retention/durability cannot be explained and tested. Record the rejected hypothesis briefly instead of expanding scope to justify it.
 
@@ -85,7 +85,7 @@ Reject an optimization when gains disappear end-to-end, a typical workload regre
 
 Use [Agent Note rules](../../notes/README.md) for durable rationale, alternatives, calibration, exclusions, and remaining risks. Check relevant notes for supersession without turning performance work into a corpus-wide prose cleanup. Keep the reusable procedure here and scenario-specific truth with its benchmark or package owner.
 
-When the task requests stacked PRs, choose layers before editing and use official GitHub stacks and separate worktrees. Keep each layer mergeable: benchmark infrastructure can protect the measured baseline; the optimization layer carries its fix, functional coverage, and tighter budget. Independent bottlenecks may use separate stacks. Fix a finding in its owning layer before propagating upward.
+When the task requests dependent PRs, choose reviewable layers before editing. GitHub native stacks and separate worktrees are optional. Keep each layer mergeable: benchmark infrastructure can protect the measured baseline; the optimization layer carries its fix, functional coverage, and tighter budget. Independent bottlenecks may use separate stacks. Fix a finding in its owning layer before propagating upward.
 
 Apply [pre-push checks](../dsh-pre-push-checks/SKILL.md), report only executed evidence, and inspect CI rather than assuming local timing proves runner stability. After marking ready, evaluate review findings against code and executable evidence; reply with the reason or fix and resolve addressed threads. Do not dismiss a report merely because it came from a bot.
 

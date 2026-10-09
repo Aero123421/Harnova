@@ -1,6 +1,6 @@
 # AGENTS.md — Performance Benchmarks
 
-This tree owns required, repository-level performance gates whose measured user path crosses package ownership. Package-local diagnostics remain beside their owners and use the `.perf.ts` suffix instead of joining `test:bench`.
+This tree owns repository-level performance checks whose measured user path crosses package ownership. Package-local diagnostics remain beside their owners and use the `.perf.ts` suffix instead of joining `test:bench`.
 
 - Organize benchmarks by measured user path, one directory per path. Do not mirror the package tree.
 - Host cases use `*.bench.ts`; Client-face cases use `*.bench.client.ts`. Worker, fixture, and support modules do not carry a benchmark suffix.

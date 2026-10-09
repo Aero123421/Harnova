@@ -1,12 +1,12 @@
 /** VitePress configuration for the locally projected documentation site. */
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { DefaultTheme, PageData, SiteConfig } from 'vitepress'
 import type { ViteDevServer } from 'vite'
 import { withMermaid } from 'vitepress-plugin-mermaid'
 import { codeGroupFallbackHead, isolateCodeGroupRadios } from './code-groups.ts'
-import { landingLink, localeCollections, orderedPages, routeLink, sectionSpec, type DocsLocale, type DocsPage, type DocsSidebar } from '../docs.ts'
+import { landingLink, orderedPages, routeLink, sectionSpec, type DocsLocale, type DocsPage, type DocsSidebar } from '../docs.ts'
 import { docsSourceFiles, emitRawMarkdownPages, llmsTxt, projectDocs } from '../../scripts/project-doc-site.ts'
 import { rawMarkdownMiddleware } from '../raw-markdown.ts'
 
@@ -47,7 +47,7 @@ interface GuideModuleLink {
  */
 interface GuideModules {
   /** Guide sidebar collection for the locale. */
-  guide: 'zh-guide' | 'en-guide'
+  guide: DocsSidebar
   /** Development module link. */
   develop: GuideModuleLink
   /** Reference module link. */
@@ -58,18 +58,13 @@ interface GuideModules {
  * Guide-module facts keyed by locale, giving every module label and collection
  * one home shared by the navigation bar and the guide sidebar.
  */
-const guideModules = {
+const guideModules: Record<DocsLocale, GuideModules> = {
   root: {
-    guide: localeCollections.root[0],
-    develop: { label: '开发', collection: localeCollections.root[1] },
-    reference: { label: '参考', collection: localeCollections.root[2] },
+    guide: 'en-guide',
+    develop: { label: 'Development', collection: 'en-develop' },
+    reference: { label: 'Reference', collection: 'en-reference' },
   },
-  en: {
-    guide: localeCollections.en[0],
-    develop: { label: 'Development', collection: localeCollections.en[1] },
-    reference: { label: 'Reference', collection: localeCollections.en[2] },
-  },
-} satisfies Record<DocsLocale, GuideModules>
+}
 
 /**
  * Guide sidebar with direct links into the first development and reference pages.
@@ -78,7 +73,9 @@ const guideModules = {
  * @returns Guide groups followed by top-level links to the other documentation modules.
  */
 function guideSidebar(locale: DocsLocale): DefaultTheme.SidebarItem[] {
-  const { guide, develop, reference } = guideModules[locale]
+  const modules = guideModules[locale]
+  if (modules === undefined) throw new Error(`Unknown documentation locale: ${locale}`)
+  const { guide, develop, reference } = modules
   return [
     ...sidebar(locale, guide),
     ...[develop, reference].map(({ label, collection }) => ({
@@ -96,7 +93,9 @@ function guideSidebar(locale: DocsLocale): DefaultTheme.SidebarItem[] {
  * @returns The module items for the locale's navigation bar.
  */
 function moduleNav(locale: DocsLocale): DefaultTheme.NavItem[] {
-  const { develop, reference } = guideModules[locale]
+  const modules = guideModules[locale]
+  if (modules === undefined) throw new Error(`Unknown documentation locale: ${locale}`)
+  const { develop, reference } = modules
   const routePrefix = locale === 'root' ? '' : '/en'
   return [
     { text: develop.label, link: landingLink(locale, develop.collection), activeMatch: `^${routePrefix}/develop/` },
@@ -127,47 +126,18 @@ function escapeVueInterpolation(html: string): string {
 }
 
 const sharedTheme: Pick<DefaultTheme.Config, 'search' | 'socialLinks' | 'editLink'> = {
-  search: {
-    provider: 'local',
-    options: {
-      locales: {
-        root: {
-          translations: {
-            button: {
-              buttonText: '搜索文档',
-              buttonAriaLabel: '搜索文档',
-            },
-            modal: {
-              displayDetails: '显示详细列表',
-              resetButtonTitle: '清除搜索',
-              backButtonTitle: '关闭搜索',
-              noResultsText: '未找到相关结果',
-              footer: {
-                selectText: '选择',
-                selectKeyAriaLabel: '回车键',
-                navigateText: '切换',
-                navigateUpKeyAriaLabel: '上方向键',
-                navigateDownKeyAriaLabel: '下方向键',
-                closeText: '关闭',
-                closeKeyAriaLabel: 'Esc 键',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
+  search: { provider: 'local' },
   socialLinks: [
-    { icon: 'github', link: 'https://github.com/deepseek-ai/deepseek-harness' },
+    { icon: 'github', link: 'https://github.com/Aero123421/Harnova' },
   ],
   editLink: {
     pattern: ({ frontmatter }: PageData) => {
       const data: unknown = frontmatter
       const editSource: unknown = typeof data === 'object' && data !== null ? Reflect.get(data, 'editSource') : undefined
       if (typeof editSource !== 'string') throw new Error('Projected documentation page has no editSource frontmatter.')
-      return `https://github.com/deepseek-ai/deepseek-harness/edit/master/${editSource}`
+      return `https://github.com/Aero123421/Harnova/edit/main/${editSource}`
     },
-    text: '在 GitHub 上编辑此页',
+    text: 'Edit this page on GitHub',
   },
 }
 
@@ -176,17 +146,9 @@ const base = process.env.DOCS_BASE ?? '/'
 
 /** Site identity shared by the VitePress configuration and the llms.txt index. */
 const siteIdentity = {
-  title: 'DeepSeek Harness',
-  description: '用于构建 Agent Harness 的插件化 SDK',
+  title: 'Harnova',
+  description: 'An open-source AI agent built with Cordis plugins',
 }
-
-/**
- * The DeepSeek wordmark, inlined so its `currentColor` fills follow the active
- * theme. An `<img>` would freeze the mark at the colors the file declares.
- */
-const wordmark = readFileSync(resolve(import.meta.dirname, '../public/wordmark.svg'), 'utf8')
-  .trim()
-  .replace('<svg ', '<svg class="dsh-wordmark" ')
 
 /**
  * Head-injected styles for the site identity and sidebar scrollbar.
@@ -259,7 +221,7 @@ const scrollbarScript = `
  * @returns Markup placed beside the navigation-bar home link.
  */
 function siteTitle(previewTag: string): string {
-  return `<span class="dsh-lockup">${wordmark}<span class="dsh-tag">${previewTag}</span></span>`
+  return `<span class="dsh-lockup">Harnova<span class="dsh-tag">${previewTag}</span></span>`
 }
 
 export default withMermaid({
@@ -282,68 +244,14 @@ export default withMermaid({
   srcDir: '.generated',
   cacheDir: '.cache',
   outDir: '.dist',
-  locales: {
-    root: {
-      label: '简体中文',
-      lang: 'zh-CN',
-      themeConfig: {
-        siteTitle: siteTitle('技术预览'),
-        nav: [
-          { text: '入门', link: landingLink('root', guideModules.root.guide), activeMatch: '^/guide/' },
-          ...moduleNav('root'),
-        ],
-        sidebar: {
-          '/guide/': guideSidebar('root'),
-          '/develop/': sidebar('root', 'zh-develop'),
-          '/reference/': sidebar('root', 'zh-reference'),
-        },
-        outline: { label: '本页目录' },
-        docFooter: { prev: '上一篇', next: '下一篇' },
-        darkModeSwitchLabel: '外观',
-        lightModeSwitchTitle: '切换到浅色主题',
-        darkModeSwitchTitle: '切换到深色主题',
-        sidebarMenuLabel: '菜单',
-        returnToTopLabel: '返回顶部',
-        langMenuLabel: '切换语言',
-        skipToContentLabel: '跳至内容',
-      },
-    },
-    en: {
-      label: 'English',
-      lang: 'en-US',
-      link: '/en/',
-      themeConfig: {
-        siteTitle: siteTitle('Preview'),
-        nav: [
-          { text: 'Guide', link: landingLink('en', guideModules.en.guide), activeMatch: '^/en/guide/' },
-          ...moduleNav('en'),
-        ],
-        sidebar: {
-          '/en/guide/': guideSidebar('en'),
-          '/en/develop/': sidebar('en', 'en-develop'),
-          '/en/reference/': sidebar('en', 'en-reference'),
-        },
-        editLink: {
-          pattern: ({ frontmatter }: PageData) => {
-            const data: unknown = frontmatter
-            const editSource: unknown = typeof data === 'object' && data !== null ? Reflect.get(data, 'editSource') : undefined
-            if (typeof editSource !== 'string') throw new Error('Projected documentation page has no editSource frontmatter.')
-            return `https://github.com/deepseek-ai/deepseek-harness/edit/master/${editSource}`
-          },
-          text: 'Edit this page on GitHub',
-        },
-        outline: { label: 'On this page' },
-        docFooter: { prev: 'Previous', next: 'Next' },
-      },
-    },
-  },
+  lang: 'en-US',
   vite: {
     // `srcDir` puts the Vite root inside the disposable generated tree, whose
     // own `public/` no tracked asset can live in.
     publicDir: resolve(import.meta.dirname, '../public'),
     plugins: [
       {
-        name: 'deepseek-harness-doc-projector',
+        name: 'harnova-doc-projector',
         configureServer(server) {
           watchCanonicalDocs(server)
           serveRawMarkdown(server)
@@ -382,5 +290,19 @@ export default withMermaid({
     },
   },
   mermaid: {},
-  themeConfig: sharedTheme,
+  themeConfig: {
+    ...sharedTheme,
+    siteTitle: siteTitle('Preview'),
+    nav: [
+      { text: 'Guide', link: landingLink('root', 'en-guide'), activeMatch: '^/guide/' },
+      ...moduleNav('root'),
+    ],
+    sidebar: {
+      '/guide/': guideSidebar('root'),
+      '/develop/': sidebar('root', 'en-develop'),
+      '/reference/': sidebar('root', 'en-reference'),
+    },
+    outline: { label: 'On this page' },
+    docFooter: { prev: 'Previous', next: 'Next' },
+  },
 })

@@ -1,23 +1,9 @@
-# Contributing
+# Contributing to Harnova
 
-English | [中文](CONTRIBUTING.zh.md)
+Harnova is an independent project based on DeepSeek Harness. Open a pull request against `main` in [Aero123421/Harnova](https://github.com/Aero123421/Harnova). Upstream changes are fetched separately; Harnova contributions do not require approval from upstream maintainers.
 
-Thank you for your interest in contributing to DeepSeek Harness!
+Start with [development](docs/development.md), [architecture](docs/architecture.md), and [testing](docs/testing.md). Keep changes focused, use existing plugin interfaces, and run checks relevant to the change. Record the commands and results in the pull request. Commits and pull request descriptions use Japanese; reference documentation can use English or Japanese without a Chinese translation requirement.
 
-We deeply believe in the power of open source communities, and that belief has shaped this project from the very beginning.
+Use GitHub-hosted Actions for CI. Live-provider tests and browser recordings are optional when they help verify a specific change. Local hooks can be enabled with `pnpm run prepare:hooks`.
 
-DeepSeek Harness is still at an early stage and under active development. We are sorry that we cannot accept external pull requests at the moment. However, contributing code to this repository is far from the only way to help. There are many other ways to get involved:
-
-- Identify and report issues or bugs in GitHub Discussions:
-  - Upvote discussions that you would like to bring to the team's attention. We are a very small team and may not be able to reply to every post, but we monitor them and consider them when allocating resources.
-- Contribute to the ecosystem:
-  - Create a plugin that excites you and share it with others:
-    - Associate your GitHub project with the `dsh-plugin` topic to help others discover your plugin.
-  - Write blog posts and how-to guides about DeepSeek Harness.
-  - Answer questions and help other members of the community.
-
-DeepSeek Harness is designed to be deeply customizable. We do not believe that packages in the official repository are inherently more important than packages created by the community. You may consider this repository an idea, an official showcase, and a source of inspiration, but not a mandate from us.
-
-We have already seen exciting projects emerge from the community, and we hope to see the ecosystem continue to grow in its own directions.
-
-Into the unknown.
+The [MIT license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md) apply to contributions and distributions.

@@ -1,6 +1,6 @@
 # Template: package-bundle
 
-Use this template for a package whose manifest declares `dsh.bundle.patch` — an installable profile layer: `packages/bundle/*`, `dsh-subagent-codex`, `dsh-subagent-claude-code`. The `bundle/base` README pair is the worked example.
+Use this template for a package whose manifest declares `dsh.bundle.patch` — an installable profile layer: `packages/bundle/*`, `dsh-subagent-codex`, `dsh-subagent-claude-code`. The `bundle/base` README is the worked example.
 
 A bundle README leads with the profile-install path and the layer semantics; the implementation fold explains the patch document. It never presents the package as a library to import or as a single plugin to mount.
 
@@ -18,11 +18,9 @@ kind: "package-bundle"
 ```markdown
 # @deepseek-ai/dsh-<name>
 
-English | [中文](README.zh.md)
-
 ## Summary
 
-Three to five sentences and at most 100 `wc -w`-style words: what a profile gains from this layer, which profiles already include it, how a user adds or removes it, and the main boundary. Apply the [Summary voice rules](../SKILL.md#voice-rules).
+A concise explanation: what a profile gains from this layer, which profiles already include it, how a user adds or removes it, and the main boundary. Apply the [Summary voice rules](../SKILL.md#voice-rules).
 
 ## Table of Contents
 
@@ -77,7 +75,7 @@ Adjacent pages: the group map, the profile contract, the composition graph.
 <a id="model-experience"></a>
 ## Model Experience
 
-The form the verify-package-readme-model-experience gate assigns (bundle carriers are `indirect` or `none`: each inserted row's package owns its model-facing behavior).
+Describe relevant model effects, linking inserted packages for their model-facing behavior.
 
 ## Known Limitations and Deferred Work
 
@@ -100,4 +98,3 @@ None.
 
 - **Only `dsh.bundle.patch` packages use this template.** Verify the declaration in `package.json` before classifying; the `dsh plugin` reconcile activates a layer for exactly these packages.
 - **Test the install path.** Run `dsh plugin --profile <name> add <this-package>` in a scratch profile and reproduce the documented warning, layer activation, and failure modes before writing them.
-- Re-run `pnpm run verify-translation-pairing --write packages/<group>/<pkg>/README.md` after editing the pair.
