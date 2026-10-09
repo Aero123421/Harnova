@@ -22,7 +22,7 @@ function page(name: string) {
   return { dom, document, element, run }
 }
 
-it.each(['en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyboard-accessible: %s', async (language) => {
+it.each(['ja-JP', 'en', 'zh-CN'])('keeps ordinary diagnostics folded, text-only, and keyboard-accessible: %s', async (language) => {
   const p = page('update-dialog')
   const locale = resolveDesktopLocale(language)
   const state: UpdateDialogView = { revision: 1, locale: locale.id, title: locale.messages.updateFailedTitle,
@@ -216,7 +216,7 @@ it('renders server markup literally in a dedicated safety case', async () => {
   expect(p.element('detail').childElementCount).toBe(0)
 })
 
-it.each(['en', 'zh-CN'])('records mandatory update guidance and actions across its states: %s', async (language) => {
+it.each(['ja-JP', 'en', 'zh-CN'])('records mandatory update guidance and actions across its states: %s', async (language) => {
   const p = page('mandatory-update')
   const locale = resolveDesktopLocale(language)
   const base: MandatoryUpdateView = { locale, deferred: false, policy: { blocking: true, checking: false,

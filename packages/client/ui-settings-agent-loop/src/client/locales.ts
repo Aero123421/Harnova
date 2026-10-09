@@ -48,3 +48,19 @@ export const zh: Record<AgentLoopSettingsLocaleKey, string> = {
 export function formLabels(t: (key: AgentLoopSettingsLocaleKey) => string): SettingsFormLabels {
   return { unavailable: t('unavailable'), readOnly: t('readOnly'), saveFailed: t('saveFailed'), save: t('save'), saving: t('saving') }
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  title: 'エージェントループ',
+  description: 'エージェントのツール呼び出し方法を設定します。',
+  maxParallel: 'ツールの並列呼び出し',
+  maxParallelHint: '1ステップで同時に実行できる、並列処理に対応した呼び出しの上限。',
+  overridden: '上書き済み',
+  reset: '既定値に戻す',
+  readOnly: 'この環境の設定は読み取り専用です。',
+  unavailable: 'このプラグインは読み込まれていないため、現在は設定できません。',
+  save: '保存',
+  saving: '保存中…',
+  saveFailed: 'この環境では値が受理されませんでした。修正できるように入力を保持しています。',
+  invalidNumber: '数値を入力するか、既定値を使う場合は空欄にしてください。',
+} satisfies Record<keyof typeof en, string>

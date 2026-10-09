@@ -51,7 +51,8 @@ describe('desktop macOS release signature', () => {
     expect(appInfo.updaterCacheDirName).toBe('harnova-desktop-updater')
     expect(config.protocols).toEqual([{ name: 'Harnova', schemes: ['harnova'] }])
     expect(portablePath(config.directories.output)).toContain('/.desktop-build/targets/mac-arm64/artifacts')
-    expect(config.mac.extendInfo.NSMicrophoneUsageDescription).toContain('microphone')
+    expect(config.mac.extendInfo.CFBundleLocalizations).toEqual(['ja', 'en', 'zh_CN'])
+    expect(config.mac.extendInfo.NSMicrophoneUsageDescription).toContain('マイク')
     expect(config.mac.entitlementsInherit).toBe(config.mac.entitlements)
     const entitlements = readFileSync(config.mac.entitlements, 'utf8')
     for (const key of ['com.apple.security.cs.allow-jit', 'com.apple.security.cs.allow-unsigned-executable-memory',

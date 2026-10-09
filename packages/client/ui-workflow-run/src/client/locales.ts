@@ -49,3 +49,25 @@ export const en: Record<WorkflowRunKey, string> = {
 
 /** Union of this namespace's dictionary keys. */
 export type WorkflowRunKey = keyof typeof zh
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'run.title': '{name}',
+  'run.members.one': 'メンバー{count}人',
+  'run.members.other': 'メンバー{count}人',
+  'run.empty': '開始したメンバーなし',
+  'phase.unassigned': 'フェーズなし',
+  'phase.empty': 'フェーズ名なし',
+  'statusCount.running': '実行中{count}件',
+  'statusCount.completed': '完了{count}件',
+  'statusCount.failed': '失敗{count}件',
+  'statusCount.cancelled': 'キャンセル{count}件',
+  'statusCount.interrupted': '中断{count}件',
+  'member.empty': 'メンバー名なし',
+  'member.open': '{name}を開く',
+  'status.running': '実行中',
+  'status.completed': '完了',
+  'status.failed': '失敗',
+  'status.cancelled': 'キャンセル済み',
+  'status.interrupted': '中断済み',
+} satisfies Record<keyof typeof en, string>

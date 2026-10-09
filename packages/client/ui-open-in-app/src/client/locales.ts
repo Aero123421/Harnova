@@ -79,3 +79,23 @@ export const en: Record<OpenInAppKey, string> = {
 
 /** Key domain of the `open-in-app` namespace (zh is the source of truth). */
 export type OpenInAppKey = keyof typeof zh
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'open.title': '{app}で開く',
+  'path.appDefault': '{app}（既定）',
+  'path.appsError': 'アプリ一覧を読み込めませんでした',
+  'shortcut.busy': 'ワークスペースを開いています',
+  'shortcut.unavailable': '現在のワークスペースまたはローカルアプリを利用できません',
+  'open.tooltip': 'ローカルで開く',
+  'path.open': '開く',
+  'path.more': 'ほかの開き方',
+  'path.reveal': 'ファイルの場所を表示',
+  'path.openError': '開けませんでした。再試行してください。',
+  'path.revealError': 'ファイルの場所を表示できませんでした。再試行してください。',
+  ...PRODUCT_NAMES,
+  'app.finder': 'Finder',
+  'app.explorer': 'エクスプローラー',
+  'app.filemanager': 'ファイル',
+  'app.terminal': 'ターミナル',
+} satisfies Record<keyof typeof en, string>

@@ -45,7 +45,8 @@ const CODEX_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-codex')
 const CLAUDE_CODE_PACKAGE_DIR = join(REPO_ROOT, 'packages/subagent/subagent-claude-code')
 /** The installation anchor whose dependency surface the runtime resolution mirrors. */
 const INSTALL_ANCHOR = join(REPO_ROOT, 'apps/cli/package.json')
-const MINIMAL_PROMPT = 'You are a helpful software engineer assistant.'
+const JAPANESE_REPLY_POLICY = 'Reply to the user in Japanese by default. Use another language when the user requests it. Preserve code, commands, identifiers, and quoted text in their original language.'
+const MINIMAL_PROMPT = 'You are a helpful software engineer assistant. ' + JAPANESE_REPLY_POLICY
 const MINIMAL_BASH_DESCRIPTION = `Run commands in a bash shell
 * When invoking this tool, the contents of the "command" parameter does NOT need to be XML-escaped.
 * Network access depends on the task environment. Prefer configured mirrors/proxies when they are available.
@@ -400,6 +401,20 @@ describe('the shipped Web composition', () => {
     }
   })
 
+  it.each(['standard', 'ptc', 'minimal', 'cordis'])('ships Japanese reply guidance in the %s preset', async (preset) => {
+    const handle = await ctx.agents.create({
+      sessionId: SessionId(`japanese-reply-${preset}`),
+      setup: scope => ctx.agentPresets.mount(scope, preset).then(() => undefined),
+    })
+    try {
+      const assembly = await ctx.systemPrompt.assemble({ scope: handle.agent })
+      const persona = assembly.sections.find(section => section.name === 'deployment:persona-prefix')
+      expect(persona?.text).toContain(JAPANESE_REPLY_POLICY)
+    } finally {
+      await handle.dispose()
+    }
+  })
+
   it('presents `ptc` as PTC mode without disturbing a native session beside it', async () => {
     const coded = await ctx.agents.create({
       sessionId: SessionId('preset-ptc'),
@@ -493,7 +508,7 @@ describe('the shipped Web composition', () => {
         agent: handle.agent,
       })
       expect(loaded.isError).toBe(false)
-      expect(JSON.stringify(loaded.content)).toContain('powered by dsh')
+      expect(JSON.stringify(loaded.content)).toContain('powered by Harnova')
     } finally {
       await handle.dispose()
     }

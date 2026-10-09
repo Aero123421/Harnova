@@ -16,6 +16,7 @@
               suffix: Your working directory is {{cwd}}.
               prefix: >-
                 You are a coding agent powered by the {{model}} model.
+                Reply to the user in Japanese by default. Use another language when the user requests it. Preserve code, commands, identifiers, and quoted text in their original language.
           - id: agent-instructions
             name: '@deepseek-ai/dsh-agent-instructions'
             config:

@@ -13,3 +13,11 @@ export const zh: Record<keyof typeof en, string> = {
   saved: '设置已保存',
   failed: '无法保存设置',
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  title: '公式モデルAPI利用時にセッションログをアップロード',
+  description: 'DeepSeekのモデルと製品の改善に協力します。',
+  saved: '設定を保存しました',
+  failed: '設定を保存できませんでした',
+} satisfies Record<keyof typeof en, string>

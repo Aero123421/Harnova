@@ -63,3 +63,32 @@ export const en = {
   'status.in_progress': 'In progress',
   'status.completed': 'Completed',
 } satisfies Record<TeamKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  trigger: 'エージェントチーム',
+  loading: 'チームを読み込んでいます…',
+  unavailable: 'チームを利用できません',
+  failure: '保存済みのチーム情報が不正です: {message}',
+  empty: '共有タスクはまだありません。会話から作成してください。',
+  roster: 'メンバー',
+  tasks: '共有タスク',
+  model: 'モデル',
+  open: 'メンバーの会話を開く',
+  current: '現在のチャット',
+  owner: '担当者',
+  unowned: '担当者なし',
+  blockedBy: '阻害要因',
+  writeScopes: '書き込み範囲',
+  ready: '準備完了',
+  blocked: '依存タスク待ち',
+  'task.expand': 'さらに表示',
+  'task.collapse': '表示を減らす',
+  'memberStatus.running': '実行中',
+  'memberStatus.inactive': '停止中',
+  'memberStatus.provisioning': '準備中',
+  'memberStatus.failed': '失敗',
+  'status.pending': '保留中',
+  'status.in_progress': '処理中',
+  'status.completed': '完了',
+} satisfies Record<keyof typeof en, string>

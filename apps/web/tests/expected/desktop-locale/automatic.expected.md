@@ -1,34 +1,34 @@
-- dialog "设置":
+- dialog "設定":
   - navigation:
-    - text: 设置
-    - button "通用设置"
-    - button "模型"
-    - button "内置插件"
-    - button "Agent 预设"
-  - button "打开配置文件"
-  - button "关闭"
-  - text: 权限 选择新会话的默认权限模式
-  - button "工作区内修改"
-  - text: 语言
-  - button "中文"
-  - text: 外观
-  - button "浅色"
-  - button "深色"
-  - button "跟随系统" [pressed]
-  - text: 字号大小 仅影响会话内容的字号 14
-  - button "增大字号"
-  - button "减小字号"
-  - text: px 工作步骤展示 选择希望看到多少工具调用细节
-  - button "标准"
-  - text: 显示代码工作视图 开启后，显示轨迹、本轮代码差异，可选择完整的 Agent 预设切换
-  - switch "显示代码工作视图" [checked]
-  - text: 快捷键
-  - paragraph: 查看和编辑当前可用的快捷键和输入操作
-  - button "编辑快捷键"
-  - text: 繁忙时的发送行为 智能体运行时 Enter 键和发送按钮的行为；Cmd/Ctrl+Enter 使用另一行为
-  - button "排队发送"
-  - text: 性能与用量 选择性能与用量信息展示的详细程度
-  - button "详细"
-  - text: 在使用官方模型 API 时上传 Session Log 帮助改进 DeepSeek 模型与产品
-  - switch "在使用官方模型 API 时上传 Session Log"
-  - text: 当前版本：{{version}}
+    - text: 設定
+    - button "一般"
+    - button "モデル"
+    - button "組み込みプラグイン"
+    - button "エージェントプリセット"
+  - button "設定ファイルを開く"
+  - button "閉じる"
+  - text: 権限 新しいセッションの既定の権限モードを選択
+  - button "ワークスペースへの書き込み"
+  - text: 言語
+  - button "日本語"
+  - text: 外観
+  - button "ライト"
+  - button "ダーク"
+  - button "システムに合わせる" [pressed]
+  - text: フォントサイズ 会話の内容にのみ適用 14
+  - button "フォントサイズを大きくする"
+  - button "フォントサイズを小さくする"
+  - text: px 作業の詳細 ツール呼び出しをどこまで詳しく表示するか選択
+  - button "標準"
+  - text: 開発用の表示 実行履歴、コードの差分、すべてのエージェントプリセットを表示します
+  - switch "開発用の表示" [checked]
+  - text: キーボードショートカット
+  - paragraph: 利用可能なショートカットと入力操作を表示・編集
+  - button "ショートカットを編集"
+  - text: 実行中の送信方法 エージェントの実行中にEnterや送信ボタンで行う操作。Cmd/Ctrl+Enterで別の操作を実行します
+  - button "キューに追加"
+  - text: 性能と使用量 性能と使用量をどこまで詳しく表示するか選択
+  - button "詳細"
+  - text: 公式モデルAPI利用時にセッションログをアップロード DeepSeekのモデルと製品の改善に協力します。
+  - switch "公式モデルAPI利用時にセッションログをアップロード"
+  - text: "現在のバージョン: {{version}}"

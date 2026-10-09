@@ -57,3 +57,27 @@ export const en = {
   'error.generic': 'Could not save feedback',
   'error.noteTooLarge': 'The description is too long; shorten it and submit again',
 } satisfies Record<MessageFeedbackKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'action.like': '良い応答',
+  'action.likeActive': '評価を削除',
+  'action.dislike': '良くない応答',
+  'action.dislikeActive': '評価を削除',
+  'dialog.title': 'フィードバックを送信',
+  'dialog.categories': 'フィードバックの分類',
+  'dialog.detail': 'フィードバックの詳細',
+  'dialog.hint': '改善のために詳細を入力してください。送信内容には現在の会話ログが含まれます。',
+  'category.task-result': 'タスクの結果',
+  'category.instruction-following': '指示の理解と遵守',
+  'category.product-interaction': '製品の機能と操作',
+  'category.service-stability': '安定性と速度',
+  'category.resource-cost': 'リソース使用量と費用',
+  'category.security-privacy-permission': 'セキュリティ、プライバシー、権限',
+  'category.other': 'その他',
+  'toast.recorded': 'フィードバックありがとうございます',
+  'error.conflict': '別の場所でフィードバックが変更されました。最新の状態を表示しています',
+  'error.load': 'フィードバックを読み込めませんでした',
+  'error.generic': 'フィードバックを保存できませんでした',
+  'error.noteTooLarge': '説明が長すぎます。短くして再度送信してください',
+} satisfies Record<keyof typeof en, string>

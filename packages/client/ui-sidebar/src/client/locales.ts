@@ -20,3 +20,12 @@ export const en = {
   'toggle.collapse': 'Collapse sidebar',
   'panels.label': 'Global panels',
 } satisfies Record<SidebarKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'session.new': '新しいセッション',
+  'session.new.label': '新しいセッション',
+  'toggle.open': 'サイドバーを開く',
+  'toggle.collapse': 'サイドバーを折りたたむ',
+  'panels.label': '共通パネル',
+} satisfies Record<keyof typeof en, string>

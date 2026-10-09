@@ -1,37 +1,44 @@
 # Harnova
 
-Harnova is an independent open-source AI agent project based on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by [DeepSeek AI](https://deepseek.com). It retains the upstream plugin runtime and package names, and uses the `harnova` command and its own data directory.
+Harnovaは、[DeepSeek AI](https://deepseek.com)が開発した[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)を基にする、独立したオープンソースのAIエージェントです。上流のプラグイン実行基盤とパッケージ名を維持し、`harnova`コマンドと専用のデータフォルダを使います。
 
-It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
+**すべてをプラグインで構成する**アーキテクチャを採用し、[Cordis](https://github.com/cordiverse/cordis)を使用しています。設計の解説は[_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)を参照してください。
 
-Upstream documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
+上流のドキュメント: [DeepSeek Harness](https://deepseek-harness.github.io/deepseek-harness/)
 
-## Planned features
+## 日本語対応
 
-Harnova-specific capabilities are development goals, not completed features:
+WebとDesktopの画面は、日本語・英語・中国語に標準対応しています。日本語パックの追加は不要です。OS・ブラウザが日本語なら日本語で起動し、対応する言語が見つからない場合も日本語を表示します。保存済みの言語設定がある場合は、その設定を優先します。
 
-- Japanese UI and Japanese agent interaction as standard features.
-- Security Mode for source auditing, dependency checks, and authorized security diagnostics.
-- SSH remote workspaces for file operations and command execution on a selected host.
-- Native Desktop distribution for Windows, macOS, and Linux. The upstream Desktop currently supports Windows and macOS releases; Linux packaging requires additional work.
+「設定 → 一般 → 言語」から表示言語を変更できます。Webのローカル接続とDesktopでは選択を保存し、再起動後も引き継ぎます。外部ホスト名で開いたWeb画面では、言語選択はそのページ内だけで有効です。
 
-Security Mode selects agent capabilities; SSH selects the execution environment. They remain independent. Extensions use plugin APIs where possible so upstream updates remain manageable. Harnova has its own branding and application identity; signed distribution still requires its own signing credentials and update service.
+標準・PTC・最小・作成の各モードは、日本語での返答を基本とする指示を持ちます。別の言語を指定した場合は、その指定に従う方針です。保存済みの独自設定や既存セッションは書き換えません。
 
-## Development and distribution
+<a id="planned-features"></a>
+## 開発予定
 
-Harnova uses standard GitHub Actions runners for Linux, Windows, and macOS. Pull requests and changes to `main` run checks without provider API keys; live-provider E2E runs are started manually. Package builds also verify installation from local tarballs.
+以下は開発目標であり、完成済みの機能ではありません。
 
-Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and use Harnova branding. Desktop installers require signing credentials and an update service before distribution. Linux packaging needs additional work.
+- ソースコードの監査、依存関係の確認、許可されたセキュリティ診断を行うSecurity Mode。
+- 選択したホスト上でファイル操作やコマンド実行を行うSSHリモートワークスペース。
+- Windows・macOS・Linux向けのDesktopアプリ配布。上流のDesktopはWindows・macOS向けに配布されており、Linux向けのパッケージには追加の作業が必要です。
 
-Development instructions are in [AGENTS.md](AGENTS.md). Chinese documentation copies and translation bookkeeping are removed; English reference documentation remains. Browser GIF recording is optional, using [record-browser-gif](.agents/skills/record-browser-gif/SKILL.md). Product UI locale dictionaries are separate from documentation.
+<a id="development-and-distribution"></a>
+## 開発と配布
 
-Review the [safety notice](SAFETY.md) before running the project.
+CIにはLinux・Windows・macOSの標準GitHub Actionsランナーを使用します。PRと`main`の変更では、プロバイダーのAPIキーなしで検査を実行します。実際のプロバイダーを使うE2Eテストは手動で開始します。パッケージのビルドでは、ローカルのアーカイブからのインストールも検証します。
 
-## Run
+配布先は[HarnovaのGitHub Releases](https://github.com/Aero123421/Harnova/releases)です。手動のリリースワークフローで、開発者向けのパッケージアーカイブを含む下書きを作成します。アーカイブでは既存の上流パッケージ名を維持し、Harnovaのブランドを使用します。Linux向けのパッケージには追加の作業が必要です。
 
-### Run from source
+開発手順は[AGENTS.md](AGENTS.md)を参照してください。ブラウザ操作のGIF録画は任意で、[record-browser-gif](.agents/skills/record-browser-gif/SKILL.md)を使用できます。
 
-To run from a repository checkout:
+実行前に[安全性に関する注意事項](SAFETY.md)を確認してください。
+
+<a id="run"></a>
+## 実行方法
+
+<a id="run-from-source"></a>
+### ソースから実行
 
 ```sh
 git clone https://github.com/Aero123421/Harnova.git
@@ -41,23 +48,26 @@ pnpm run build
 pnpm harnova web
 ```
 
-Harnova starts the Web UI at `http://127.0.0.1:3081` by default; use `--no-open` to suppress browser launch. Its user data lives in `~/.harnova`, or the explicit `HARNOVA_HOME` directory. Inherited `DSH_HOME` and existing `~/.dsh` data are ignored. See the [coexistence audit](docs/harnova-coexistence-audit.md).
+Web UIは既定で`http://127.0.0.1:3081`に起動します。ブラウザを自動で開かない場合は`--no-open`を指定してください。ユーザーデータは`~/.harnova`、または明示した`HARNOVA_HOME`のフォルダに保存します。継承した`DSH_HOME`や既存の`~/.dsh`は参照しません。詳細は[共存に関する調査](docs/harnova-coexistence-audit.md)を参照してください。
 
-`pnpm run build` prepares the repository artifacts. `pnpm harnova web` uses those built artifacts without rebuilding.
+`pnpm run build`で実行に必要な成果物を作成します。`pnpm harnova web`はビルド済みの成果物を使い、再ビルドは行いません。
 
-## Contributing
+<a id="contributing"></a>
+## コントリビューション
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md)を参照してください。
 
-## Development
+<a id="development"></a>
+## 開発用の起動
 
-Start with the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md).
+[開発ガイド](docs/development.md)と[アーキテクチャ](docs/architecture.md)を参照してください。
 
-`pnpm run dev:web` builds, serves, and rebuilds client bundles on source edits in one terminal, and `make help` lists the matching Make targets for Web and Desktop; the guide's application commands section owns the full table.
+`pnpm run dev:web`は、1つのターミナルでビルド・配信・ソース変更時のクライアント再ビルドを実行します。`make help`でWebとDesktopのMakeターゲットを確認できます。コマンドの一覧は開発ガイドにあります。
 
-For agents, follow [AGENTS.md](AGENTS.md).
+エージェントによる作業は[AGENTS.md](AGENTS.md)に従ってください。
 
-## Citation
+<a id="citation"></a>
+## 引用
 
 ```bibtex
 @misc{deepseek-harness2026,
@@ -69,8 +79,9 @@ For agents, follow [AGENTS.md](AGENTS.md).
 }
 ```
 
-## License
+<a id="license"></a>
+## ライセンス
 
 [MIT](LICENSE)
 
-Third-party dependencies and their licenses are disclosed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+依存するサードパーティのライセンスは[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)に記載しています。

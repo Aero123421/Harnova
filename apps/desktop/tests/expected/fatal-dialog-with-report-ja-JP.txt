@@ -1,0 +1,10 @@
+Harnovaを利用できません
+アプリを起動できなかったか、予期せず停止しました。
+Desktop Host failed
+Plugin initialization failed
+診断レポート: C:\Users\someone\AppData\Roaming\Harnova\logs\crash-2026-09-22T10-30-00-000Z-host.log
+
+アプリのファイルが不足しているか破損している場合は、アプリを閉じて再インストールしてください。タスクのデータは別の場所に保存されています。
+終了
+再起動
+サードパーティのプラグインを無効にしてプロファイルの変更設定をバックアップし、再起動

@@ -62,3 +62,24 @@ export const en = {
   'error.notDirectory': 'That is not a directory.',
   'error.unavailable': 'Read failed: {message}',
 } satisfies Record<SidebarFilesKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'shortcut.noSession': '先にセッションを選択してください',
+  'type.label': 'ファイル',
+  'guide.title': 'ワークスペースのファイル',
+  'guide.description': 'このセッションのワークスペース内のファイルを閲覧',
+  loading: '読み込んでいます…',
+  empty: '空のフォルダ',
+  truncated: '項目が多いため、一部のみ表示しています。',
+  noWorkspace: 'このセッションにはワークスペースのフォルダがありません。',
+  reload: '再読み込み',
+  autoRefresh: '自動更新',
+  'autoRefresh.enable': '自動更新を有効化',
+  'autoRefresh.disable': '自動更新を無効化',
+  'entry.other': 'ファイルでもフォルダでもないため、開けません。',
+  'error.notFound': 'このフォルダは存在しません。移動または削除された可能性があります。',
+  'error.outsideWorkspace': 'ワークスペース外のフォルダのため、サイドバーでは読み込みません。',
+  'error.notDirectory': 'フォルダではありません。',
+  'error.unavailable': '読み込みに失敗しました: {message}',
+} satisfies Record<keyof typeof en, string>

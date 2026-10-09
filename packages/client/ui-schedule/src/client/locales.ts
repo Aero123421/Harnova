@@ -2,7 +2,7 @@
  * `schedule.catalog` namespace dictionaries: the Session header catalog and the
  * Sidebar row mark with its hover-card task section.
  */
-import { frequencyEn, frequencyZh } from './frequency-locales.ts'
+import { frequencyEn, frequencyZh , frequencyJa } from './frequency-locales.ts'
 
 /** Dictionary namespace owned by this plugin. */
 export const NS = 'schedule.catalog'
@@ -51,3 +51,24 @@ export const en: Record<ScheduleCatalogKey, string> = {
 
 /** Key domain of the Schedule catalog namespace. */
 export type ScheduleCatalogKey = keyof typeof zh
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'trigger.label': 'リマインダー',
+  'list.loading': 'リマインダーを読み込んでいます…',
+  'list.error': 'リマインダーを読み込めませんでした。',
+  'list.retry': '再試行',
+  'delete.action': '削除',
+  'delete.pending': '削除中…',
+  'delete.label': 'リマインダーを削除: {title}',
+  'list.open': 'リマインダーの詳細を開く: {title}',
+  'trigger.one': 'リマインダー{count}件',
+  'trigger.other': 'リマインダー{count}件',
+  'list.aria': '有効なリマインダー',
+  'list.nextRun': '次回の実行',
+  'frequency.once': '1回',
+  'frequency.every': '{value}{unit}ごと',
+  ...frequencyJa,
+  'mark.aria': 'スケジュールされたタスク{count}件',
+  'hover.more': 'ほか{count}件',
+} satisfies Record<keyof typeof en, string>

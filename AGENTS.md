@@ -4,7 +4,7 @@ Harnova は DeepSeek Harness を基にした、Cordis プラグインで構成�
 
 ## Harnova development
 
-- Windows・macOS・Linux の通常の開発機能を維持し、日本語 UI、Security Mode、SSH ワークスペースを追加する。未実装機能は予定として記載する。
+- Windows・macOS・Linux の通常の開発機能を維持する。日本語 UI は標準対応で、明示的な言語設定を優先する。Security Mode と SSH ワークスペースは開発予定として記載する。
 - 独自機能は既存のプラグイン拡張点を優先する。Security Mode と SSH の実行先選択は独立させる。
 - 主ブランチは `main`。Push・PR 先は `origin` の `Aero123421/Harnova`。`upstream` は更新取得専用とし、上流への Push・PR はユーザーの明示的な依頼が必要。
 - ブランチは原則 `codex/`、コミットと PR は日本語で作成する。履歴を書き換える場合は remote の現在値を確認し、`--force-with-lease` を使う。

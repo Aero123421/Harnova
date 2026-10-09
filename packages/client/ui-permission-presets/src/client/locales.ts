@@ -82,3 +82,40 @@ export const accessEn = {
   'auto.confirm.acknowledge': 'I understand these risks and want to continue',
   'auto.confirm.enable': 'Enable Auto review',
 } satisfies Record<PermissionAccessKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'title': '権限',
+  'description': '新しいセッションの既定の権限モードを選択',
+  'loading': '読み込み中',
+  'unavailable': '利用不可',
+  'preset.readOnly': '読み取り専用',
+  'preset.workspaceWrite': 'ワークスペースへの書き込み',
+  'preset.fullAccess': 'フルアクセス',
+  'confirm.title': 'フルアクセスを有効にしますか？',
+  'confirm.description': 'フルアクセスでは新しいセッションの確認を減らし、機密性の高い操作、ファイル変更、外部コマンドなどを直接実行できます。今後のタスクを信頼できる場合のみ使用してください。',
+  'confirm.acknowledge': 'リスクを理解したうえで続けます',
+  'confirm.cancel': 'キャンセル',
+  'confirm.enable': 'フルアクセスを有効化',
+} satisfies Record<keyof typeof en, string>
+
+/** Japanese copy shipped with Harnova. */
+export const accessJa = {
+  'mode': 'アクセスモード、現在: {name}',
+  'close': '閉じる',
+  'preset.readOnly': '読み取り専用',
+  'preset.workspaceWrite': 'ワークスペースへの書き込み',
+  'preset.fullAccess': 'フルアクセス',
+  'confirm.title': 'フルアクセスを有効にしますか？',
+  'confirm.description': 'フルアクセスでは確認を減らし、機密性の高い操作、ファイル変更、外部コマンドなどを直接実行できます。現在のタスクを信頼できる場合のみ使用してください。',
+  'confirm.acknowledge': 'リスクを理解したうえで続けます',
+  'confirm.cancel': 'キャンセル',
+  'confirm.enable': 'フルアクセスを有効化',
+  'auto.label': '自動審査',
+  'auto.badge': '試験機能',
+  'auto.description': '各ネイティブツール呼び出しとPTC内部呼び出しを同じモデルで審査したあと、サンドボックスなしで実行します。試験的な機能です。',
+  'auto.confirm.title': '自動審査（試験機能）を有効にしますか？',
+  'auto.confirm.description': '自動審査はサンドボックスなしで実行します。各ネイティブツール呼び出しとPTC内部呼び出しの前に、現在のエージェントと同じモデルで許可を審査します。拒否された呼び出しはユーザーが許可または拒否します。試験的な機能のため判断を誤る可能性があり、追加のトークンを使用します。',
+  'auto.confirm.acknowledge': 'これらのリスクを理解したうえで続けます',
+  'auto.confirm.enable': '自動審査を有効化',
+} satisfies Record<keyof typeof accessEn, string>

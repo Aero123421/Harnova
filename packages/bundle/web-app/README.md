@@ -71,7 +71,7 @@ When you launch `harnova --profile web` over SSH, the URL line still prints but 
 
 ### Per-session agent setup
 
-Each browser session selects a shipped preset (`standard` by default). The Agent presets settings page changes the default and edits preset child plugins; saves persist in `$HARNOVA_HOME/profiles/web/cordis.patch.yml`. Creator's plugin-management tool is enabled only when the Host provides an editable profile.
+Each browser session selects a shipped preset (`standard` by default). All four shipped presets instruct the agent to reply in Japanese by default, use another language when requested, and preserve code, commands, identifiers, and quoted text. Saved custom persona settings take precedence; existing Session records are not rewritten. The Agent presets settings page changes the default and edits preset child plugins; saves persist in `$HARNOVA_HOME/profiles/web/cordis.patch.yml`. Creator's plugin-management tool is enabled only when the Host provides an editable profile.
 
 -----
 
