@@ -85,7 +85,7 @@ Read these pages when you need the launcher or the consumers that depend on a si
 
 - [Boot package](../../boot/app-boot/README.md) — the launcher that resolves the home before any plugin mounts.
 - [Shell environment](../../shell/shell-env/README.md) — how `HARNOVA_HOME` reaches model shell calls.
-- [Anonymous user id](../../identity/anonymous-user-id/README.md) — a stored identity file under the resolved home.
+- [Anonymous user id](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) — a stored identity file under the resolved home.
 
 -----
 

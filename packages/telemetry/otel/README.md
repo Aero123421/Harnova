@@ -5,6 +5,8 @@ kind: "package-reference"
 
 # @deepseek-ai/dsh-otel
 
+Harnova does not mount a telemetry backend or configure a collector. This SDK is available for custom extensions only; no data is collected by installing it.
+
 ## Summary
 
 Mount one `otel` service to create ordinary-event and Session-log reporting channels. Each channel has its own exporter, resource, instrumentation scope, and queue. Mounting alone creates no transport or identity and sends nothing. Business consumers own authorization, redaction, field selection, and their channel's disposal.
@@ -25,7 +27,7 @@ The base bundle mounts `@deepseek-ai/dsh-otel`. Independent compositions must mo
 
 The returned channel belongs to the consumer. Ordinary-event `shutdown(signal)` cancels requests and retry waits when the supplied signal aborts, and resolves after transport cleanup. Register shutdown with the consumer's Cordis fiber and bound the complete drain with its configured deadline. Injection makes service replacement unload dependent consumers. Do not retain a channel after its consumer unloads. The product and Session adapters implement this ownership for UI and feedback callers.
 
-Ordinary channels use SDK count-based batching. Session channels preserve one complete event per record with `eventName: "session-log"`, `sessionId`, and a JSON string `content`, and enforce at most 4,000,000 uncompressed request bytes. Their byte limits, single-record rejection, serial transport settlement, and shutdown behavior are specified by the [Session adapter](../../session/session-telemetry-otel/README.md). A Session channel never shares a request or queue with ordinary events.
+Ordinary channels use SDK count-based batching. Session channels preserve one complete event per record with `eventName: "session-log"`, `sessionId`, and a JSON string `content`, and enforce at most 4,000,000 uncompressed request bytes. Their byte limits, single-record rejection, serial transport settlement, and shutdown behavior are specified by the [Session adapter](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md). A Session channel never shares a request or queue with ordinary events.
 
 Headers are explicit. The service does not add a channel header or inherit ambient authorization headers or TLS identity. Agent factories configure their returned agents, including keepAlive. Ordinary-event channels destroy their agent on shutdown; factories must provide a dedicated agent for each channel. Scope names and versions are supplied by each consumer, so transport sharing does not change event attribution.
 
@@ -40,8 +42,8 @@ Composition tests exercise independent channels and service removal; adapter tes
 ## Further Exploration
 
 - [OTel subsystem](../../../docs/subsystems/otel.md) — service ownership and API.
-- [Product adapter](../../host/product-telemetry-otel/README.md) — explicit analytics policy and configuration.
-- [Session adapter](../../session/session-telemetry-otel/README.md) — feedback authorization and configured upload limits.
+- [Product adapter](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) — explicit analytics policy and configuration.
+- [Session adapter](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) — feedback authorization and configured upload limits.
 
 <a id="model-experience"></a>
 ## Model Experience

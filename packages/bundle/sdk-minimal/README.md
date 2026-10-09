@@ -90,7 +90,7 @@ Stable for a fixed persona, platform, provider, model, and bundle patch stack. P
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **The composition intentionally omits shared product services** — select `harnova --profile sdk` when settings, managed credentials, policy presets, telemetry, Web tools, or the full default tool roster are required.
+- **The composition intentionally omits shared product services** — select `harnova --profile sdk` when settings, managed credentials, policy presets, Web tools, or the full default tool roster are required.
 - **User patches can expand the tree and corrupt stdout** — profile customization is trusted application composition; a plugin that writes ordinary text to stdout can break JSON-RPC framing.
 
 <a id="dev-note"></a>

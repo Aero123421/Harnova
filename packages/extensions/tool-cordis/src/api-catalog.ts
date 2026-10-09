@@ -1511,31 +1511,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
-    key: 'messageFeedback',
-    summary: 'Session-log service; cold operations never construct a Session or Agent.',
-    description: 'Session-log service; cold operations never construct a Session or Agent.',
-    methods: [
-      {
-        signature: '@Remote(\'list\') list(request: MessageFeedbackListRequest): Promise<MessageFeedbackListResult>',
-        description: 'Read current feedback from the canonical log.',
-        parameters: [{ name: 'request', description: 'Session to inspect.' }],
-        returns: 'immutable items or a definite persistence miss.',
-      },
-      {
-        signature: '@Remote(\'put\') put(request: MessageFeedbackPutRequest): Promise<MessageFeedbackPutResult>',
-        description: 'Create or replace feedback after checking its current version. Matching no-ops retain the version and append no event.',
-        parameters: [{ name: 'request', description: 'Target, desired value, and observed item version.' }],
-        returns: 'the durable item or an explicit business failure.',
-      },
-      {
-        signature: '@Remote(\'delete\') delete(request: MessageFeedbackDeleteRequest): Promise<MessageFeedbackDeleteResult>',
-        description: 'Delete one item after checking its version; absence succeeds without an event.',
-        parameters: [{ name: 'request', description: 'Session, message, and observed item version.' }],
-        returns: 'the stable absent postcondition or an explicit failure.',
-      },
-    ],
-  },
-  {
     key: 'officeToPdf',
     summary: 'A provider lifetime owns all converters, queued calls, and temporary files.',
     description: 'A provider lifetime owns all converters, queued calls, and temporary files.',
@@ -1738,43 +1713,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         parameters: [],
         returns: 'the first registry with a successful response, or null when disabled or neither responds successfully; results are cached.',
         throws: ['rejects when the service has been unloaded.'],
-      },
-    ],
-  },
-  {
-    key: 'productAnalytics',
-    summary: 'Authenticated event intake; disabled instances do not inspect identity or accept new events.',
-    description: 'Authenticated event intake; disabled instances do not inspect identity or accept new events.',
-    methods: [
-      {
-        signature: '@Remote enabled(): boolean',
-        description: 'Read the collection policy.',
-        parameters: [],
-        returns: 'whether this Host currently accepts Desktop analytics.',
-      },
-      {
-        signature: '@Remote({ mode: \'stream\' }) async *watchPolicy(signal: AbortSignal): AsyncIterable<boolean>',
-        description: 'Stream the effective policy initially and after live configuration edits.',
-        parameters: [{ name: 'signal', description: 'subscriber lifetime.' }],
-        returns: 'current policy values until cancellation or service disposal.',
-      },
-      {
-        signature: '@Remote async report(event: ProductEvent): Promise<void>',
-        description: 'Submit selected Desktop fields; missing identity is omitted and never generated.',
-        parameters: [{ name: 'event', description: 'typed product event without message contents or credentials.' }],
-        returns: 'after local submission; no delivery or warehouse acknowledgement.',
-      },
-    ],
-  },
-  {
-    key: 'productTelemetry',
-    summary: 'Host analytics sender.',
-    description: 'Host analytics sender. Mounting alone sends nothing; the owning fiber drains it on unload.',
-    methods: [
-      {
-        signature: 'emit(record: ProductTelemetryRecord): void',
-        description: 'Enqueue one selected product event without waiting for network delivery. Queue admission and shutdown completion are not collector or warehouse acknowledgements.',
-        parameters: [{ name: 'record', description: 'caller-owned event containing only approved analytics fields.' }],
       },
     ],
   },
@@ -2059,19 +1997,6 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Stream a complete live-control baseline followed by replacement frames.',
         parameters: [{ name: 'signal', description: 'cancellation owned by the Remote stream carrier.' }],
         returns: 'one complete baseline followed by live replacement frames.',
-      },
-    ],
-  },
-  {
-    key: 'sessionFeedback',
-    summary: 'Host Remote through which a product surface records a Session-level remark.',
-    description: 'Host Remote through which a product surface records a Session-level remark.',
-    methods: [
-      {
-        signature: '@Remote(\'record\') record(request: SessionFeedbackRecordRequest): Promise<SessionFeedbackRecordResult>',
-        description: 'Record one remark on a live Session.',
-        parameters: [{ name: 'request', description: 'target Session plus the optional text and category.' }],
-        returns: 'the recorded postcondition, or `session-not-found` when no live Session carries the id.',
       },
     ],
   },
@@ -4073,14 +3998,6 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'change', description: 'domain, table (`\'\'` for global), key (`\'\'` for global), operation discriminant, and on `put` the new snapshot.' }],
   },
   {
-    name: 'feedback/committed',
-    mode: 'parallel',
-    signature: '\'feedback/committed\'(inspection: SessionInspection): void',
-    summary: 'Observe a durable cold feedback mutation without publishing a live Session.',
-    description: 'Observe a durable cold feedback mutation without publishing a live Session. Observers run before write ownership is released and must not await another message-feedback operation for this Session. The payload is borrowed read-only; deep-clone it before transferring ownership (for example, to Session.fromRestore).',
-    parameters: [{ name: 'inspection', description: 'committed canonical prefix, including the feedback as its last event.' }],
-  },
-  {
     name: 'fs/edit-intent',
     mode: 'waterfall',
     signature: '\'fs/edit-intent\'(target: FsTarget, actor: object | undefined, next: () => { version: FsVersion } | undefined | Promise<{ version: FsVersion } | undefined>): Promise<{ version: FsVersion } | undefined>',
@@ -5225,10 +5142,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface EveryScheduleRecord {\n    readonly id: ScheduleId;\n    readonly kind: \'every\';\n    readonly title: string;\n    readonly prompt: string;\n    readonly everySeconds: number;\n    readonly scheduledAt: string;\n}',
   },
   {
-    name: 'FeedbackCategory',
-    declaration: 'export type FeedbackCategory = \'task-result\' | \'instruction-following\' | \'product-interaction\' | \'service-stability\' | \'resource-cost\' | \'security-privacy-permission\' | \'other\';',
-  },
-  {
     name: 'FiberState',
     declaration: 'export const enum FiberState {\n    PENDING,\n    LOADING,\n    ACTIVE,\n    FAILED,\n    DISPOSED,\n    UNLOADING\n}',
   },
@@ -5785,82 +5698,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type Message = MessageRoleMap[keyof MessageRoleMap];',
   },
   {
-    name: 'MessageFeedbackDeleteRequest',
-    declaration: 'export interface MessageFeedbackDeleteRequest {\n    readonly sessionId: SessionId;\n    readonly messageId: MessageId;\n    readonly ifVersion: MessageFeedbackVersion;\n}',
-  },
-  {
-    name: 'MessageFeedbackDeleteResult',
-    declaration: 'export type MessageFeedbackDeleteResult = MessageFeedbackSuccess<MessageFeedbackDeleteValue> | MessageFeedbackRejected<MessageFeedbackSessionNotFound | MessageFeedbackVersionConflict>;',
-  },
-  {
-    name: 'MessageFeedbackDeleteValue',
-    declaration: 'export interface MessageFeedbackDeleteValue {\n    readonly absent: true;\n}',
-  },
-  {
-    name: 'MessageFeedbackFailure',
-    declaration: 'export type MessageFeedbackFailure = MessageFeedbackSessionNotFound | MessageFeedbackTargetNotFound | MessageFeedbackVersionConflict | MessageFeedbackNoteBlank | MessageFeedbackNoteTooLarge;',
-  },
-  {
-    name: 'MessageFeedbackItem',
-    declaration: 'export interface MessageFeedbackItem {\n    readonly messageId: MessageId;\n    readonly rating: MessageFeedbackRating;\n    readonly note?: string;\n    readonly category?: FeedbackCategory;\n    readonly version: MessageFeedbackVersion;\n    readonly createdAt: number;\n    readonly updatedAt: number;\n}',
-  },
-  {
-    name: 'MessageFeedbackListRequest',
-    declaration: 'export interface MessageFeedbackListRequest {\n    readonly sessionId: SessionId;\n}',
-  },
-  {
-    name: 'MessageFeedbackListResult',
-    declaration: 'export type MessageFeedbackListResult = MessageFeedbackSuccess<MessageFeedbackListValue> | MessageFeedbackRejected<MessageFeedbackSessionNotFound>;',
-  },
-  {
-    name: 'MessageFeedbackListValue',
-    declaration: 'export interface MessageFeedbackListValue {\n    readonly items: readonly MessageFeedbackItem[];\n}',
-  },
-  {
-    name: 'MessageFeedbackNoteBlank',
-    declaration: 'export interface MessageFeedbackNoteBlank {\n    readonly code: \'note-blank\';\n}',
-  },
-  {
-    name: 'MessageFeedbackNoteTooLarge',
-    declaration: 'export interface MessageFeedbackNoteTooLarge {\n    readonly code: \'note-too-large\';\n    readonly maxBytes: number;\n    readonly actualBytes: number;\n}',
-  },
-  {
-    name: 'MessageFeedbackPutRequest',
-    declaration: 'export interface MessageFeedbackPutRequest {\n    readonly sessionId: SessionId;\n    readonly messageId: MessageId;\n    readonly rating: MessageFeedbackRating;\n    readonly note?: string;\n    readonly category?: FeedbackCategory;\n    readonly ifVersion: MessageFeedbackVersion | null;\n}',
-  },
-  {
-    name: 'MessageFeedbackPutResult',
-    declaration: 'export type MessageFeedbackPutResult = MessageFeedbackSuccess<MessageFeedbackItem> | MessageFeedbackRejected<MessageFeedbackSessionNotFound | MessageFeedbackTargetNotFound | MessageFeedbackVersionConflict | MessageFeedbackNoteBlank | MessageFeedbackNoteTooLarge>;',
-  },
-  {
-    name: 'MessageFeedbackRating',
-    declaration: 'export type MessageFeedbackRating = \'positive\' | \'negative\';',
-  },
-  {
-    name: 'MessageFeedbackRejected',
-    declaration: 'export interface MessageFeedbackRejected<E extends MessageFeedbackFailure> {\n    readonly ok: false;\n    readonly error: E;\n}',
-  },
-  {
-    name: 'MessageFeedbackSessionNotFound',
-    declaration: 'export interface MessageFeedbackSessionNotFound {\n    readonly code: \'session-not-found\';\n    readonly sessionId: SessionId;\n}',
-  },
-  {
-    name: 'MessageFeedbackSuccess',
-    declaration: 'export interface MessageFeedbackSuccess<T> {\n    readonly ok: true;\n    readonly value: T;\n}',
-  },
-  {
-    name: 'MessageFeedbackTargetNotFound',
-    declaration: 'export interface MessageFeedbackTargetNotFound {\n    readonly code: \'target-not-found\';\n    readonly sessionId: SessionId;\n    readonly messageId: MessageId;\n}',
-  },
-  {
-    name: 'MessageFeedbackVersion',
-    declaration: 'export type MessageFeedbackVersion = Branded<\'MessageFeedbackVersion\'>;',
-  },
-  {
-    name: 'MessageFeedbackVersionConflict',
-    declaration: 'export interface MessageFeedbackVersionConflict {\n    readonly code: \'version-conflict\';\n    readonly current: MessageFeedbackItem | null;\n}',
-  },
-  {
     name: 'MessageId',
     declaration: 'export type MessageId = Branded<\'MessageId\'>;',
   },
@@ -5975,10 +5812,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'OfficeToPdfResult',
     declaration: 'export interface OfficeToPdfResult {\n    readonly pdf: Uint8Array;\n    readonly missingFonts: string[];\n    readonly cacheKey: OfficeToPdfKey;\n    readonly generation: OfficeToPdfGeneration;\n}',
-  },
-  {
-    name: 'OnboardingPage',
-    declaration: 'export type OnboardingPage = \'onboarding_welcome\' | \'onboarding_recharge\' | \'onboarding_use_case\' | \'onboarding_process\';',
   },
   {
     name: 'OneShotScheduleRecord',
@@ -6143,18 +5976,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'PreToolDecision',
     declaration: 'export type PreToolDecision = {\n    kind: \'allow\';\n} | {\n    kind: \'deny\';\n    reason: string;\n    info?: ToolErrorInfo;\n} | {\n    kind: \'cancel\';\n} | {\n    kind: \'ask\';\n    reason?: string;\n    displayReason?: {\n        readonly en: string;\n        readonly [locale: string]: string;\n    };\n};',
-  },
-  {
-    name: 'ProductEvent',
-    declaration: 'export type ProductEvent = {\n    [K in keyof ProductEventMap]: {\n        eventName: K;\n        attributes: ProductEventMap[K];\n        timestamp: number;\n    };\n}[keyof ProductEventMap];',
-  },
-  {
-    name: 'ProductEventMap',
-    declaration: 'export interface ProductEventMap {\n    desktop_app_launch: Record<string, never>;\n    auth_page_view: Record<string, never>;\n    auth_page_click: {\n        button_name: \'sign_in\' | \'api-key\';\n    };\n    api_key_save_click: Record<string, never>;\n    onboarding_page_view: {\n        page_name: OnboardingPage;\n    };\n    onboarding_page_click: {\n        page_name: OnboardingPage;\n        button_name: \'next\' | \'back\' | \'skip\' | \'charge\' | \'later\' | \'continue\';\n        selected_content?: \'office\' | \'code\' | \'code_office\' | \'focus_result\' | \'key_detail\' | \'full_process\';\n    };\n    onboarding_popup_view: {\n        popup_name: \'skip_charge\' | \'skip_setting\';\n    };\n    onboarding_popup_click: {\n        popup_name: \'skip_charge\' | \'skip_setting\';\n        button_name: \'charge\' | \'know\' | \'enter\' | \'setting\' | \'close\';\n    };\n    desktop_upgrade_click: Record<string, never>;\n    desktop_upgrade_download_result: {\n        is_success: boolean;\n        error_reason?: string;\n    };\n    desktop_upgrade_install_restart_click: Record<string, never>;\n    send_button_click: {\n        session_id?: SessionId;\n        model_name?: string;\n        thinking_effort?: string;\n        run_mode: \'plan\' | \'goal\' | \'default\';\n        msg_type: \'default\' | \'steer\' | \'queue\';\n    };\n    model_switch: {\n        session_id?: SessionId;\n        switch_from: string;\n        switch_to: string;\n    };\n    thinking_level_switch: {\n        session_id?: SessionId;\n        switch_from: string;\n        switch_to: str /* …truncated — full shape in source */',
-  },
-  {
-    name: 'ProductTelemetryRecord',
-    declaration: 'export type ProductTelemetryRecord = OTelEventRecord;',
   },
   {
     name: 'ProfilePnpmInvocation',
@@ -6719,22 +6540,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'SessionEventWindow',
     declaration: 'export interface SessionEventWindow {\n    session: SessionHeader;\n    inheritedEventCount: SessionLogOffset;\n    target: SessionEvent;\n    events: SessionEvent[];\n    startSeq: SessionSeq;\n    endSeq: SessionSeq;\n}',
-  },
-  {
-    name: 'SessionFeedbackRecordRequest',
-    declaration: 'export interface SessionFeedbackRecordRequest {\n    readonly sessionId: SessionId;\n    readonly text?: string;\n    readonly category?: FeedbackCategory;\n}',
-  },
-  {
-    name: 'SessionFeedbackRecordResult',
-    declaration: 'export type SessionFeedbackRecordResult = {\n    readonly ok: true;\n    readonly value: SessionFeedbackRecordValue;\n} | {\n    readonly ok: false;\n    readonly error: SessionFeedbackSessionNotFound;\n};',
-  },
-  {
-    name: 'SessionFeedbackRecordValue',
-    declaration: 'export interface SessionFeedbackRecordValue {\n    readonly recorded: true;\n}',
-  },
-  {
-    name: 'SessionFeedbackSessionNotFound',
-    declaration: 'export interface SessionFeedbackSessionNotFound {\n    readonly code: \'session-not-found\';\n    readonly sessionId: SessionId;\n}',
   },
   {
     name: 'SessionFollowFrame',

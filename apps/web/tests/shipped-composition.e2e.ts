@@ -644,12 +644,10 @@ it('assembles the shipped Web transport, catalog, guidance, and defaults', async
     agentOptions: { provider: 'deepseek-official', model: 'deepseek-v4-flash' },
   })
   try {
-    expect(scaffold.ctx.commands.list(commandHandle.agent)).toContainEqual({
-      definitionId: '@deepseek-ai/dsh-command-feedback',
-      name: 'feedback',
-      description: 'Record feedback about this session',
-      input: { hint: '<text>' },
-    })
+    expect(scaffold.ctx.commands.list(commandHandle.agent).map(command => command.name)).not.toContain('feedback')
+    for (const service of ['productAnalytics', 'productTelemetry', 'sessionTelemetry', 'messageFeedback', 'sessionFeedback']) {
+      expect(scaffold.ctx.get(service)).toBeUndefined()
+    }
   } finally {
     await commandHandle.dispose()
   }
