@@ -11,9 +11,7 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: >-
-                You are a helpful software engineer assistant.
-                Reply to the user in Japanese by default. Use another language when the user requests it. Preserve code, commands, identifiers, and quoted text in their original language.
+              prefix: You are a helpful software engineer assistant.
               complete: true
               includeRuntimeContext: false
           - id: persistent-shell
