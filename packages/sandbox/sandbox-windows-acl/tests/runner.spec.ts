@@ -543,6 +543,16 @@ describe.skipIf(!isWin32 || !pwshAvailable())('windows-acl runner', () => {
     grant.add(granted, true)
     try {
       const probe = `
+$ErrorActionPreference='Stop'
+$acl = Get-Acl -LiteralPath '${child.replaceAll("'", "''")}'
+# Explicit token-default allows precede inherited denies on elevated hosts.
+# This probe owns an inherited DACL so the container-only deny is evaluated.
+foreach ($rule in @($acl.GetAccessRules($true, $false, [System.Security.Principal.SecurityIdentifier]))) {
+  if ($rule.AccessControlType -eq [System.Security.AccessControl.AccessControlType]::Allow) {
+    $acl.RemoveAccessRuleSpecific($rule)
+  }
+}
+Set-Acl -LiteralPath '${child.replaceAll("'", "''")}' -AclObject $acl
 $ErrorActionPreference='SilentlyContinue'
 Add-Type -Namespace P -Name F -MemberDefinition @'
 [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode, EntryPoint="CreateFileW")]
