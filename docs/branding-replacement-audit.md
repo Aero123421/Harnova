@@ -10,11 +10,11 @@
 | --- | --- | --- |
 | サイドバーの展開時・折り畳み時 | `packages/client/ui-sidebar/src/client/SidebarRoot.tsx`、`packages/client/ui-brand-official/src/client/Brand.tsx` | ロゴと文字を別々に反映。slot と fallback の両経路を確認 |
 | 新しい会話の開始画面 | `packages/client/ui-conversation/src/client/skeleton/EmptyHero.tsx` | hero の mark slot とクジラの fallback を更新。既存の泳ぐ動作も見直す |
-| エージェント実行中の表示 | `packages/client/ui-chat/src/client/chat/RunningWhaleTail.tsx`、`running-whale@2x.png` | APNG と静止 SVG の両方を更新、または Harnova に合う共通の進行表示に変更 |
+| エージェント実行中の表示 | [RunningBrandMark.tsx](../packages/client/ui-chat/src/client/chat/RunningBrandMark.tsx)（旧 `RunningWhaleTail.tsx`）、旧 `running-whale@2x.png` | APNG と静止 SVG の両方を更新、または Harnova に合う共通の進行表示に変更 |
 | 起動中・プラグイン読み込み失敗画面 | `packages/client/web/src/boot-page.ts` | 固定文字 `HARNESS` を Harnova の表示に更新。React・ブランドプラグインが使えない段階でも表示できること |
 | ブラウザタブ・PWA | `apps/web/public/favicon.svg`、`favicon-dark.svg`、`manifest.webmanifest` | 明暗のマークと PWA の製品名を更新 |
 | デスクトップ初回起動画面 | `apps/desktop/renderer/assets/welcome-brand.svg`、`apps/desktop/src/client/WelcomePage.tsx` | マークと文字を含む素材、表示比率、alt を更新 |
-| アプリ内オンボーディングの説明画像 | `packages/client/ui-settings-account/src/client/assets/onboarding-{welcome,recharge}*.png` | 元のロゴが焼き込まれた 8 枚。welcome は再作成、recharge は公式課金連携の撤去と合わせて整理 |
+| アプリ内オンボーディングの説明画像 | [assets ディレクトリ](../packages/client/ui-settings-account/src/client/assets/) 内の `onboarding-{welcome,recharge}*.png` | 元のロゴが焼き込まれた 8 枚。welcome は再作成、recharge は公式課金連携の撤去と合わせて整理 |
 | デスクトップアプリ・Dock・Windows の実行ファイル | `apps/desktop/resources/icon-{windows,macos}.{svg,png}` | 各 OS の余白を維持して Harnova マークを置き、PNG も再生成 |
 | About・終了確認のアプリ画像 | `apps/desktop/src/main.ts`、`apps/desktop/scripts/electron-builder-config.mjs` | 現在は Windows 用 PNG を共通画像として使用。開発時・配布時を確認 |
 | Windows のシステムトレイ | `apps/desktop/resources/tray-windows.ico`、`apps/desktop/scripts/render-tray-icon.ts` | ベクター素材から各解像度の ICO を再生成 |
