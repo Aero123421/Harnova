@@ -1,6 +1,8 @@
 import { Agent, createServer, type RequestListener } from 'node:http'
 import { Agent as HttpsAgent } from 'node:https'
 import { once } from 'node:events'
+import { gunzipSync } from 'node:zlib'
+import { CompressionAlgorithm } from '@opentelemetry/otlp-exporter-base'
 import { afterEach, expect, it, vi } from 'vitest'
 import { EventLogReporter, type EventLogOptions } from '../src/event-log.ts'
 
@@ -147,4 +149,26 @@ it('destroys the agent when cancellation rejects a batch already in flight', asy
   await received.promise
   await sender.shutdown(AbortSignal.abort())
   expect(destroy).toHaveBeenCalledTimes(1)
+})
+
+it('delivers compressed events to the explicitly selected collector', async () => {
+  const bodies: unknown[] = []
+  const encodings: unknown[] = []
+  const url = await collector((req, res) => {
+    const chunks: Buffer[] = []
+    req.on('data', chunk => chunks.push(chunk as Buffer))
+    req.on('end', () => {
+      encodings.push(req.headers['content-encoding'])
+      bodies.push(JSON.parse(gunzipSync(Buffer.concat(chunks)).toString()))
+      res.end('{}')
+    })
+  })
+  const { sender, onFailure } = reporter(url, { compression: CompressionAlgorithm.GZIP })
+  sender.emit(event)
+  await sender.shutdown()
+  expect(onFailure).not.toHaveBeenCalled()
+  expect(encodings).toEqual(['gzip'])
+  expect(bodies).toMatchObject([{
+    resourceLogs: [{ scopeLogs: [{ logRecords: [{ body: { stringValue: event.body } }] }] }],
+  }])
 })
