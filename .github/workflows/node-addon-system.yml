@@ -1,24 +1,17 @@
-# CI for the node-addon-system packages under native/system. A separate
-# workflow from ci.yml keeps the native OS/architecture matrix independent of
-# the harness Node matrix. Each platform job builds once and tests those bytes
-# under every supported Node release. Release assembly and publication use the
-# companion Node Addon System Release workflow.
 name: Node Addon System
 
 on:
   pull_request:
     paths:
       - '.github/workflows/node-addon-system.yml'
-      - '.github/workflows/node-addon-system-release.yml'
       - 'native/system/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - '.github/workflows/node-addon-system.yml'
-      - '.github/workflows/node-addon-system-release.yml'
       - 'native/system/**'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -33,8 +26,6 @@ permissions:
   contents: read
 
 env:
-  # CI runs must never report to the production telemetry endpoint baked
-  # into apps/cli/cordis.yml (AppCLIEntry disables the row when set).
   DSH_TELEMETRY_DISABLED: '1'
 
 defaults:
@@ -94,9 +85,6 @@ jobs:
       - name: Entry tests (keyless)
         run: node ./test/entry.test.js
 
-      # NALR_REQUIRE_LANDLOCK: a self-skip on the very platform that exists to
-      # prove enforcement would be a false green, so an unenforcing kernel
-      # fails the leg instead of skipping.
       - name: Launcher tests (real kernel enforcement)
         if: runner.os == 'Linux'
         run: node ./test/launcher.test.js

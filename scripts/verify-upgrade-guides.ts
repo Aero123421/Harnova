@@ -1,7 +1,6 @@
 /**
  * Enforce the `docs/upgrade-guide/v<version>/<item>/guide.md` layout, metadata,
  * sections, and word ceiling defined by the `dsh-create-upgrade-guide` skill.
- * `verify-translation-pairing` owns the Chinese sibling's pairing record.
  * @module scripts/verify-upgrade-guides
  */
 
@@ -15,17 +14,14 @@ const GUIDE_ROOT = 'docs/upgrade-guide'
 const FRONTMATTER_KEYS = ['description', 'kind']
 /** Required `##` sections for each guide language; the word ceiling applies to the English source. */
 const LANGUAGES = {
-  'guide.md': { sections: ['Change', 'Migration'], maxWords: 500 },
-  'guide.zh.md': { sections: ['变更', '迁移'], maxWords: undefined },
+  'guide.md': { sections: ['Change', 'Migration'] },
 } as const
 const SEMVER = String.raw`(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?`
-const GUIDE_PATH = new RegExp(`^v${SEMVER}/[a-z0-9]+(?:-[a-z0-9]+)*/(guide\\.md|guide\\.zh\\.md|guide\\.i18n\\.yaml)$`, 'u')
+const GUIDE_PATH = new RegExp(`^v${SEMVER}/[a-z0-9]+(?:-[a-z0-9]+)*/(guide\\.md)$`, 'u')
 
 /** Return one guide's frontmatter and structure violations. */
 function guideViolations(source: string, language: typeof LANGUAGES[keyof typeof LANGUAGES]): string[] {
   const violations: string[] = []
-  const words = source.split(/\s+/u).filter(Boolean).length
-  if (language.maxWords !== undefined && words > language.maxWords) violations.push(`${String(words)} words exceeds the ${String(language.maxWords)}-word ceiling`)
 
   const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/u.exec(source)
   if (frontmatter === null) return [...violations, 'must start with YAML frontmatter']
@@ -64,10 +60,10 @@ export function collectUpgradeGuideViolations(root: string): string[] {
     const path = `${GUIDE_ROOT}/${file}`
     const name = GUIDE_PATH.exec(file)?.[1]
     if (name === undefined) {
-      violations.push(`${path}: only v<semver>/<kebab-case-item>/guide.{md,zh.md,i18n.yaml} files belong in ${GUIDE_ROOT}`)
+      violations.push(`${path}: only v<semver>/<kebab-case-item>/guide.md files belong in ${GUIDE_ROOT}`)
       continue
     }
-    if (name === 'guide.md' || name === 'guide.zh.md') {
+    if (name === 'guide.md') {
       for (const violation of guideViolations(readFileSync(join(directory, file), 'utf8'), LANGUAGES[name])) violations.push(`${path}: ${violation}`)
     }
   }

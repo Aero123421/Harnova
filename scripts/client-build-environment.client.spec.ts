@@ -30,7 +30,7 @@ const dshBuildWorkflows = [
   'ci.yml',
   'e2e.yml',
   'release.yml',
-  'release-publish.yml',
+  'draft-release.yml',
   'sandbox.yml',
 ]
 

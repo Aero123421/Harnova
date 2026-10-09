@@ -1,7 +1,5 @@
 # AGENTS.md — Agent Notes
 
-Agent Notes are effectively RFCs written by agents: durable proposals and decision records that preserve rationale, alternatives, consequences, and required verification. Follow the [documentation standard](../../docs/AGENTS.md) and the [Agent Note rules](README.md).
+[Note rules](README.md) に従い、コード・テスト・既存文書だけでは残せない長期的な設計理由を記録する。機械的変更・局所的 UI 変更には新しい Note は不要。
 
-**Every new Agent Note triggers a supersession check.** Search the active tree for older notes covering the same decision or mechanism, classify any full or partial supersession with [`dsh-archive-agent-notes`](../skills/dsh-archive-agent-notes/SKILL.md), and archive every qualifying implemented triplet in the same PR. Keep partial supersessions active and cross-linked.
-
-Files under [`archived/`](archived/AGENTS.md) are frozen historical snapshots: never edit them or treat them as current authority.
+上流から引き継いだ Notes は参考資料。過去の企業運用や承認・翻訳手順を Harnova の現在の指示として扱わない。過去 Note の設計内容は維持し、撤去した開発環境へのリンクは過去の参照として記載する。

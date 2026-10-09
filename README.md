@@ -1,7 +1,5 @@
 # Harnova
 
-English | [中文](README.zh.md)
-
 Harnova is an independent open-source AI agent project based on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness), developed by [DeepSeek AI](https://deepseek.com). This checkout retains the upstream runtime, package names, and `dsh` command.
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
@@ -19,9 +17,13 @@ Harnova-specific capabilities are development goals, not completed features:
 
 Security Mode selects agent capabilities; SSH selects the execution environment. They remain independent. Extensions use plugin APIs where possible so upstream updates remain manageable. Before distributing Harnova, its application IDs, signing, update endpoints, and branding must be independent of the upstream application.
 
-## Developer preview
+## Development and distribution
 
-DeepSeek Harness is in _developer preview_ and iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**
+Harnova uses standard GitHub Actions runners for Linux, Windows, and macOS. Pull requests and changes to `main` run checks without provider API keys; live-provider E2E runs are started manually. Package builds also verify installation from local tarballs.
+
+Distribution uses [Harnova GitHub Releases](https://github.com/Aero123421/Harnova/releases). The manual release workflow prepares a draft with developer package archives. These archives retain the current upstream package names and UI branding. Desktop installers require independent application identity, signing, update endpoints, and Linux packaging before they can be distributed.
+
+Development instructions are in [AGENTS.md](AGENTS.md). Chinese documentation copies and translation bookkeeping are removed; English reference documentation remains. Browser GIF recording is optional, using [record-browser-gif](.agents/skills/record-browser-gif/SKILL.md). Product UI locale dictionaries are separate from documentation.
 
 Review the [safety notice](SAFETY.md) before running the project.
 
@@ -50,12 +52,6 @@ pnpm dsh web
 ```
 
 `pnpm run build` prepares the repository artifacts. `pnpm dsh web` uses those built artifacts without rebuilding.
-
-## Community and support
-
-- Submit Harnova feedback or bug reports through [GitHub Issues](https://github.com/Aero123421/Harnova/issues).
-- Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Join <a href="https://discord.gg/4MrtZUhpxg">DeepSeek Harness Discord community</a>.
 
 ## Contributing
 

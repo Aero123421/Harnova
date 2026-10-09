@@ -1,6 +1,6 @@
 # Historical simplification patterns
 
-Use these examples to calibrate a candidate whose value is not established by an unused-symbol search. They describe recorded decisions, not current removal opportunities. Archived sources are frozen snapshots: read the cited note itself, never follow or repair its outbound links. Verify current owners and released-data obligations before applying a pattern.
+Use these examples to calibrate a candidate whose value is not established by an unused-symbol search. They describe recorded decisions, not current removal opportunities. Archived sources are historical references; verify current code rather than treating them as current development instructions. Verify current owners and released-data obligations before applying a pattern.
 
 ## Require a complete effect path
 

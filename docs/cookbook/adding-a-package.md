@@ -1,7 +1,5 @@
 # Cookbook: adding a workspace package
 
-English | [中文](adding-a-package.zh.md)
-
 The file-by-file checklist for a new `@deepseek-ai/dsh-<name>` package. This checklist is validated against the bash and adapter packages as templates; if it drifts from them, fix it here.
 
 ## 1. Create the package
@@ -15,11 +13,8 @@ packages/<group>/<pkg>/
                    # you use Config, + ../../<group>/<dep> for each dsh dep)
   src/index.ts     # service default export or plugin (name/inject/apply/Config)
   locale/en.json   # optional display metadata: meta.title and meta.description
-  locale/zh.json   # translations using the same fields
+  locale/ja.json   # optional Japanese display metadata using the same fields
   README.md        # service API, events, extension points, design notes,
-                   # + gated Model Experience context blocks or short form
-                   # + the gated "Known Limitations and Deferred Work" section
-                   # (or a whitelist entry in scripts/verify-package-readme-limitations.ts)
 ```
 
 Choose an existing group when one matches the package's role (`core`, `llm`, `shell`, `compaction`, `subagent`, `todo`, `session`, `client`/`host`, `util`, or `test-support`). A new group is allowed, but it is a pure container: no `package.json`, no source files, and packages still sit exactly one level below it.
@@ -75,45 +70,17 @@ Use `SDK` only for the JSON-RPC client/server protocol used by the supported Pyt
 
 ## 4. Write the package README
 
-Keep package-specific service API, config, events, extension points, and design notes first. Choose the frontmatter `kind` from the four kind labels in the [dsh-doc metadata reference](../../.agents/skills/dsh-doc/references/metadata-links-i18n.md#the-kind-system) — group, reference, library, or bundle — matching the package's repository position and entry shape; each kind selects one README template. The limitations section records durable consumer gaps and non-obvious maintainer constraints owned by this package; ordinary cleanup stays in its source TODO or Agent Note. An indirect Model Experience sentence may name the consumer that surfaces this package's contribution, but it does not restate that consumer's implementation. End a package README with this canonical sequence:
+Describe the package's observable behavior, configuration, failure handling, extension points, and current limitations. Choose the frontmatter `kind` that matches its position and entry: group, plugin reference, library, or bundle. The [templates](../../.agents/skills/dsh-doc/templates/) are useful starting points, not a fixed chapter-order or word-budget requirement.
 
-````markdown
-## Model Experience
+For model-facing behavior, explain the text or fields the model receives and any meaningful token or cache effect. Link generated catalogs rather than repeating every schema field. A package with no direct model effect needs only a brief explanation when that distinction matters to its callers. State durable limitations and non-obvious maintainer constraints; ordinary cleanup remains a source TODO.
 
-### Request context and condition
-
-#### What the model sees
-
-The exact data-dependent fields, an anchored generated-catalog link, or an introduction to the verbatim literal below.
-
-##### Verbatim text for this field, when needed
-
-```markdown
-Stable system-prompt prose of any length, or another long non-generated literal, copied exactly from source.
-```
-
-#### Token effect
-
-Fixed, conditional, retained, replaced, capped, or zero-direct token effect.
-
-#### KV Cache effect
-
-Append-only, prefix-stable, replacing, or independent behavior, including the exact conditions that may invalidate reuse.
-
-## Known Limitations and Deferred Work
-
-- **Consumer-visible gap** — exact missing operation or case, its consequence, and any maintainer constraint.
-````
-
-Fill Model Experience from the implementation. Use one H3 per direct, conditional, capped, lifetime, or auxiliary model-context entry, with the three ordered H4 fields shown above and one prose paragraph under each. Quote stable text owned by the package: system-prompt prose goes in a titled H5 plus `markdown` fence under the field that introduces it—normally `What the model sees`—other short literals stay inline with named placeholders, and other long literals use the same nested form. Summarize only data-dependent or provider-owned text. A tool-schema entry links its anchored section in the generated [tool catalog](../tool-catalog.md) and states only deltas absent there. Keep prompt and schema entries separate when scoping can hide one without the other. In `KV Cache effect`, distinguish append-only growth, a stable repeated prefix, replacement of earlier request tokens, and an independent model request, then name the package-owned changes that can invalidate reuse. “Does not invalidate” means the package preserves an already-reusable prefix; provider cache availability and eviction remain outside the package contract. The [prose standard](../../.agents/skills/dsh-prose-standard/SKILL.md) governs completeness and ownership; the verifier enforces the required section structure.
-
-A package with no context effect or one consumer-owned path uses the audited `None, as ` or `Indirectly, through ` sentence in [`SENTENCE_MODEL_EXPERIENCE`](../../scripts/verify-package-readme-model-experience.ts), followed by a `KV Cache effect` H4 and one non-empty paragraph; a model-agnostic generic package may instead join `NO_MODEL_EXPERIENCE_SECTION`. Do not expand either case into a description of another package's work. The limitations [allowlist](../../scripts/verify-package-readme-limitations.ts) is independent. The [archived Model Experience Agent Note](../../.agents/notes/archived/process/2026-07-12-package-model-experience-contract.md) records the rationale.
+The [prose standard](../../.agents/skills/dsh-prose-standard/SKILL.md) preserves important conditions, ownership, timing, and failures. Japanese or English documentation does not require a Chinese counterpart or translation sidecar.
 
 <a id="plugin-display-metadata"></a>
 
 ## 5. Add optional plugin display metadata
 
-For an npm package plugin, define its title and description in `locale/en.json`. Other language files, such as `locale/zh.json`, use the same fields:
+For an npm package plugin, define its title and description in `locale/en.json`. Other language files, such as `locale/ja.json`, use the same fields:
 
 ```json
 {
@@ -156,7 +123,7 @@ The Install view still uses npm registry information from `pnpm view`, not local
 Verify the result:
 
 1. Run `pnpm run verify-package-meta` from the repository root to check fields, resource exports, and publication coverage.
-2. Switch an installed plugin's applicable Plugin Manager and Settings entries between English and Chinese; check the title, description, per-field fallback, and Settings-only compact technical names.
+2. Switch an installed plugin's applicable Plugin Manager and Settings entries between its supported locales; check the title, description, per-field fallback, and Settings-only compact technical names.
 
 ## 6. Verify
 

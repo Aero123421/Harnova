@@ -1,7 +1,5 @@
 # Testing policy
 
-English | [中文](testing.zh.md)
-
 How this repo tests, tier by tier, and the rules that keep a green suite meaningful. Commands live in root [AGENTS.md](../AGENTS.md); linked Agent Notes carry the rationale.
 
 ## Tiers
@@ -18,11 +16,13 @@ Session fixtures retain headers and payloads but omit body sequence/time envelop
 
 ## How specs execute
 
-Forked workers run several spec files at once, the coverage gate splits into concurrent partitions beside the other gates in its job, and the self-hosted runners share one host and one volume. Only the process is isolated: ports, predictable paths, external namespaces, and inherited children are not. Own each acquired resource through its teardown, and read a spec that passes only when it runs alone as a defect in the spec rather than an unstable runner. [dsh-ci-test-reliability](../.agents/skills/dsh-ci-test-reliability/SKILL.md) owns the allocation, restoration, synchronization, timeout-budget, platform, and teardown rules; its [flake diagnosis workflow](../.agents/skills/dsh-ci-test-reliability/references/ci-flake-diagnosis.md) classifies an existing probabilistic failure.
+Forked workers run several spec files at once, the coverage gate splits into concurrent partitions beside the other gates in its job, so tests must own shared host resources: ports, predictable paths, external namespaces, and inherited children are not. Own each acquired resource through its teardown, and read a spec that passes only when it runs alone as a defect in the spec rather than an unstable runner. [dsh-ci-test-reliability](../.agents/skills/dsh-ci-test-reliability/SKILL.md) owns the allocation, restoration, synchronization, timeout-budget, platform, and teardown rules; its [flake diagnosis workflow](../.agents/skills/dsh-ci-test-reliability/references/ci-flake-diagnosis.md) classifies an existing probabilistic failure.
 
-## The with-key policy: inference is cheap here
+## Live-provider verification
 
-We are DeepSeek — do not ration real-API tests. A no-key test proves plumbing; only a with-key run proves the agent works against a real model. Cover file-writing prompts, multi-turn conversations, tool use, and mid-stream cancellation. Highest-value are **smoke tests** that boot a shipped `dsh` profile, send one prompt, and check the world — they catch the "green unit tests, broken product" class that mocks cannot ([postmortem 0001](postmortem/0001-acp-default-export-drops-inject.md)). Self-skip keeps secretless CI and keyless contributors unblocked; it is not a cost signal. Profile-level integration tests live under `apps/cli/tests/profiles/`; package-specific compositions stay with their package tests.
+Keyless unit, integration, and recorded-session replay checks are the standard development path. Run a focused live-provider smoke when changing provider behavior or when the requested end-to-end verification needs a real model. A missing key is a reported verification limit, not a reason to substitute a mock and claim live compatibility. Keep costs bounded to the relevant scenario.
+
+High-value live smokes boot a shipped `dsh` profile and verify external files or events, including tool use and cancellation where affected. Profile-level integration tests live under `apps/cli/tests/profiles/`; package-specific compositions stay with their package tests.
 
 ## Prefer the real implementation over a mock
 
@@ -52,4 +52,4 @@ An e2e assertion re-runs the command or re-reads the file externally; a keyword 
 
 ## When a snapshot test is required
 
-Every non-trivial model-, protocol-, or human-visible change adds or updates a keyless recorded-session scenario in the same PR; package, e2e, mock-only, and rationale evidence does not replace the assembled transcript. Headless, SDK, ACP, and Web recordings live under `snapshots/session/`, `snapshots/sdk/`, `snapshots/acp/`, and `snapshots/web/`; a Web rendering may explicitly borrow another scenario's canonical session. Expected output that is not driven by a recorded session stays with its owning app, package, or script under `tests/expected/` and does not use the `*.snapshot.ts` suffix. [`dsh-session-snapshot`](../packages/test-support/session-snapshot/README.md) owns the shared storage rules and profile adapters. Agent-loop, session-lifecycle, and `SessionEventMap` changes update both SDK projections: `snapshots/sdk/` owns TypeScript, while [Python-runtime CI](../.github/workflows/ci-master.yml) owns `scripts/snapshots/python-sdk-single-exe/`. New capability seams and lifecycle or transcript variants name every required tier at plan time.
+Every non-trivial model-, protocol-, or human-visible change adds or updates a keyless recorded-session scenario in the same PR; package, e2e, mock-only, and rationale evidence does not replace the assembled transcript. Headless, SDK, ACP, and Web recordings live under `snapshots/session/`, `snapshots/sdk/`, `snapshots/acp/`, and `snapshots/web/`; a Web rendering may explicitly borrow another scenario's canonical session. Expected output that is not driven by a recorded session stays with its owning app, package, or script under `tests/expected/` and does not use the `*.snapshot.ts` suffix. [`dsh-session-snapshot`](../packages/test-support/session-snapshot/README.md) owns the shared storage rules and profile adapters. Agent-loop, session-lifecycle, and `SessionEventMap` changes update both SDK projections: `snapshots/sdk/` owns TypeScript, while `scripts/snapshots/python-sdk-single-exe/` holds Python executable-runtime expectations. The default keyless Python SDK CI runs SDK tests; executable-runtime expectations need a focused runtime check when that runtime changes. New capability seams and lifecycle or transcript variants name every required tier at plan time.

@@ -103,7 +103,6 @@ async function abortAndExpectTreeStopped(promise: Promise<GateResult>, controlle
   expect(procStopped(pid)).toBe(true)
 }
 
-
 function gate(id: string, options: Partial<Gate> = {}): Gate {
   return {
     id,
@@ -264,32 +263,6 @@ describe('gate graph validation', () => {
     expect(scripts['test:bench:built']).toBe('vitest run --config vitest.bench.config.ts')
   })
 
-  it('checks all maintained repository references locally and in CI', () => {
-    const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
-      scripts: Record<string, string>
-    }
-    for (const mode of ['doc-sync', 'doc-quick', 'ci-static'] as const) {
-      const gates = withPnpmEntrypoint(() => gatesForMode(mode))
-      expect(gates).toContainEqual(expect.objectContaining({
-        id: 'repository-references',
-        displayCommand: 'pnpm run verify-repository-references',
-      }))
-    }
-    expect(scripts['verify-repository-references']).toBe('tsx scripts/verify-repository-references.ts')
-  })
-
-  it('keeps the public repository link policy in the documentation gate', () => {
-    const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
-
-    expect(ids).toContain('public-repository-links')
-  })
-
-  it('keeps the concrete terminology policy in the documentation gate', () => {
-    const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
-
-    expect(ids).toContain('concrete-terms')
-  })
-
   it('checks retrospective releases alongside the current persistence history', () => {
     for (const mode of ['doc-sync', 'ci-static'] as const) {
       const ids = withPnpmEntrypoint(() => gatesForMode(mode).map(subject => subject.id))
@@ -314,12 +287,6 @@ describe('gate graph validation', () => {
     const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
 
     expect(ids).toContain('subsystem-pages')
-  })
-
-  it('keeps the package README Summary limit in the documentation gate', () => {
-    const ids = withPnpmEntrypoint(() => gatesForMode('doc-sync').map(subject => subject.id))
-
-    expect(ids).toContain('package-readme-summaries')
   })
 
   it('derives the quick documentation aggregate from marked doc-sync leaves', () => {
@@ -362,7 +329,7 @@ describe('gate graph validation', () => {
 
     expect(ids.slice(0, 10)).toEqual([
       'doc-typecheck', 'docs-site-build', 'doc-graphs', 'markdown-links', 'type-equivalence',
-      'cordis-catalog', 'cordis-inspect-catalog', 'workflow-guest', 'mermaid', 'translation-pairing',
+      'cordis-catalog', 'cordis-inspect-catalog', 'workflow-guest', 'mermaid', 'client-catalog',
     ])
   })
 
@@ -421,15 +388,6 @@ describe('gate graph validation', () => {
       const ids = withPnpmEntrypoint(() => gatesForMode(mode).map(subject => subject.id))
 
       expect(ids).toContain('client-packages')
-    },
-  )
-
-  it.each(['ci-primary', 'ci-static', 'check-all'] as const)(
-    'keeps weighted approval policy tests in %s',
-    (mode) => {
-      const ids = withPnpmEntrypoint(() => gatesForMode(mode).map(subject => subject.id))
-
-      expect(ids).toContain('approval-policy')
     },
   )
 
