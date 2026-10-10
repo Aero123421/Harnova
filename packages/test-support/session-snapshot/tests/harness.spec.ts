@@ -789,7 +789,8 @@ describe('runScenario', () => {
     expect(result.sessionLogs[0]?.content).toContain('durable marker')
   })
 
-  it('waitForInboxMessage times out when the session log or matching insertion is absent', { timeout: 20_000 }, async () => {
+  it('waitForInboxMessage times out when the session log or matching insertion is absent', { timeout: 20_000 }, async ({ onTestFinished }) => {
+    isolateDiagnosticTimeout(onTestFinished)
     const absent = await scenario({ prompt: 'hang-until-cancel', persistLogsOnCancel: true })
     await expect(runScenario(
       { steps: [...boot, { op: 'promptAndCancel', text: 'hang' }, { op: 'waitForInboxMessage', text: 'missing', timeoutMs: 20 }] },
@@ -968,7 +969,8 @@ describe('runScenario', () => {
     )).rejects.toThrow(/did not persist turn\/end within 200ms/)
   })
 
-  it('waitForGoalPhase requires the requested durable goal phase', { timeout: 20_000 }, async () => {
+  it('waitForGoalPhase requires the requested durable goal phase', { timeout: 20_000 }, async ({ onTestFinished }) => {
+    isolateDiagnosticTimeout(onTestFinished)
     const reached = await scenario({
       prompt: 'hang-until-cancel',
       persistLogsOnCancel: true,

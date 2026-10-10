@@ -236,7 +236,7 @@ def write_profile_patch(
             "id": "session-persistence-jsonl",
             "config": {"root": str(sessions), "compression": "none"},
         },
-        {"id": "session-telemetry-otel", "disabled": True},
+
         *patches,
     ], indent=2))
     return path
@@ -252,7 +252,7 @@ def write_advanced_profile_patch(root: Path, name: str, sessions: Path) -> Path:
                 "persona": "You are a coding agent powered by the {{model}} model. Your working directory is {{cwd}}.",
             },
         },
-        {"id": "session-log-deepseek", "config": {"enabled": True}},
+
         *({"id": row_id, "disabled": True} for row_id in LEGACY_CUSTOM_DISABLED_ROWS),
         {"id": "tool-bash", "disabled": True},
         {"id": "tool-pwsh", "disabled": True},
@@ -1522,7 +1522,7 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
         dsh_home = root / "home"
         sessions = dsh_home / "sessions"
         patch = write_advanced_profile_patch(root, "snapshot.patch.yml", sessions)
-        feedback_patch = write_profile_patch(root, "feedback.patch.yml", sessions, [{"insert": [
+        runtime_patch = write_profile_patch(root, "runtime.patch.yml", sessions, [{"insert": [
             {"id": "snapshot-tool", "name": (
                 Path(__file__).resolve().parent / "fixtures/python-snapshot-tool.mjs"
             ).as_uri()},
@@ -1534,11 +1534,6 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
             ).as_uri(), "config": {
                 "parentSessionId": SNAPSHOT_SESSION_ID, "prompt": SNAPSHOT_WORKFLOW_CHILD_PROMPT,
             }},
-            {"id": "snapshot-message-feedback", "name": "@deepseek-ai/dsh-message-feedback",
-             "config": {"maxNoteBytes": 1024}},
-            {"id": "snapshot-feedback-producer", "name": (
-                Path(__file__).resolve().parent.parent / "snapshots/sdk/text-turn/feedback-producer.mjs"
-            ).as_uri()},
         ]}])
         creation_patch = write_profile_patch(root, "creation.patch.yml", sessions, [
             {"insert": [{
@@ -1552,7 +1547,7 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
             cwd=str(root),
             dsh_bin=str(executable),
             dsh_home=str(dsh_home),
-            patches=(str(patch), str(feedback_patch), str(creation_patch)),
+            patches=(str(patch), str(runtime_patch), str(creation_patch)),
             env={
                 "DSH_PERMISSION_MODE": "danger-full-access",
                 "DSH_TELEMETRY_DISABLED": "1",
@@ -1572,8 +1567,8 @@ def smoke_sdk_snapshot(base_url: str, executable: Path, update_snapshots: bool) 
             raise AssertionError(f"advanced snapshot selected unexpected image occurrences: {targets}")
         feedback_types = [event.get("type") for event in result.events
                           if str(event.get("type")).startswith("feedback/")]
-        if feedback_types != ["feedback/record", "feedback/record", "feedback/message-put", "feedback/message-put", "feedback/message-delete"]:
-            raise AssertionError(f"advanced snapshot did not exercise all feedback mutations: {feedback_types}")
+        if feedback_types:
+            raise AssertionError(f"advanced snapshot unexpectedly collected feedback: {feedback_types}")
         methods = [notification.method for notification in result.notifications]
         if methods.count("subagent.started") != 2 or methods.count("subagent.finished") != 2:
             raise AssertionError(f"advanced snapshot emitted unexpected subagent lifecycle: {methods}")
@@ -1692,7 +1687,7 @@ def smoke_sdk_scheduler_recovery(base_url: str, executable: Path, update_snapsho
         patch = write_profile_patch(root, "recovery.patch.yml", sessions, [
             {"id": "tool-todo", "disabled": False},
             {"id": "session-title-llm", "disabled": True},
-            {"id": "session-log-deepseek", "config": {"enabled": False}},
+
             {"insert": [{
                 "id": "scheduler-failure-fixture",
                 "name": (

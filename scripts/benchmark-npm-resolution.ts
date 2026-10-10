@@ -484,7 +484,8 @@ export async function resolveNpmPackageLock(
   } finally {
     server.closeAllConnections()
     await close(server)
-    rmSync(consumer, { recursive: true, force: true })
+    // Windows can release file handles after the npm process has closed.
+    rmSync(consumer, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
   }
 }
 

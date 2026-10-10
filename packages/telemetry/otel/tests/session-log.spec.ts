@@ -300,3 +300,19 @@ it('keeps ordinary events and Session logs in independent channels through one C
   await ctx.fiber.dispose()
   expect(ctx.get('otel')).toBeUndefined()
 })
+
+it('delivers multiple queued records on its scheduled flush before shutdown', async () => {
+  const target = await collector()
+  const { sender, onFailure } = reporter(target.endpoint, {
+    processor: { scheduledDelayMillis: 10 },
+  })
+  const first = sessionRecord('first', 1)
+  const second = sessionRecord('second', 2)
+  sender.reportSessionLog(first)
+  sender.reportSessionLog(second)
+  await expect.poll(() => target.captures.length).toBe(1)
+  expect(contents(target.captures).map(parseContent)).toEqual([first.event, second.event])
+  await sender.shutdown()
+  expect(target.captures).toHaveLength(1)
+  expect(onFailure).not.toHaveBeenCalled()
+})

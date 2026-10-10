@@ -554,6 +554,20 @@ describe('UiWorkspaceService', () => {
     expect(b.sessions.retained[0]!.release).not.toHaveBeenCalled()
   })
 
+  it('forwards the creation observer without selecting the forked Session', async () => {
+    const b = bench()
+    const onCreated = vi.fn<(id: SessionId) => void>()
+    b.sessions.fork.mockImplementationOnce(async (options) => {
+      options.onCreated?.(sid('forked'))
+      return sid('forked')
+    })
+    expect(await b.uiWorkspace.forkSession(sid('source'), onCreated)).toBe(sid('forked'))
+    expect(b.sessions.fork).toHaveBeenCalledWith({ sessionId: sid('source'), increaseTitle: true, onCreated })
+    expect(onCreated).toHaveBeenCalledExactlyOnceWith(sid('forked'))
+    expect(b.sessions.retain).not.toHaveBeenCalled()
+    expect(b.selectPanel).not.toHaveBeenCalled()
+  })
+
   it('does not supersede a pending Workspace selection when a sidebar fork completes', async () => {
     const b = bench({ workspaces: workspaceState([workspace('a')]) })
     const created = Promise.withResolvers<SessionId>()

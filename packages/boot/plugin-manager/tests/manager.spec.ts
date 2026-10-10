@@ -176,7 +176,10 @@ it.each(['github:acme/connected', 'https://github.com/acme/connected.git', 'git+
   'installs %s through real Git and pnpm with private repository SSH fallback', async (spec) => {
     const pnpm = fileURLToPath(new URL('../../../../apps/desktop/node_modules/pnpm/bin/pnpm.mjs', import.meta.url))
     const env = { GIT_CONFIG_GLOBAL: '', GIT_CONFIG_NOSYSTEM: '1' }
-    const { manager, dir, connection } = await fixture('startup', false, undefined, {}, {
+    // This transport test includes real Git startup; use the lane's process budget.
+    const { manager, dir, connection } = await fixture('startup', false, undefined, {
+      githubConnectionTimeoutMs: Number(process.env.DSH_COVERAGE_TEST_TIMEOUT_MS ?? 5000),
+    }, {
       command: process.execPath, args: ['--expose-internals', pnpm], env,
     })
     connection.mockRestore()

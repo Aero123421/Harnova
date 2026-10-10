@@ -69,12 +69,6 @@ export interface DeepSeekSessionLogExtension {
   readonly events: readonly DeepSeekSessionLogWireEvent[]
 }
 
-declare module '@deepseek-ai/dsh-deepseek-llm-api-extensions/types' {
-  interface DeepSeekLlmApiExtensionMap {
-    dsh_session_log: DeepSeekSessionLogExtension
-  }
-}
-
 declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
     /** Records that the configured endpoint accepted one delivery through `throughSeq`. */

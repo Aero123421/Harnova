@@ -12,8 +12,6 @@
 - button "Completed in {{duration}}"
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - button "Usage 15.8K tok"
 - text: {{clock}}

@@ -5,6 +5,8 @@ kind: "package-library"
 
 # @deepseek-ai/dsh-session-telemetry
 
+Harnova does not mount a telemetry backend or configure a collector. This SDK is available for custom extensions only; no data is collected by installing it.
+
 ## Summary
 
 Session telemetry lets deployments send ordered copies of session activity for reporting while preserving the canonical session log. Deployments choose one reporting backend and can redact each outbound copy before delivery; without redaction rules, captured data leaves the process unchanged. The handoff is non-blocking, so reporting does not delay session processing. Delivery is best effort, and queued records may be lost if the process crashes.
@@ -89,7 +91,7 @@ A module-scope `WeakMap<Session, seq>` records the highest sequence handed off, 
 
 Read these pages when the seam contract is not enough. They move from the shipped backend to the subsystem reference and the decision evidence.
 
-- [OpenTelemetry telemetry backend](../session-telemetry-otel/README.md) — the shipped backend deployments load, with mode and exporter configuration.
+- [OpenTelemetry telemetry backend](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) — the shipped backend deployments load, with mode and exporter configuration.
 - [Session telemetry subsystem](../../../docs/subsystems/session-telemetry.md) — the capability split and type declarations.
 - [historical Session telemetry revival decision](../../../.agents/notes/archived/feature/2026-07-23-session-telemetry-otel-revival.md) — rationale, trade-offs, and rejected alternatives.
 - [Session package map](../README.md) — adjacent persistence, projection, title, and telemetry packages.

@@ -19,8 +19,6 @@
 - button "Think The user answered \"Blue\". I should now reply with the single word DONE and stop."
 - paragraph: DONE
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - text: {{clock}}
 - textbox "Message or run a task, / commands, @ files or sessions"

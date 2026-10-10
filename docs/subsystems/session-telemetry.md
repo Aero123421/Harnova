@@ -1,6 +1,8 @@
 # SessionTelemetryBackend
 
-The [capture service](../../packages/session/session-telemetry/README.md) owns canonical-event capture, redaction, and handoff cursors. The [feedback backend](../../packages/session/session-telemetry-otel/README.md) authorizes Session prefixes and owns their independent queue, per-request scheduling, and 4,000,000-byte ceiling. No reporting data reaches model requests.
+Harnova does not mount a telemetry backend or configure a collector. This SDK is available for custom extensions only; no data is collected by installing it.
+
+The [capture service](../../packages/session/session-telemetry/README.md) owns canonical-event capture, redaction, and handoff cursors. The [feedback backend](../upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) authorizes Session prefixes and owns their independent queue, per-request scheduling, and 4,000,000-byte ceiling. No reporting data reaches model requests.
 
 Source: [`packages/session/session-telemetry/src/index.ts`](../../packages/session/session-telemetry/src/index.ts)
 
@@ -85,7 +87,7 @@ interface SessionTelemetryCaptureOptions {
 }
 ```
 
-`includeHistory` permits stored and inherited records but does not itself authorize capture. The [OTel backend](../../packages/session/session-telemetry-otel/README.md) uses on-demand capture and requires new own explicit feedback; it releases only the complete prefix through that feedback, for every provider.
+`includeHistory` permits stored and inherited records but does not itself authorize capture. The [OTel backend](../upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) uses on-demand capture and requires new own explicit feedback; it releases only the complete prefix through that feedback, for every provider.
 
 ## The backend contract
 

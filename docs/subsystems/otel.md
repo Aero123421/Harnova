@@ -4,7 +4,7 @@ The [OTel plugin](../../packages/telemetry/otel/README.md) registers `ctx.otel`,
 
 UI feedback reaches the Session feedback services through their existing Remote APIs. Feedback recording authorizes the Session adapter's canonical-prefix capture and redaction before it reports through an OTel channel. Ordinary product consumers submit selected fields through the product adapter. The shared service has no automatic identity or capture policy, and channels never share queues or requests.
 
-The [product adapter](../../packages/host/product-telemetry-otel/README.md) and [Session adapter](../../packages/session/session-telemetry-otel/README.md) retain their deployment configuration and disposal deadlines. Consumers must not reuse a channel after shutdown. Mounting only the OTel service allocates no provider or transport.
+The [product adapter](../upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) and [Session adapter](../upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) retain their deployment configuration and disposal deadlines. Consumers must not reuse a channel after shutdown. Mounting only the OTel service allocates no provider or transport.
 
 <!-- BEGIN GENERATED cordis-surface (gen-cordis-catalog.ts) — do not edit between markers -->
 

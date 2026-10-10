@@ -44,8 +44,6 @@
 - button "Open in Test Editor"
 - button "More ways to open"
 - button "Copy"
-- button "Good response"
-- button "Bad response"
 - button "Branch into a new conversation"
 - button "Usage 19K tok"
 - text: {{clock}}

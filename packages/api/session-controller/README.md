@@ -4,7 +4,7 @@ kind: "package-reference"
 ---
 # Session Controller
 
-Desktop analytics follows the [product collection policy](../../client/product-analytics/README.md), including its launch-time switch. Web usage is excluded.
+Desktop analytics follows the [product collection policy](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md), including its launch-time switch. Web usage is excluded.
 
 ## Summary
 

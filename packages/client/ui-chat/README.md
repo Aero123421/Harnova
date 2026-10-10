@@ -4,7 +4,7 @@ kind: "package-reference"
 ---
 # @deepseek-ai/dsh-client-ui-chat
 
-Desktop product events use the optional [product analytics service](../product-analytics/README.md); ordinary Web interactions are excluded.
+Desktop product events use the optional [product analytics service](../../../docs/upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md); ordinary Web interactions are excluded.
 
 ## Summary
 

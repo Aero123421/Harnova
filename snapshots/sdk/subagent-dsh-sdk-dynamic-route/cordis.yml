@@ -59,7 +59,3 @@
       disabled: !!js process.env.DSH_SNAPSHOT !== 'record'
       config:
         maxTokensAsSuccess: true
-
-- id: session-log-deepseek
-  config:
-    enabled: false

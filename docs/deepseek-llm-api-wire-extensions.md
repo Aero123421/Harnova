@@ -1,4 +1,8 @@
-# Official DeepSeek LLM API wire extensions
+# Historical DeepSeek LLM API wire extensions
+
+Harnova has removed the anonymous-user, Session-id, and compaction tracking headers, as well as `dsh_session_log` and `dsh_plugin_packages` contributors. The protocol descriptions below document the former implementation and persisted delivery events. They do not describe the current shipped request. See the [upgrade guide](upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md).
+
+Current provider requests use the ordinary authentication and protocol headers plus the static application User-Agent. They do not create an anonymous identity file. The generic extension registry remains available for explicitly installed custom plugins.
 
 This reference defines every DeepSeek Harness-specific HTTP header and additive JSON field sent by [`@deepseek-ai/dsh-llm-deepseek`](../packages/llm/llm-deepseek/README.md) on `deepseek-official` Messages requests. It does not redefine fields owned by the upstream DeepSeek API. The provider-neutral LLM interface and `llm-pi-ai` do not implement these additions.
 
@@ -38,7 +42,7 @@ After the configured endpoint returns HTTP 2xx, the adapter runs the prepared `a
 
 ## `dsh_plugin_packages`
 
-[`@deepseek-ai/dsh-plugin-package-inventory-deepseek`](../packages/llm/plugin-package-inventory-deepseek/README.md) contributes the complete active Loader-backed plugin package inventory. The field is enabled by default.
+[`@deepseek-ai/dsh-plugin-package-inventory-deepseek`](upgrade-guide/v0.2.1-alpha.1/feedback-and-telemetry-removal/guide.md) contributes the complete active Loader-backed plugin package inventory. The field is enabled by default.
 
 ```json
 {
