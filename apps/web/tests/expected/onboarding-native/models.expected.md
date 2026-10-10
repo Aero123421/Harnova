@@ -8,9 +8,24 @@
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
-  - paragraph: 填入各提供商的 API 密钥即可使用其模型。
+  - paragraph: 连接提供商并选择整个 Harnova 中可用的模型。
   - list:
     - listitem:
+      - text: 2 个模型已启用
+      - switch "使用 DeepSeek" [checked]
+      - paragraph: 这些选择适用于聊天、子代理、工作流、摘要和标题。关闭后仍会保留凭证。
+      - textbox "搜索模型"
+      - checkbox "仅显示已启用"
+      - text: 仅显示已启用
+      - button "启用显示的模型"
+      - button "关闭显示的模型"
+      - list:
+        - listitem:
+          - text: DeepSeek-V41-Flash
+          - switch "使用 DeepSeek-V41-Flash" [checked]
+        - listitem:
+          - text: DeepSeek-V4-Pro
+          - switch "使用 DeepSeek-V4-Pro" [checked]
       - text: DeepSeek deepseek-official API 密钥
       - textbox "API 密钥":
         - /placeholder: 输入 API 密钥

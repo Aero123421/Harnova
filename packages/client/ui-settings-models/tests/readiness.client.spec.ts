@@ -93,6 +93,14 @@ describe('onboardingReadiness', () => {
     }))).toEqual({ kind: 'credential-missing' })
   })
 
+  it('retains completed onboarding when a connected provider or all its models are OFF', () => {
+    for (const choice of [{ enabled: false }, { enabledModels: [] }]) {
+      const connected = otherRow(choice)
+      expect(providerUsable(connected)).toBe(false)
+      expect(onboardingReadiness(state({ rows: [row(), connected] }))).toEqual({ kind: 'provider-ready' })
+    }
+  })
+
   it('accepts file and process-environment credentials without prompting', () => {
     expect(onboardingReadiness(state({
       rows: [row({ credential: { configured: true, source: 'file', writable: true } })],

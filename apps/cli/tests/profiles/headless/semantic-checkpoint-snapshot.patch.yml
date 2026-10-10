@@ -23,3 +23,12 @@
     # Publish the persisted agent before the driver selects the single root.
     - id: resumed-agent
       name: './tests/fixtures/semantic-checkpoint-agent.ts'
+
+# Replay middleware advertises no catalog; explicitly enable this recorded route.
+- id: model-access
+  config:
+    initialized: true
+    providers:
+      deepseek-official:
+        enabled: true
+        models: [deepseek-v4-flash]

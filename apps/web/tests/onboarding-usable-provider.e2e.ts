@@ -94,6 +94,11 @@ describe.skipIf(MODE === 'record')('web e2e: another usable provider ends first-
     await settings.getByRole('button', { name: '保存', exact: true }).click()
     await settings.getByText('已保存 minimax-cn。', { exact: true }).waitFor({ timeout: 15_000 })
 
+    await settings.getByRole('switch', { name: '使用 minimax-cn', exact: true }).click()
+    await settings.getByRole('button', { name: '编辑 minimax-cn', exact: true }).click()
+    await settings.getByRole('button', { name: '启用显示的模型', exact: true }).click()
+    await expect.poll(async () => (await scaffold.ctx.llm.listModels('minimax-cn')).length).toBeGreaterThan(0)
+
     // Only minimax-cn is reachable; DeepSeek still holds no credential.
     const document = await readFile(join(scaffold.harnessHome, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8')
     expect(document).toContain('apiKeyEnv: MINIMAX_CN_API_KEY')

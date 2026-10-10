@@ -1,4 +1,5 @@
 /** Frozen 0.87.1 catalog used only for the first model-access migration. */
+/* jscpd:ignore-start */
 export const legacyModelIds: Readonly<Record<string, readonly string[]>> = {
   'amazon-bedrock': [
     'amazon.nova-2-lite-v1:0',
@@ -1578,3 +1579,5 @@ export const legacyModelIds: Readonly<Record<string, readonly string[]>> = {
     'glm-5.3-highspeed',
   ],
 }
+
+/* jscpd:ignore-end */

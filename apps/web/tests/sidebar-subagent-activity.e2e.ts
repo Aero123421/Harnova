@@ -29,6 +29,7 @@ const HOLD_MODEL = 'hold'
 
 /** Model stub that completes the owner turn, then holds its delegated child open. */
 class StagedAdapter extends LlmAdapter {
+  override async listModels(provider: string) { return [await this.resolveModel(provider, HOLD_MODEL)] }
   activeCalls = 0
   private calls = 0
 
@@ -84,6 +85,11 @@ describe('web e2e: sidebar subagent activity', () => {
       () => scaffold.ctx.llm.registerAdapter([HOLD_PROVIDER], adapter),
       'sidebar subagent activity staged adapter',
     )
+    const policy = scaffold.ctx.settings.describe().find(row => row.ns === 'model-access')
+    if (policy === undefined) throw new Error('model-access settings are missing')
+    await scaffold.ctx.settings.mutate(policy.ns, [
+      { op: 'set', path: ['providers', HOLD_PROVIDER], value: { enabled: true, models: [HOLD_MODEL] } },
+    ], policy.revision)
     const cwd = join(scaffold.workspaceCwd, 'workspace')
     await mkdir(cwd)
     parentHandle = await scaffold.ctx.agents.create({

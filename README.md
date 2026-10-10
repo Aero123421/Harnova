@@ -19,14 +19,14 @@ WebとDesktopの画面は、日本語・英語・中国語に標準対応して�
 
 - ソースコードの監査、依存関係の確認、許可されたセキュリティ診断を行うSecurity Mode。
 - 選択したホスト上でファイル操作やコマンド実行を行うSSHリモートワークスペース。
-- Windows・macOS・Linux向けのDesktopアプリ配布。上流のDesktopはWindows・macOS向けに配布されており、Linux向けのパッケージには追加の作業が必要です。
+- Windows・macOS・Linux向けのDesktopアプリ配布。上流のDesktopはWindows・macOS向けに配布されており、開発者向けネイティブパッケージはLinux x64用です。macOS・Linuxのデスクトップインストーラーは含みません。署名なしWindows版は自動更新と強制更新サービスを使用しません。
 
 <a id="development-and-distribution"></a>
 ## 開発と配布
 
 CIにはLinux・Windows・macOSの標準GitHub Actionsランナーを使用します。PRと`main`の変更では、プロバイダーのAPIキーなしで検査を実行します。実際のプロバイダーを使うE2Eテストは手動で開始します。パッケージのビルドでは、ローカルのアーカイブからのインストールも検証します。
 
-配布先は[HarnovaのGitHub Releases](https://github.com/Aero123421/Harnova/releases)です。手動のリリースワークフローで、開発者向けのパッケージアーカイブを含む下書きを作成します。アーカイブでは既存の上流パッケージ名を維持し、Harnovaのブランドを使用します。Linux向けのパッケージには追加の作業が必要です。
+配布先は[HarnovaのGitHub Releases](https://github.com/Aero123421/Harnova/releases)です。手動のリリースワークフローで、Windows x64の署名なしインストーラーと開発者向けパッケージを含む下書きを作成します。アーカイブでは既存の上流パッケージ名を維持し、Harnovaのブランドを使用します。開発者向けネイティブパッケージはLinux x64用です。macOS・Linuxのデスクトップインストーラーは含みません。署名なしWindows版は自動更新と強制更新サービスを使用しません。
 
 開発手順は[AGENTS.md](AGENTS.md)を参照してください。ブラウザ操作のGIF録画は任意で、[record-browser-gif](.agents/skills/record-browser-gif/SKILL.md)を使用できます。
 

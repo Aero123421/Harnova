@@ -10,6 +10,9 @@ import { LlmAdapter, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
  * text before a fixed provider error so the parent can assert safe diagnostics.
  */
 class RouteEchoAdapter extends LlmAdapter {
+  override async listModels(provider: string) {
+    return Promise.all(['mock-echo', 'mock-routed'].map(model => this.resolveModel(provider, model)))
+  }
   override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return Promise.resolve({
       provider,

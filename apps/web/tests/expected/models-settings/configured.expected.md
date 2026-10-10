@@ -8,7 +8,7 @@
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
-  - paragraph: 填入各提供商的 API 密钥即可使用其模型。
+  - paragraph: 连接提供商并选择整个 Harnova 中可用的模型。
   - status: 已保存 minimax-cn。
   - list:
     - listitem:
@@ -16,6 +16,6 @@
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
       - button "删除 minimax-cn": 删除
-      - text: OFF · 0 model choices saved
-      - switch "Use minimax-cn"
+      - text: 已关闭 · 保留 0 个模型的选择
+      - switch "使用 minimax-cn"
   - button "添加模型提供商"

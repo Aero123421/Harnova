@@ -7,6 +7,8 @@ import {
 } from '@deepseek-ai/dsh-llm'
 
 class RetrySnapshotAdapter extends LlmAdapter {
+  async listModels(provider) { return [await this.resolveModel(provider, 'deepseek-v4-flash')] }
+
   requests = 0
   firstMessages
   policy = resolveRetryPolicy({

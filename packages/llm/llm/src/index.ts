@@ -257,6 +257,14 @@ export abstract class LlmAdapter {
     return Promise.resolve([])
   }
 
+  /** Full catalog for settings, including routes awaiting authentication.
+   * @param provider - registered adapter route.
+   * @returns candidate models before authentication and user choices are applied.
+   */
+  listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]> {
+    return this.listModels(provider)
+  }
+
   /**
    * Resolve all metadata available for one exact model. This query is
    * independent of the advisory catalog and does not validate request routing.
@@ -745,7 +753,7 @@ export class LlmRuntime extends TypertRemoteService {
   async listModels(provider: string): Promise<LlmModelInfo[]> {
     const allowed = await this.modelAccess?.allowed(provider)
     if (allowed?.size === 0) return []
-    const models = await this.listModelCandidates(provider)
+    const models = await this.adapterModels(provider, false)
     const available = this.modelAccess === undefined ? undefined : await this.registration(provider).adapter.availableModelIds(provider)
     return models.filter(model => (allowed === undefined || allowed.has(model.id)) && (available === undefined || available.has(model.id)))
   }
@@ -760,13 +768,28 @@ export class LlmRuntime extends TypertRemoteService {
     return this.listModelCandidates(provider)
   }
 
+  /** Locally usable candidates, independent of saved provider/model switches.
+   * @param provider - registered adapter route.
+   * @returns catalog entries usable with the current authentication.
+   */
+  @Remote('availableModelCandidates')
+  async availableModelCandidates(provider: string): Promise<LlmModelInfo[]> {
+    const models = await this.adapterModels(provider, false)
+    const available = await this.registration(provider).adapter.availableModelIds(provider)
+    return models.filter(model => available === undefined || available.has(model.id))
+  }
+
   /** Query unfiltered candidates without invoking the product policy's migration.
    * @param provider - registered provider route.
    * @returns detached candidate metadata in adapter order.
    */
   async listModelCandidates(provider: string): Promise<LlmModelInfo[]> {
+    return this.adapterModels(provider, true)
+  }
+
+  private async adapterModels(provider: string, candidates: boolean): Promise<LlmModelInfo[]> {
     const adapter = this.registration(provider).adapter
-    const models = await adapter.listModels(provider)
+    const models = await (candidates ? adapter.listModelCandidates(provider) : adapter.listModels(provider))
     const seen = new Set<string>()
     return models.map((model) => {
       if (

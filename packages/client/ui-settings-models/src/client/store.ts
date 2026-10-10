@@ -251,8 +251,9 @@ export class ModelsSettingsStore {
       }
     }
     if (rows.some(row => row.entry.provider === 'deepseek-account')) {
+      const usable = await this.ctx.remote.llm.availableModelCandidates('deepseek-account')
       for (const row of rows) {
-        if (row.entry.provider === 'deepseek-account') row.accountAvailable = (row.candidates?.length ?? 0) > 0
+        if (row.entry.provider === 'deepseek-account') row.accountAvailable = usable.ok && usable.value.length > 0
       }
     }
     const refs = [...new Set(rows.filter(row => row.entry.provider !== 'deepseek-account').map(row => row.apiKeyEnv ?? deriveKeyRef(row.entry.provider)))]
@@ -307,7 +308,10 @@ export class ModelsSettingsStore {
  * @returns whether the user already has this provider to talk to.
  */
 export function providerUsable(row: ProviderRow): boolean {
-  if (row.enabled === false || row.enabledModels?.length === 0) return false
+  return row.enabled !== false && row.enabledModels?.length !== 0 && providerConnected(row)
+}
+
+function providerConnected(row: ProviderRow): boolean {
   if (!row.entry.active) return false
   if (row.entry.provider === 'deepseek-account') return row.accountAvailable === true
   if (row.apiKeyEnv === undefined) return row.authorization?.methods.every(method => method.id === 'oauth') !== true || row.authorization.configured
@@ -332,8 +336,8 @@ export type OnboardingReadiness =
 
 /**
  * Project first-run readiness from the provider/settings/credential join used
- * by the Models page. The step exists to leave the user with a model to talk
- * to, so ANY usable provider ends it; only when none exists does the official
+ * by the Models page. Any connected provider ends the credential step, even
+ * when its models are OFF; only when no connection exists does the official
  * DeepSeek route — the one route the prompt can offer a key field for — decide
  * whether prompting can help. A missing official configurable-provider
  * declaration means the adapter is not repairable by navigating to Models.
@@ -350,7 +354,7 @@ export function onboardingReadiness(state: ModelsSettingsState): OnboardingReadi
       reason: 'load-failed',
     }
   }
-  if (state.rows.some(providerUsable)) return { kind: 'provider-ready' }
+  if (state.rows.some(providerConnected)) return { kind: 'provider-ready' }
   const row = state.rows.find(candidate =>
     candidate.entry.provider === 'deepseek-official'
     && candidate.entry.settingsNs === 'llm-deepseek'

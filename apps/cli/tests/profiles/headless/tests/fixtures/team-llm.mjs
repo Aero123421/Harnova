@@ -177,6 +177,8 @@ function lead(messages) {
 }
 
 class TeamFixtureAdapter extends LlmAdapter {
+  async listModels(provider) { return [await this.resolveModel(provider, 'deepseek-v4-flash')] }
+
   async * stream(options) {
     const tools = options.tools.map(tool => tool.name)
     if (tools.includes('subagent') || tools.includes('subagent_fork')) {

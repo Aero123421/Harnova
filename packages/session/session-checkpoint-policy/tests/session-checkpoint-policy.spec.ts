@@ -53,11 +53,13 @@ describe('session-checkpoint-policy request boundary', () => {
   it('awaits the live session checkpoint before constructing the downstream model stream', async () => {
     const ctx = await setup()
     const session = ctx.sessions.create(SessionId('request-checkpoint'))
+    const started = Promise.withResolvers<undefined>()
     session.append('turn/start', { turn: 1 })
     const gate = Promise.withResolvers<undefined>()
     const order: string[] = []
     ctx.on('session/flush', async () => {
       order.push('flush:start')
+      started.resolve(undefined)
       await gate.promise
       order.push('flush:end')
     })
@@ -66,7 +68,7 @@ describe('session-checkpoint-policy request boundary', () => {
     const pending = drain(ctx.llm.stream({
       provider: 'mock', model: 'mock', messages: [], sessionId: session.id,
     }))
-    await Promise.resolve()
+    await started.promise
     expect(order).toEqual(['flush:start'])
     gate.resolve(undefined)
     await pending

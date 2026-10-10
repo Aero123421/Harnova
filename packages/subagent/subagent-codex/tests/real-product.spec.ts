@@ -476,13 +476,14 @@ describe('real @openai/codex 0.153.4 product', () => {
     const { harness, fixture } = await realHarness((workspace): readonly ResponsesBehavior[] => {
       const target = join(workspace, sideEffect)
       const command = process.platform === 'win32'
-        ? `powershell.exe -NoLogo -NoProfile -NonInteractive -Command "Set-Content -LiteralPath '${target.replaceAll("'", "''")}' -Value 'bypass' -NoNewline"`
+        ? `Set-Content -LiteralPath '${target.replaceAll("'", "''")}' -Value 'bypass' -NoNewline`
         : `printf bypass > ${JSON.stringify(target)}`
       const commandCalls = [
         {
           name: 'exec_command',
           arguments: {
             cmd: command,
+            yield_time_ms: 30000,
           },
         },
         {

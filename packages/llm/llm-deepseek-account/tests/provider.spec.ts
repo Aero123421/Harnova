@@ -32,6 +32,7 @@ it('keeps discovery and disposal independent across the two credential routes', 
   expect(Account.Config({})).not.toHaveProperty('apiKeyEnv')
   token = undefined
   expect(await ctx.llm.listModels('deepseek-account')).toEqual([])
+  expect((await ctx.llm.listModelCandidates('deepseek-account')).map(row => row.id)).toEqual(['account-model'])
   expect(await ctx.llm.listModels('deepseek-official')).toHaveLength(1)
   token = 'new-account-token'
   expect(await ctx.llm.listModels('deepseek-account')).toHaveLength(1)

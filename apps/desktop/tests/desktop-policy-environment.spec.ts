@@ -13,6 +13,7 @@ it.each(['test', 'production'] as const)('selects the %s policy and authenticati
   expect(policy).toEqual({ origin, allowedPageOrigins: [origin],
     ...(deployment === 'test' ? { allowedAuthOrigins: ['https://login.example.com'] } : {}),
     authentication: deployment === 'test' ? 'feishu-test' : 'anonymous' })
+  if (policy === undefined) throw new Error('expected an enabled policy')
   expect(resolveDesktopPolicyConfig(policy)).toMatchObject(policy)
 })
 
@@ -52,4 +53,14 @@ it.each([{ unsigned: true }, { prepareOnly: true }, {}])('fails before signing/p
     expect(() => { validateDesktopPackageEnvironment({ HARNOVA_DESKTOP_APP_ID: 'com.example.test' }, { platform, arch: 'x64' }, options) })
       .toThrow('HARNOVA_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN')
   }
+})
+
+it('packages without a mandatory policy service when explicitly disabled', () => {
+  const env = {
+    HARNOVA_DESKTOP_APP_ID: 'io.github.aero123421.harnova',
+    HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED: '1',
+  }
+  expect(resolveDesktopPolicyEnvironment(env)).toBeUndefined()
+  expect(() => { validateDesktopPackageEnvironment(env, { platform: 'win32', arch: 'x64' }, { unsigned: true }) }).not.toThrow()
+  expect(() => resolveDesktopPolicyEnvironment({ HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED: 'yes' })).toThrow('must be 0 or 1')
 })

@@ -1,4 +1,4 @@
-name: Draft developer release
+name: Draft Harnova release
 
 on:
   workflow_dispatch:
@@ -83,8 +83,43 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  draft:
+  windows:
     needs: build
+    runs-on: windows-2025
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.build.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Enable Windows symlinks
+        shell: pwsh
+        run: reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock" /t REG_DWORD /f /v "AllowDevelopmentWithoutDevLicense" /d "1"
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Configure the unsigned Harnova distribution
+        shell: pwsh
+        run: |
+          @'
+          HARNOVA_DESKTOP_APP_ID=io.github.aero123421.harnova
+          HARNOVA_DESKTOP_AUTO_UPDATE_ENV=production
+          HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED=1
+          '@ | Set-Content -LiteralPath apps/desktop/.env.windows -Encoding utf8
+      - run: pnpm run package:desktop:win:x64:unsigned
+      - uses: actions/upload-artifact@v7
+        with:
+          name: windows-installer
+          path: apps/desktop/.desktop-build/targets/win-x64/unsigned-artifacts/*.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    needs: [build, windows]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -99,7 +134,11 @@ jobs:
         with:
           name: developer-packages
           path: developer-packages
-      - name: Create draft with validated developer packages
+      - uses: actions/download-artifact@v8
+        with:
+          name: windows-installer
+          path: windows-installer
+      - name: Create draft with validated packages and Windows installer
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
@@ -110,13 +149,22 @@ jobs:
             echo '::error::Tag moved after the build; refusing to attach mismatched artifacts.'
             exit 1
           }
-          mapfile -d '' -t assets < <(find developer-packages -type f -name '*.tgz' -print0)
+          archive="harnova-developer-packages-${TAG#v}.tar.gz"
+          tar -czf "$archive" -C developer-packages .
+          mapfile -d '' -t assets < <(find windows-installer -type f -name '*.exe' -print0)
           [[ "${#assets[@]}" -gt 0 ]]
+          assets+=("$archive")
+          for asset in "${assets[@]}"; do
+            checksum=$(sha256sum "$asset")
+            printf '%s  %s\n' "${checksum%% *}" "${asset##*/}" >> SHA256SUMS
+          done
+          assets+=(SHA256SUMS)
           cat > release-notes.md <<'NOTES'
           開発者向けのローカルパッケージです。npmやPyPIには公開していません。
-          Windows・macOS・Linux向けデスクトップインストーラーは含みません。
+          Windows x64向けの署名なしデスクトップインストーラーを含みます。自動更新と強制更新サービスは無効です。
+          macOS・Linux向けデスクトップインストーラーは含みません。
           ネイティブパッケージはLinux x64用です。
           NOTES
           gh release create "$TAG" "${assets[@]}" \
             --repo Aero123421/Harnova --verify-tag --target "$COMMIT" \
-            --draft --title "Harnova $TAG 開発者向けパッケージ" --notes-file release-notes.md
+            --draft --prerelease --title "Harnova $TAG" --notes-file release-notes.md

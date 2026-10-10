@@ -118,7 +118,8 @@ function api(overrides: {
       listConfigurableProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.settingsNs !== '')
         .map(({ active: _active, ...row }) => row)),
-      modelCandidates: (provider: string) => Promise.resolve(remoteOk(provider === 'deepseek-account' && !overrides.accountAvailable ? [] : [{ id: 'model', name: 'Model', provider }])),
+      modelCandidates: (provider: string) => Promise.resolve(remoteOk([{ id: 'model', name: 'Model', provider }])),
+      availableModelCandidates: (provider: string) => Promise.resolve(remoteOk(provider === 'deepseek-account' && !overrides.accountAvailable ? [] : [{ id: 'model', name: 'Model', provider }])),
       discoverModels: () => Promise.resolve(remoteOk([])),
     },
     settings: {

@@ -1663,3 +1663,6 @@ export const IconBoltFillRegular = ({ size = 16, className }: IconProps) => (
     <path d="M9.6 1 3 9h4l-.6 6L13 7H9l.6-6Z" />
   </svg>
 )
+
+/** Filled marks use the same silhouette at both weights. */
+export const IconBoltFillMedium = IconBoltFillRegular

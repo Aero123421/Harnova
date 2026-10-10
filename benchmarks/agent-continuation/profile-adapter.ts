@@ -6,6 +6,9 @@ import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@deepse
 import { response, WORKLOAD } from './workload.ts'
 
 class ProfileAdapter extends LlmAdapter {
+  override async listModels(provider: string) {
+    return [await this.resolveModel(provider, 'bench')]
+  }
   private requests = 0
   override resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return Promise.resolve({ provider, id: model, name: model, contextWindow: 1_000_000 })

@@ -862,6 +862,11 @@ declare abstract class LlmAdapter {
    * @returns discoverable models in adapter-preferred order.
    */
   listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
+  /** Full catalog for settings, including routes awaiting authentication.
+   * @param provider - registered adapter route.
+   * @returns candidate models before authentication and user choices are applied.
+   */
+  listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]>;
   /**
    * Resolve all metadata available for one exact model. This query is
    * independent of the advisory catalog and does not validate request routing.
@@ -1062,6 +1067,12 @@ async listModels(provider: string): Promise<LlmModelInfo[]>
  * @returns detached candidate metadata, including disabled models.
  */
 @Remote('modelCandidates') async remoteModelCandidates(provider: string): Promise<LlmModelInfo[]>
+
+/** Locally usable candidates, independent of saved provider/model switches.
+ * @param provider - registered adapter route.
+ * @returns catalog entries usable with the current authentication.
+ */
+@Remote('availableModelCandidates') async availableModelCandidates(provider: string): Promise<LlmModelInfo[]>
 
 /** Query unfiltered candidates without invoking the product policy's migration.
  * @param provider - registered provider route.

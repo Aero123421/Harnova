@@ -485,3 +485,10 @@ The account provider’s `embeddedPageDist` configuration adds a `dist` query pa
 ## Dev Note
 
 Pre-launch CDN and capacity decisions are tracked in the [Desktop update proposal](../../.agents/notes/proposed/feature/2026-09-08-desktop-update-policy-and-installation.md#cdn-and-capacity-qualification).
+
+GitHub Releases向けの署名なしWindowsビルドは、`.env.windows`に
+`HARNOVA_DESKTOP_APP_ID=io.github.aero123421.harnova`と
+`HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED=1`を設定し、
+`pnpm run package:desktop:win:x64:unsigned`で作成します。
+この配布形態は自動更新フィードと強制更新サービスを同梱しません。
+署名付き配布にはHarnova独自の署名資格情報が必要です。

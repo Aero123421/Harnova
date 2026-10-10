@@ -4,7 +4,7 @@ import { attributionHeaders, LlmAdapter, LlmError } from '@deepseek-ai/dsh-llm'
 import type { GenerateOptions, ImageAttachmentAccessResolver, PreparedAdapterCall, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { DeepSeekLlmApiJson } from '@deepseek-ai/dsh-deepseek-llm-api-extensions'
 import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { modelInfo } from './model-info.ts'
+import { modelInfo, catalogModelInfo } from './model-info.ts'
 import type { DeepSeekAdapterOptions, DeepSeekConnectionOptions as Connection } from './types.ts'
 import { DeepSeekFileStore } from './file-store.ts'
 import { MESSAGES_FILES_BETA, MESSAGES_TOOL_CHANGES_BETA, messagesApiRoot } from './messages-api.ts'
@@ -33,6 +33,12 @@ export class DeepSeekAdapter<C extends Connection = Connection> extends LlmAdapt
   override providerRetryPolicy(_provider: string) { return this.dependencies.options().retryPolicy }
   override async listModels(provider: string) {
     return this.dependencies.discoverModels?.(provider) ?? []
+  }
+  override listModelCandidates(provider: string) {
+    return Promise.resolve(this.dependencies.options().models.map(model => catalogModelInfo(provider, model)))
+  }
+  override async availableModelIds(provider: string) {
+    return new Set((await this.listModels(provider)).map(model => model.id))
   }
   override resolveModel(provider: string, model: string, _signal?: AbortSignal) {
     return Promise.resolve(modelInfo(this.dependencies.options(), provider, model))

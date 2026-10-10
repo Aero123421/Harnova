@@ -1500,6 +1500,12 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'detached candidate metadata, including disabled models.',
       },
       {
+        signature: '@Remote(\'availableModelCandidates\') async availableModelCandidates(provider: string): Promise<LlmModelInfo[]>',
+        description: 'Locally usable candidates, independent of saved provider/model switches.',
+        parameters: [{ name: 'provider', description: 'registered adapter route.' }],
+        returns: 'catalog entries usable with the current authentication.',
+      },
+      {
         signature: 'async listModelCandidates(provider: string): Promise<LlmModelInfo[]>',
         description: 'Query unfiltered candidates without invoking the product policy\'s migration.',
         parameters: [{ name: 'provider', description: 'registered provider route.' }],
@@ -5639,7 +5645,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmAdapter',
-    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    availableModelIds(_provider: string): Promise<ReadonlySet<string> | undefined>;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
+    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    availableModelIds(_provider: string): Promise<ReadonlySet<string> | undefined>;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
     name: 'LlmAttemptId',

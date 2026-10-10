@@ -17,7 +17,7 @@ it.skipIf(webSnapshotMode() === 'record')('keeps additional logs and tracking ab
   const key = credentialRef('DSH_UPLOAD_BROWSER_KEY')
   const overlay = join(root, 'upload.yml')
   await writeFile(overlay, JSON.stringify([
-    { id: 'llm-deepseek', config: { baseURL: server.baseURL, apiKeyEnv: key } },
+    { id: 'llm-deepseek', config: { baseURL: server.baseURL, apiKeyEnv: key, models: [{ id: 'deepseek-v4-flash' }] } },
     { id: 'agent-default-model', config: { provider: 'deepseek-official', model: 'deepseek-v4-flash' } },
   ]))
   const scaffold = await launchWebScaffold({ deepSeekMissingCredential: true, extraOverlayPath: overlay })

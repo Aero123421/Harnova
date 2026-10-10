@@ -15,7 +15,11 @@ const modelSelectionSchema = z.object({
   model: z.string().min(1),
   reasoningEffort: z.string().min(1).optional(),
   speed: z.enum(['standard', 'fast']).optional(),
-}) as unknown as z.ZodType<ModelSelection>
+}).transform(({ provider, model, reasoningEffort, speed }): ModelSelection => ({
+  provider, model,
+  ...reasoningEffort === undefined ? {} : { reasoningEffort },
+  ...speed === undefined ? {} : { speed },
+}))
 
 const modelSelectionProjectionStateSchema = z.object({
   lastUsed: modelSelectionSchema.nullable(),

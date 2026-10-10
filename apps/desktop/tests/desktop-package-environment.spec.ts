@@ -23,6 +23,20 @@ async function withDirectory(action: (directory: string) => Promise<void>): Prom
 }
 
 describe('Desktop local packaging configuration', () => {
+  it('loads and validates the unsigned GitHub release configuration without an update service', async () => {
+    await withDirectory(async (directory) => {
+      await writeFile(join(directory, '.env.windows'), [
+        'HARNOVA_DESKTOP_APP_ID=io.github.aero123421.harnova',
+        'HARNOVA_DESKTOP_AUTO_UPDATE_ENV=production',
+        'HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED=1',
+      ].join('\n'))
+      const environment = loadDesktopPackageEnvironment('win32', {}, directory)
+      expect(environment.HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED).toBe('1')
+      expect(() => validateDesktopPackageEnvironment(environment, WINDOWS, { unsigned: true })).not.toThrow()
+      expect(() => validateDesktopPackageEnvironment(environment, WINDOWS)).toThrow(/HARNOVA_DOWNLOAD_PROD_ORIGIN/u)
+    })
+  })
+
   it('takes cache concurrency from the Windows file and defaults to four without ambient overrides', async () => {
     await withDirectory(async (directory) => {
       const parent = { HARNOVA_DESKTOP_WINDOWS_SIGNATURE_CACHE_CONCURRENCY: '8' }

@@ -268,7 +268,7 @@ describe.skipIf(MODE === 'record')('web e2e: first-run DeepSeek credential setup
       inputModalities: ['text', 'image'],
     })
     await deepSeek.locator('xpath=ancestor::li').getByRole('button', { name: '编辑' }).click()
-    const usePreview = settings.getByRole('switch', { name: 'Use Private Preview', exact: true })
+    const usePreview = settings.getByRole('switch', { name: '使用 Private Preview', exact: true })
     await expect.poll(() => usePreview.getAttribute('aria-checked')).toBe('false')
     await usePreview.click()
     await expect.poll(() => usePreview.getAttribute('aria-checked')).toBe('true')

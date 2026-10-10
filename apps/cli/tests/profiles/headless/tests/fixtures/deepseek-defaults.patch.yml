@@ -9,6 +9,8 @@
   config:
     baseURL: !!js process.env.DSH_SNAPSHOT_BASE_URL
     thinking: enabled
+    models:
+      - id: deepseek-v4-flash
     reasoningEffort: low
     streamIdleTimeoutMs: 150
 
