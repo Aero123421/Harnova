@@ -1,4 +1,4 @@
-/** Typed English and Chinese copy owned by the Electron shell. */
+/** Typed Japanese, English, and Chinese copy owned by the Electron shell. */
 
 export const en = {
   cliCommandMenu: 'Manage harnova Command…',
@@ -341,31 +341,32 @@ export const zh = {
 
 /** Locale payload exposed to the Desktop-owned renderer. */
 export interface DesktopLocale {
-  readonly id: 'en' | 'zh-CN'
+  readonly id: 'ja-JP' | 'en' | 'zh-CN'
   readonly messages: DesktopMessages
 }
 
 /** Resolve Electron's locale to one shipped Desktop dictionary. */
 export function resolveDesktopLocale(locale: string): DesktopLocale {
-  return locale.toLowerCase().startsWith('zh')
-    ? { id: 'zh-CN', messages: zh }
-    : { id: 'en', messages: en }
+  const primary = locale.toLowerCase().split('-')[0]
+  if (primary === 'zh') return { id: 'zh-CN', messages: zh }
+  if (primary === 'en') return { id: 'en', messages: en }
+  return { id: 'ja-JP', messages: ja }
 }
 
 /**
  * Choose a built-in dictionary from the shared preference, then ordered OS languages.
  * @param preference - explicit locale.preference, or null when no language was selected.
  * @param languages - operating-system languages in preference order.
- * @returns the supported dictionary, falling back to English.
+ * @returns the supported dictionary, falling back to Japanese.
  */
 export function resolveDesktopStartupLocale(preference: string | null, languages: readonly string[]): DesktopLocale {
   const selected = preference?.toLowerCase()
-  if (selected === 'zh' || selected === 'en') return resolveDesktopLocale(selected)
+  if (selected === 'ja' || selected === 'zh' || selected === 'en') return resolveDesktopLocale(selected)
   for (const language of languages) {
     const primary = language.toLowerCase().split('-')[0]
-    if (primary === 'zh' || primary === 'en') return resolveDesktopLocale(primary)
+    if (primary === 'ja' || primary === 'zh' || primary === 'en') return resolveDesktopLocale(primary)
   }
-  return resolveDesktopLocale('en')
+  return resolveDesktopLocale('ja')
 }
 
 /** Replace named placeholders in one locale-owned message. */
@@ -393,3 +394,172 @@ export function desktopUpdateReadyConfirmation(
     detail: platform === 'win32' ? messages.updateDownloadedDetailWindows : messages.updateDownloadedDetail,
   }
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  cliCommandMenu: 'harnovaコマンドを管理…',
+  cliCommandTitle: 'harnovaコマンドを管理',
+  cliCommandLocation: 'Desktopのコマンド: {path}',
+  cliCommandSelected: '現在のharnovaコマンド: {path}',
+  cliCommandTarget: '現在の起動先: {path}',
+  cliCommandShadowed: '別のharnovaが優先されています。Desktopのコマンドを既定にするには、そのインストールを削除するか検索順を変更してください。Desktopのコマンドをフルパスで実行することもできます。',
+  cliCommandSelectionUnknown: 'シェルのコマンドを確認できませんでした。エイリアスや別のharnovaが優先されている可能性があります。',
+  cliCommandInstalled: 'Desktopのコマンドはインストール済みです。',
+  cliCommandNotInstalled: 'Desktopのコマンドをターミナルに追加します。',
+  cliCommandBroken: 'Desktopのコマンドを修復する必要があります。',
+  cliCommandInstall: 'インストール',
+  cliCommandRepair: '修復',
+  cliCommandRemove: '削除',
+  cliCommandClose: '閉じる',
+  cliCommandSwitch: 'Desktopのコマンドを使いますか？',
+  cliCommandPreserve: '既存のコマンドは保存されます。他のインストールやシェルの起動設定は変更しません。',
+  cliCommandContinue: '続ける',
+  cliCommandInstallApp: 'harnovaコマンドを管理する前に、Desktopをアプリケーションフォルダにインストールしてください。',
+  cliCommandUpdating: '更新をインストール中です。完了後にコマンドを管理してください。',
+  cliCommandNewTerminal: '新しいターミナルでharnova --versionを実行してください。',
+  cliCommandRemoved: 'Desktopのコマンド登録を削除しました。',
+  cliCommandPreviousRestored: '以前のランチャーを復元しました。',
+  cliCommandOtherKept: '他のコマンドのインストールは維持されています。',
+  cliCommandBackupKept: '以前のランチャーの保存先: {path}',
+  cliCommandChanged: 'ダイアログを開いている間にコマンドまたはPATHが変更されました。「harnovaコマンドを管理」を開き直して確認してください。',
+  cliCommandOwnershipError: 'コマンド登録またはバックアップが変更されました。無関係なコマンドは削除していません。',
+  cliCommandFailed: 'コマンドを更新できませんでした。アプリのインストールと保存先への書き込み権限を確認して、再試行してください。',
+  application: 'アプリケーション',
+  fileMenu: 'ファイル',
+  closePage: 'ページまたはウィンドウを閉じる',
+  aboutMenu: 'Harnovaについて',
+  aboutProduct: 'Harnova',
+  aboutVersion: 'バージョン V{version}',
+  hideApplication: 'Harnovaを隠す',
+  hideOtherApplications: 'ほかを隠す',
+  showAllApplications: 'すべて表示',
+  quitApplication: 'Harnovaを終了',
+  openApplication: 'Harnovaを開く',
+  quit: '終了',
+  cancel: 'キャンセル',
+  quitTitle: 'Harnovaを終了しますか？',
+  quitActiveTasks: '実行中のタスクは中断されます。',
+  quitScheduledTasks: 'アプリを閉じている間、スケジュールされたタスクは実行されません。',
+  quitActiveAndScheduledTasks: '実行中のタスクは中断され、アプリを閉じている間はスケジュールされたタスクも実行されません。',
+  backgroundNoticeBody: '実行中のタスクは続行されます。システムトレイからウィンドウを開き直せます。',
+  backgroundNoticeConfirm: '確認',
+  edit: '編集',
+  menuBar: 'アプリケーションメニュー',
+  delete: '削除',
+  undo: '元に戻す',
+  redo: 'やり直す',
+  cut: '切り取り',
+  copy: 'コピー',
+  paste: '貼り付け',
+  selectAll: 'すべて選択',
+  startupFailed: 'Harnovaを利用できません',
+  fatalSummary: 'アプリを起動できなかったか、予期せず停止しました。',
+  startupAddressInUse: '別のHarnova（harnova webやDesktopなど）が実行中です。同時に起動できません。実行中のHarnovaを終了してから再起動してください。',
+  diagnosticTruncated: '… エラーの詳細を省略しました。',
+  reportWrittenTo: '診断レポート: {path}',
+  startupReinstallAdvice: 'アプリのファイルが不足しているか破損している場合は、アプリを閉じて再インストールしてください。タスクのデータは別の場所に保存されています。',
+  exitApplication: '終了',
+  restartApplication: '再起動',
+  recoveryOperationFailed: '復旧操作に失敗しました',
+  disableThirdPartyPlugins: 'サードパーティのプラグインを無効にしてプロファイルの変更設定をバックアップし、再起動',
+  welcomeTitle: 'Harnova',
+  welcomeBrand: 'Harnova',
+  welcomeTaglineBefore: 'ようこそ、',
+  welcomeTaglineBrand: 'Harnova',
+  welcomeTaglineAfter: '',
+  welcomeDescription: '可能性を組み立て、知能を探求する。',
+  welcomeAuthStarting: 'ログイン画面を開いています…',
+  welcomeAuthWaiting: 'ブラウザが自動で開きませんでしたか？',
+  welcomeAuthWaitingDescription: 'ログインリンクをコピーしてブラウザで開き、ログインしてください。',
+  welcomeAuthExchanging: 'ログインを完了しています…',
+  welcomeAuthExpired: 'ログインがタイムアウトしました',
+  welcomeAuthExpiredDescription: '再度ログインして続けてください',
+  welcomeAuthFailed: 'ログインを完了できませんでした。再試行してください。',
+  welcomeAuthCopyLink: 'ログインリンクをコピー',
+  welcomeAuthCopied: 'コピーしました',
+  welcomeAuthCopyFailed: 'コピーできませんでした。再試行してください。',
+  welcomeAuthCancel: 'キャンセル',
+  welcomeAuthRetry: '再度ログイン',
+  welcomeSignIn: 'ログイン',
+  welcomeApiKey: 'APIキーを追加',
+  welcomeKeyTitle: 'APIキーを追加して開始',
+  welcomeKeyDescription: 'DeepSeekの公式モデルを設定するとHarnovaを使い始められます',
+  welcomeKeyPlaceholder: 'APIキーを入力',
+  welcomeKeySave: '保存して続ける',
+  welcomeKeyLater: 'あとで設定',
+  welcomeKeyBack: 'ログインに戻る',
+  welcomeSessionExpired: 'アカウントからログアウトしました。再度ログインしてください。',
+  welcomeKeyBlank: 'APIキーを入力してください。',
+  welcomeKeyInvalid: '引用符、空白、環境変数の代入を含めず、APIキーだけを入力してください。',
+  welcomeKeyFailed: 'APIキーを保存できませんでした。再試行してください。',
+  welcomeContinueFailed: 'ワークスペースを開けませんでした。再試行してください。',
+  checkUpdatesMenu: '更新を確認…',
+  reloadPageMenu: 'ページを再読み込み',
+  restartAppHostMenu: 'アプリとホストを再起動',
+  updateCheckFailedTitle: '更新の確認に失敗しました',
+  updateCheckFailed: '更新を確認できませんでした。あとで再試行してください。',
+  updateDownloadFailed: '更新をダウンロードできませんでした。再試行してください。',
+  updateInstallFailed: '更新をインストールできませんでした。あとで再試行してください。',
+  updateCheckNetworkFailed: '更新を確認できませんでした。ネットワーク接続を確認して再試行してください。',
+  updateDownloadNetworkFailed: '更新をダウンロードできませんでした。ネットワーク接続を確認して再試行してください。',
+  updateInstallNetworkFailed: '更新をインストールできませんでした。ネットワーク接続を確認して再試行してください。',
+  unknownError: '不明なエラー',
+  updateCheckTitle: '更新を確認',
+  updateCurrentDetail: '現在のバージョン: {version}',
+  updateCurrent: '最新のバージョンです',
+  updateChecking: '更新を確認しています…',
+  updateDownload: '更新をダウンロード',
+  updateDownloadedTitle: 'バージョン{version}をインストールできます',
+  updateDownloadedDetail: '更新中はアプリが閉じられ、完了すると自動で開きます。',
+  updateDownloadedDetailWindows: '更新中はアプリが一時的に閉じられ、完了すると自動で開きます。\n\n更新には時間がかかる場合があります。インストール中はアプリを再度起動せず、そのままお待ちください。',
+  updateClose: '閉じる',
+  updateAcknowledge: 'OK',
+  updateLater: 'あとで更新',
+  updateDownloading: 'ダウンロード中 {percent}%…',
+  updateVerifying: '更新ファイルを検証しています…',
+  updateInstalling: '再起動を準備しています…',
+  updateRetry: '更新を再試行',
+  updateActiveTasks: '実行中のタスクがあります',
+  updateActiveTasksDetail: '更新すると実行中のタスクが停止し、アプリが再起動します。続けますか？',
+  updateStopTasks: 'タスクを停止して更新',
+  updateTasksChanged: '新しいタスクが開始されました。タスクを停止して更新するか、再度確認してください。',
+  updateTasksUnavailable: 'タスクの状態を確認できません。ワークスペースの準備ができてから更新を再試行してください。',
+  updateStopFailed: 'タスクを安全に停止できませんでした。更新はインストールされていません。あとで再試行してください。',
+  updateTechnicalDetails: '技術的な詳細を表示',
+  updateTitle: 'Harnovaの更新',
+  updateAvailable: '新しいバージョンがあります: {version}',
+  updateDetail: 'ダウンロードが完了すると、更新をインストールしてアプリを再起動できます。',
+  installAndRestart: 'インストールして再起動',
+  later: 'あとで',
+  updateFailedTitle: '更新に失敗しました',
+  mandatoryTitle: '更新して続ける',
+  mandatoryDetail: 'このバージョンはサポートが終了しています。更新して続けてください。インストールと再起動を確認するまでは、実行中のタスクは続行されます。',
+  mandatoryUnavailable: '更新の要件を確認できませんでした。あとで再試行してください。',
+  policyLoginTitle: 'テスト環境にログイン',
+  policyLoginRequired: 'このテスト版の更新要件を確認するにはFeishuでログインしてください。ログインしても更新のダウンロードやインストールは行いません。',
+  policyLogin: 'Feishuでログイン',
+  policyLoginFailed: 'Feishuのログインを完了できませんでした。再試行してください。',
+  policyLoginLoading: 'ログインページを読み込んでいます…',
+  mandatoryNoRelease: '適用できる更新が見つかりませんでした。再度確認するか、サポートにお問い合わせください。',
+  mandatoryRefresh: '再度確認',
+  mandatoryPage: '公式サイトからダウンロード',
+  mandatoryCopy: 'ダウンロードリンクをコピー',
+  mandatoryPageFailed: '公式のダウンロードページを開けませんでした。リンクをコピーしてブラウザで開いてください。',
+  mandatoryActionFailed: '操作に失敗しました。再試行してください。更新が完了すると再びアプリを使えます。',
+  mandatoryReady: '更新の準備ができました',
+  mandatoryVersion: '新しいバージョン: {version}',
+  mandatoryReadyDetail: '更新中はアプリが閉じられ、完了すると自動で開きます。',
+  mandatoryDeferred: '実行中のタスクは続行されます。アプリを使う前に更新を完了してください。',
+  mandatoryContinue: '更新を続ける',
+  mandatoryInspecting: 'タスクを確認しています…',
+  mandatoryStopping: 'タスクを停止しています…',
+  mandatoryRestarting: 'まもなくアプリが再起動します。お待ちください。',
+  mandatoryDownloadFailed: '更新ファイルのダウンロードまたは準備に失敗しました。再試行してください。',
+  mandatoryInstallFailed: '更新はインストールされていません。タスクを再度確認して再試行してください。',
+  mandatoryOpenHelp: 'ページが開きませんでしたか？',
+  mandatoryReopen: '公式のダウンロードページを開き直す',
+  mandatoryCopied: 'リンクをコピーしました',
+  mandatoryCopyFailed: 'リンクをコピーできませんでした。下のリンクを選択してコピーしてください。',
+  mandatoryAddress: 'ダウンロードリンク',
+  mandatoryNotification: 'アプリに戻り、インストールと再起動を確認してください。',
+} satisfies Record<keyof typeof en, string>

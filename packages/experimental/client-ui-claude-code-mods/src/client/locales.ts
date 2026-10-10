@@ -21,3 +21,11 @@ export const en = {
   'press.failed': 'The button failed: {message}',
   'press.stale': 'That button belonged to an earlier drawing; the band has refreshed',
 } satisfies Record<ModsBandKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  band: 'Claude Codeの拡張',
+  pressing: '作業中…',
+  'press.failed': 'ボタンの操作に失敗しました: {message}',
+  'press.stale': '以前の表示のボタンです。表示を更新しました',
+} satisfies Record<keyof typeof en, string>

@@ -28,3 +28,16 @@ export const en = {
   'fontSize.increase': 'Increase font size',
   'fontSize.decrease': 'Decrease font size',
 } satisfies Record<ThemeKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'appearance.title': '外観',
+  'appearance.light': 'ライト',
+  'appearance.dark': 'ダーク',
+  'appearance.system': 'システムに合わせる',
+  'fontSize.title': 'フォントサイズ',
+  'fontSize.description': '会話の内容にのみ適用',
+  'fontSize.unit': 'px',
+  'fontSize.increase': 'フォントサイズを大きくする',
+  'fontSize.decrease': 'フォントサイズを小さくする',
+} satisfies Record<keyof typeof en, string>

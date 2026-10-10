@@ -20,3 +20,12 @@ export const zh: Record<PluginsSettingsLocaleKey, string> = {
   tabs: '插件视图',
   empty: '本部署没有开放任何插件视图。',
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  nav: '組み込みプラグイン',
+  title: '組み込みプラグイン',
+  intro: 'この環境に同梱されているプラグインを確認します。',
+  tabs: 'プラグインの画面',
+  empty: 'この環境にはプラグインの画面がありません。',
+} satisfies Record<keyof typeof en, string>

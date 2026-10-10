@@ -29,3 +29,15 @@ export const en = {
   'row.inspect': 'Inspect',
   'menu.userOnly': 'user-only',
 } satisfies Record<SkillKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'row.title': 'スキル',
+  'row.running': 'スキルを読み込み中',
+  'row.preparing': 'スキルの読み込みを準備中',
+  'row.failed': 'スキルの読み込みに失敗しました',
+  'row.stopped': 'スキルの読み込みを停止しました',
+  'row.instructions': '指示',
+  'row.inspect': '詳細を確認',
+  'menu.userOnly': 'ユーザーのみ',
+} satisfies Record<keyof typeof en, string>

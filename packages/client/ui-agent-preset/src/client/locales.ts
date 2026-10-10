@@ -1,6 +1,6 @@
 /** Locale bundles for the agent-preset hero chip, header label, and management section. */
 
-import { guideEn, guideZh, type PresetGuideKey } from './guide-locales.ts'
+import { guideEn, guideZh, type PresetGuideKey , guideJa } from './guide-locales.ts'
 
 /** Locale keys these surfaces render. */
 export type AgentPresetSettingsKey =
@@ -125,3 +125,36 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
 // Settings plugin list inlines the same fold over this plugin's dictionaries.
 export { isBuiltInPreset, presetDisplayText } from '@deepseek-ai/dsh-agent-preset-registry/display'
 export type { PresetDisplaySource, PresetDisplayText } from '@deepseek-ai/dsh-agent-preset-registry/display'
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  ...guideJa,
+  builtInGroup: '組み込み',
+  customGroup: 'カスタム',
+  sectionIntro: 'エージェントのツールと作業方法を選択します。日常のタスクには標準モード、Harnovaへの機能追加には作成モードを使ってください。',
+  seatHint: '新しいタスクのエージェントプリセットを選択',
+  headerHint: 'このタスクの開始時に選択したプリセット',
+  nav: 'エージェントプリセット',
+  setDefault: '新しいタスクの既定値に設定',
+  view: '設定を表示',
+  presetStandardName: '標準モード',
+  presetStandardDescription: 'コード、ファイル、情報を扱います。検索、編集、ターミナルなどのツールを必要に応じて使い、多くのタスクに適しています。',
+  presetPtcName: 'PTCモード',
+  presetPtcDescription: '標準モードの全機能を含みます。ツールを一括で呼び出し、結果を絞り込み、整理、重複排除、集計、要約するタスクに適しています。',
+  presetMinimalName: '最小モード',
+  presetMinimalDescription: 'ターミナルのツールだけで作業します。基本性能のテストや比較に使えます。',
+  presetCordisName: '作成モード',
+  presetCordisDescription: '会話でHarnovaをカスタマイズします。エージェントが機能やUIを追加するプラグインを書いたり、ツールとプロンプトを組み合わせて独自のモードを作ったりします。',
+  inUse: '新しいタスクの既定値',
+  noDescription: '説明なし。',
+  brokenBadge: '読み込みに失敗しました',
+  switchRefused: '{name}に切り替えられませんでした: {reason}',
+  standardUnavailable: '標準モードを利用できません。復元するか、別の利用可能なモードを選択してください。',
+  close: '閉じる',
+  creatorDraft: 'エージェントにプリセットの作成を依頼',
+  createPlugin: 'エージェントにプラグインの作成を依頼',
+  createPluginDescription: '作成モードで独自のHarnovaプラグインを作成',
+  createPluginChecking: '作成モードが利用可能か確認中',
+  createPluginUnavailable: '一時的に利用できません。メニューを開き直して再試行してください',
+  createPluginMissing: 'この構成には作成モードが含まれていません',
+} satisfies Record<keyof typeof en, string>

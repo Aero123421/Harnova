@@ -32,3 +32,16 @@ export const en = {
   'crumbs.aria': 'Folder navigation',
   'suggestions.aria': 'Trigger suggestions',
 } satisfies Record<MenuKey, string>
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  'command': 'コマンド',
+  'skill': 'スキル',
+  'subagent': 'サブエージェント',
+  'loading': '読み込み中…',
+  'drill.aria': 'フォルダを参照',
+  'drill.hint': 'フォルダを参照',
+  'drill.key': 'タブ',
+  'crumbs.aria': 'フォルダのナビゲーション',
+  'suggestions.aria': 'トリガーの候補',
+} satisfies Record<keyof typeof en, string>

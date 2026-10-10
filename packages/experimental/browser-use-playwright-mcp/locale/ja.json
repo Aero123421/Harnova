@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "ブラウザー操作（Playwright）",
+    "description": "起動した Chromium のウェブページを、モデルが Playwright MCP を通じて閲覧・操作できます。"
+  }
+}

@@ -1,0 +1,8 @@
+Harnova
+Harnova
+APIキーを追加して開始
+DeepSeekの公式モデルを設定するとHarnovaを使い始められます
+APIキーを入力 [password]
+保存して続ける [disabled]
+あとで設定
+ログインに戻る

@@ -8,7 +8,7 @@ import {
   captureStableAria, compareOrRefreshGolden, fixtureUserPrompts, launchWebScaffold,
   recordFixture, watchConsole, webSnapshotMode,
 } from './scaffold.ts'
-import { connectFreshWorkspace, expandTurnProcesses, newEnglishPage } from './support.ts'
+import { connectFreshWorkspace, expandTurnProcesses, newEnglishPage, openSettings } from './support.ts'
 
 const DIR = fileURLToPath(new URL('../../../snapshots/web/code-language', import.meta.url))
 const FIXTURE = join(DIR, 'session.v4.jsonl')
@@ -81,6 +81,23 @@ it('replays highlighted Python stubs, PowerShell and CSV reads with their docume
       await read.locator('[data-disclosure-row]').click()
     }
     if (MODE !== 'record') await compareOrRefreshGolden(join(DIR, 'ui.expected.md'), snapshots.join('\n\n'), MODE)
+    // Render the same recorded messages in Japanese; source code and model text retain their original language.
+    await openSettings(page, 'en')
+    await page.getByRole('dialog', { name: 'Settings', exact: true }).getByRole('button', { name: 'English', exact: true }).click()
+    await page.getByRole('menuitem', { name: '日本語', exact: true }).click()
+    const settings = page.getByRole('dialog', { name: '設定', exact: true })
+    await settings.getByRole('button', { name: '日本語', exact: true }).waitFor()
+    await page.keyboard.press('Escape')
+    await settings.waitFor({ state: 'hidden' })
+    expect(await page.evaluate(() => document.documentElement.lang)).toBe('ja')
+    await page.locator('[data-dockkit-tab]').filter({ has: page.getByText('ファイル', { exact: true }) }).waitFor()
+    const japaneseReadSelector = '[data-tool="read"]:has-text("sample.pyi")'
+    await page.locator(japaneseReadSelector).locator('[data-disclosure-row]').click()
+    const japanese = [
+      `## Read sample.pyi\n\n${await captureStableAria(page, japaneseReadSelector, scaffold.workspaceCwd)}`,
+      `## File preview\n\n${await captureStableAria(page, '[data-textpreview-url]', scaffold.workspaceCwd)}`,
+    ].join('\n\n')
+    if (MODE !== 'record') await compareOrRefreshGolden(join(DIR, 'ui-ja.expected.md'), japanese, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
   } finally {

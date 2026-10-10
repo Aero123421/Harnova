@@ -22,3 +22,12 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     inspectorPanel: keyof typeof zh
   }
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  title: 'NodeJSインスペクター',
+  toggle: 'NodeJSインスペクターを切り替え',
+  close: '折りたたむ',
+  resize: 'NodeJSインスペクターのパネルのサイズを変更',
+  frameTitle: 'NodeJSインスペクター',
+} satisfies Record<keyof typeof en, string>

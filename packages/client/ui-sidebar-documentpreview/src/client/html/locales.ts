@@ -23,3 +23,11 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     documentHtml: HtmlPreviewKey
   }
 }
+
+/** Japanese copy shipped with Harnova. */
+export const ja = {
+  title: 'HTML',
+  frame: 'HTML文書のプレビュー',
+  loading: '文書を描画しています…',
+  failed: 'このHTML文書をプレビューできませんでした。',
+} satisfies Record<keyof typeof en, string>

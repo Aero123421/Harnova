@@ -140,7 +140,7 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'setLocale(id: string): void',
-        description: 'Switch the active locale — the only user preference write entry.\n\nThe durable write happens even when the id already matches the active locale, because the active value may be a provisional browser-derived or fallback resolution that nothing has stored yet. Picking the language already on screen is still an explicit choice, and it must survive a different browser sharing the same DSH home. Only the render notification is conditional: republishing an unchanged locale would churn every subscriber for nothing.',
+        description: 'Switch the active locale — the only user preference write entry.\n\nThe durable write happens even when the id already matches the active locale, because the active value may be a provisional browser-derived or fallback resolution that nothing has stored yet. Picking the language already on screen is still an explicit choice, and it must survive a different browser sharing the same Harnova home. Only the render notification is conditional: republishing an unchanged locale would churn every subscriber for nothing.',
         parameters: [{ name: 'id', description: 'a registered locale id; unknown ids throw.' }],
       },
       {
@@ -151,8 +151,8 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         throws: ['when fields are malformed, the id is occupied, or the fallback target is unknown or creates a cycle.'],
       },
       {
-        signature: 'register<N extends Extract<keyof LocaleNamespaceMap, string>>(ns: N, dicts: Record<BuiltInLocaleId, LocaleDictOf<N>>): () => void',
-        description: 'Register a declared namespace\'s dictionaries, all locales in one call — the typed form: each dictionary is checked against the namespace\'s LocaleNamespaceMap key union (a missing or extra key is a compile error), and every shipped locale is required (bilingual balance enforced at registration). Duplicate (ns, locale) throws (single occupant; a namespace\'s texts have one owner). Registration bumps the revision so mounted outlets pick up late-arriving dictionaries.',
+        signature: 'register<N extends Extract<keyof LocaleNamespaceMap, string>>(ns: N, dicts: Record<\'en\' | \'zh\', LocaleDictOf<N>> & Partial<Record<\'ja\', LocaleDictOf<N>>>): () => void',
+        description: 'Register a declared namespace\'s dictionaries, all locales in one call — the typed form: each dictionary is checked against the namespace\'s LocaleNamespaceMap key union (a missing or extra key is a compile error). Existing bilingual plugins may omit Japanese and use the English fallback. Duplicate (ns, locale) throws: each namespace\'s texts have one owner. Registration bumps the revision so mounted outlets pick up late-arriving dictionaries.',
         parameters: [{ name: 'ns', description: 'a namespace merged into LocaleNamespaceMap.' }, { name: 'dicts', description: 'complete dictionaries keyed by built-in locale id.' }],
         returns: 'disposer removing every locale registered by this call (idempotent).',
       },
@@ -498,10 +498,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'BoundActions',
     declaration: 'export type BoundActions<H> = H extends StoreHandle<infer T, infer A> ? BakedActions<T, A> : never;',
-  },
-  {
-    name: 'BuiltInLocaleId',
-    declaration: 'export type BuiltInLocaleId = typeof LOCALE_IDS[number];',
   },
   {
     name: 'ChainKeysOf',

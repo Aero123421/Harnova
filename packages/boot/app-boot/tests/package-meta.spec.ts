@@ -81,11 +81,12 @@ describe('plugin locale display metadata', () => {
   it('reads direct fields, retains per-field translations, and ignores other locale content', () => {
     dictionary('en', { meta: { title: 'Team', description: 'Work together', ignored: false }, other: { nested: [1] } })
     dictionary('zh', { meta: { title: '团队' } })
+    dictionary('ja', { meta: { title: 'チーム', description: '共同作業' } })
     dictionary('pt-BR', { meta: { description: 'Trabalhar juntos' } })
     file(join(dir, 'locale', 'ignored.txt'), 'not JSON')
     expect(readPluginMeta('localized', parentURL)).toEqual({
-      title: { en: 'Team', zh: '团队' },
-      description: { en: 'Work together', 'pt-br': 'Trabalhar juntos' },
+      title: { en: 'Team', ja: 'チーム', zh: '团队' },
+      description: { en: 'Work together', ja: '共同作業', 'pt-br': 'Trabalhar juntos' },
     })
   })
 
