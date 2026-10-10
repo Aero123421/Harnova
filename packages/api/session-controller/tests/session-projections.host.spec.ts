@@ -223,6 +223,21 @@ describe('session.history projections block', () => {
     })
   })
 
+  it('distinguishes a pending speed change from the last request and clears it only when used', async () => {
+    const { ctx, session } = await harness(true)
+    remote(ctx)
+    const standard = { provider: 'p', model: 'model', speed: 'standard' as const }
+    const fast = { ...standard, speed: 'fast' as const }
+    session.append('request/header', { header: { config: standard }, reason: 'initial' })
+    session.append('model/selection', fast)
+    expect(ctx.sessionProjections.snapshot(session).values.modelSelection).toEqual({ lastUsed: standard, next: fast })
+    session.append('request/header', { header: { config: standard }, reason: 'change' })
+    expect(ctx.sessionProjections.snapshot(session).values.modelSelection).toEqual({ lastUsed: standard, next: fast })
+    session.append('request/header', { header: { config: fast }, reason: 'change' })
+    expect(ctx.sessionProjections.stateOf(session, 'modelSelection')).toEqual({ lastUsed: fast, pending: null })
+    expect(ctx.sessionProjections.snapshot(session).values.modelSelection).toEqual({ lastUsed: fast, next: fast })
+  })
+
   it('serves the unit value on the tail page with asOfSeq = last event seq', async () => {
     const { ctx, session } = await harness(true)
     ctx.sessionProjections.register(lastUserUnit())

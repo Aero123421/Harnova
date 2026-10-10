@@ -1058,4 +1058,17 @@ it.each([
     auth: memoryAuth(),
   })
   expect(await adapter.listModels('deepseek')).not.toHaveLength(0)
+  if (error instanceof LlmError && error.code === 'MISSING_CREDENTIAL') {
+    expect(await adapter.availableModelIds('deepseek')).toEqual(new Set())
+  } else {
+    await expect(adapter.availableModelIds('deepseek')).rejects.toBe(error)
+  }
+})
+
+it('makes explicitly authenticated catalog models available without changing the full candidate list', async () => {
+  const profiles = resolveProfiles({ deepseek: { apiKeyEnv: 'PI_TEST_KEY' } })
+  const adapter = new PiAiAdapter({ profiles: () => profiles, resolveApiKey: async () => 'test-key', auth: memoryAuth() })
+  const candidates = await adapter.listModels('deepseek')
+
+  expect(await adapter.availableModelIds('deepseek')).toEqual(new Set(candidates.map(model => model.id)))
 })

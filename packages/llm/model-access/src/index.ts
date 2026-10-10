@@ -63,19 +63,18 @@ export class ModelAccess extends Service {
     const pending = this.initializeOnce()
     this.initialization = pending
     try { await pending }
-    finally { if (this.initialization === pending) this.initialization = undefined }
+    finally { this.initialization = undefined }
   }
 
   private async initializeOnce(): Promise<void> {
     const providers = this.ownerContext.llm.listProviders()
-    const catalogs = await Promise.allSettled(providers.map(provider => this.ownerContext.llm.listModelCandidates(provider.id)))
-    const rows = providers.map((provider, index) => {
-      const catalog = catalogs[index]
-      if (catalog === undefined) throw new Error('Model catalog result is missing')
-      return [provider.id, catalog.status === 'fulfilled'
-        ? { enabled: true, models: catalog.value.filter(model => model.initiallyEnabled !== false).map(model => model.id) }
-        : { enabled: false, models: [] }] as const
-    })
+    const rows: readonly (readonly [string, ProviderAccess])[] = await Promise.all(providers.map(provider =>
+      this.ownerContext.llm.listModelCandidates(provider.id).then(
+        catalog => [provider.id, {
+          enabled: true, models: catalog.filter(model => model.initiallyEnabled !== false).map(model => model.id),
+        }] as const,
+        () => [provider.id, { enabled: false, models: [] }] as const,
+      )))
     const seed: Record<string, ProviderAccess> = { ...Object.fromEntries(rows), ...this.config.providers.get() }
     if (this.config.initialized.get()) return
     const settings = this.ownerContext.get('settings')
@@ -100,7 +99,8 @@ export class ModelAccess extends Service {
    */
   async allowed(provider: string): Promise<ReadonlySet<string>> {
     await this.initialize()
-    return new Set(this.access(provider)?.enabled === true ? this.access(provider)?.models : [])
+    const access = this.access(provider)
+    return new Set(access?.enabled === true ? access.models : [])
   }
 
   private access(provider: string): ProviderAccess | undefined {

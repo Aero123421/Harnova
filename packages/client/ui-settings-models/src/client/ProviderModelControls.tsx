@@ -30,7 +30,7 @@ export function ProviderModelControls({ row, namespace, operations, expanded, re
   const savedCount = candidates.filter(model => ids.has(model.id)).length
 
   const save = async (enabled: boolean, models: readonly string[]): Promise<void> => {
-    if (saving.current || readOnly) return
+    if (saving.current) return
     saving.current = true
     setPending(true)
     try {

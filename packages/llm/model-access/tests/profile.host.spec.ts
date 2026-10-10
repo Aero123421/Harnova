@@ -2,7 +2,7 @@
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { expect, it, onTestFinished } from 'vitest'
+import { expect, it, onTestFinished, vi } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import Timer from '@deepseek-ai/cordis-plugin-timer'
 import { boot, initProfile, readProfilePatches, type ProfileContext } from '@deepseek-ai/dsh-app-boot'
@@ -16,6 +16,7 @@ import Subagents from '@deepseek-ai/dsh-subagent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { Session, SessionId } from '@deepseek-ai/dsh-session'
 import ModelAccess from '../src/index.ts'
+import { liveConfig } from '../../../settings/settings/tests/live-config.ts'
 
 class Adapter extends LlmAdapter {
   override async listModels() {
@@ -29,7 +30,7 @@ class Adapter extends LlmAdapter {
   }
 }
 
-async function fixture(active = true) {
+async function fixture(active = true, adapterFactory: () => LlmAdapter = () => new Adapter()) {
   const home = realpathSync(mkdtempSync(join(tmpdir(), 'harnova-model-access-')))
   onTestFinished(() => { rmSync(home, { recursive: true, force: true }) })
   const dir = join(home, 'profiles', 'test')
@@ -56,7 +57,7 @@ async function fixture(active = true) {
       ctx.provide('appReady', { onReady: (listener: () => void) => { listener(); return () => {} } })
       Object.assign(ctx.loader.builtins, {
         editor: ConfigEditor, settings: Settings, llm: LlmRuntime, access: ModelAccess,
-        adapter: { inject: ['llm'], apply(child: Context) { child.llm.registerAdapter(['test'], new Adapter()) } },
+        adapter: { inject: ['llm'], apply(child: Context) { child.llm.registerAdapter(['test'], adapterFactory()) } },
       })
     })
     onTestFinished(() => ctx.fiber.dispose())
@@ -66,6 +67,20 @@ async function fixture(active = true) {
     return ctx
   }
   return { ctx: await start(), start }
+}
+
+function gatedAdapter() {
+  const entered = Promise.withResolvers<undefined>()
+  const catalog = Promise.withResolvers<Awaited<ReturnType<Adapter['listModels']>>>()
+  let calls = 0
+  class WaitingAdapter extends Adapter {
+    override listModels() {
+      calls++
+      entered.resolve(undefined)
+      return catalog.promise
+    }
+  }
+  return { adapter: new WaitingAdapter(), entered: entered.promise, catalog, calls: () => calls }
 }
 
 it('migrates once, persists explicit all-OFF across restart, and restores saved choices', async () => {
@@ -114,4 +129,124 @@ it('initializes an empty profile before the first connection, leaving new models
   await ctx.plugin({ inject: ['llm'], apply(child) { child.llm.registerAdapter(['test'], new Adapter()) } })
   expect(await ctx.llm.listModels('test')).toEqual([])
   expect((await ctx.llm.listModelCandidates('test')).map(model => model.id)).toEqual(['original', 'new'])
+})
+
+it('shares one catalog migration across concurrent consumers', async () => {
+  const gate = gatedAdapter()
+  const { ctx } = await fixture(true, () => gate.adapter)
+  const first = ctx.modelAccess.allowed('test')
+  const second = ctx.modelAccess.allowed('test')
+  try {
+    await gate.entered
+    expect(gate.calls()).toBe(1)
+    expect(ctx.modelAccess.isEnabled('test', 'original')).toBe(false)
+    gate.catalog.resolve(await new Adapter().listModels())
+
+    expect(await Promise.all([first, second])).toEqual([new Set(['original']), new Set(['original'])])
+    expect(ctx.settings.describe().find(row => row.ns === 'model-access')?.value)
+      .toEqual({ initialized: true, providers: { test: { enabled: true, models: ['original'] } } })
+  } finally {
+    gate.catalog.resolve([])
+    await Promise.allSettled([first, second])
+  }
+})
+
+it('keeps an explicit selection committed while its initial catalog request was pending', async () => {
+  const gate = gatedAdapter()
+  const { ctx } = await fixture(true, () => gate.adapter)
+  const pending = ctx.modelAccess.allowed('test')
+  try {
+    await gate.entered
+    const view = ctx.settings.describe().find(row => row.ns === 'model-access')!
+    await ctx.settings.mutate(view.ns, [
+      { op: 'set', path: ['providers', 'test'], value: { enabled: true, models: ['new'] } },
+      { op: 'set', path: ['initialized'], value: true },
+    ], view.revision)
+    const mutate = vi.spyOn(ctx.settings, 'mutate')
+    try {
+      gate.catalog.resolve(await new Adapter().listModels())
+      expect(await pending).toEqual(new Set(['new']))
+      expect(mutate).not.toHaveBeenCalled()
+      expect(ctx.modelAccess.isEnabled('test', 'original')).toBe(false)
+      expect(ctx.modelAccess.isEnabled('test', 'new')).toBe(true)
+    } finally { mutate.mockRestore() }
+  } finally {
+    gate.catalog.resolve([])
+    await Promise.allSettled([pending])
+  }
+})
+
+it('preserves the winning settings edit after migration loses a compare-and-swap race', async () => {
+  const { ctx } = await fixture()
+  const commit = ctx.settings.mutate.bind(ctx.settings)
+  const mutate = vi.spyOn(ctx.settings, 'mutate').mockImplementationOnce(async (ns, ops, revision) => {
+    await commit(ns, [
+      { op: 'set', path: ['providers', 'test'], value: { enabled: true, models: ['new'] } },
+      { op: 'set', path: ['initialized'], value: true },
+    ], revision)
+    await commit(ns, ops, revision)
+  })
+  try {
+    await expect(ctx.modelAccess.allowed('test')).rejects.toMatchObject({ code: 'SETTINGS_CONFLICT' })
+    expect(await ctx.modelAccess.allowed('test')).toEqual(new Set(['new']))
+    expect(ctx.settings.describe().find(row => row.ns === 'model-access')?.value)
+      .toEqual({ initialized: true, providers: { test: { enabled: true, models: ['new'] } } })
+  } finally { mutate.mockRestore() }
+})
+
+it('disables a failed catalog without preventing the profile migration', async () => {
+  class BrokenAdapter extends Adapter {
+    override async listModels(): Promise<never> { throw new Error('catalog unavailable') }
+  }
+  const { ctx } = await fixture(true, () => new BrokenAdapter())
+
+  expect(await ctx.modelAccess.allowed('test')).toEqual(new Set())
+  expect(ctx.settings.describe().find(row => row.ns === 'model-access')?.value)
+    .toEqual({ initialized: true, providers: { test: { enabled: false, models: [] } } })
+  expect(ctx.modelAccess.isEnabled('test', 'original')).toBe(false)
+})
+
+it('refuses a missing profile form and permits initialization after it becomes available', async () => {
+  const { ctx } = await fixture()
+  const describe = vi.spyOn(ctx.settings, 'describe').mockReturnValue([])
+  try {
+    await expect(ctx.modelAccess.allowed('test')).rejects.toThrow('Model settings are not available for this profile')
+  } finally { describe.mockRestore() }
+
+  expect(await ctx.modelAccess.allowed('test')).toEqual(new Set(['original']))
+})
+
+it('holds the first catalog in a standalone Loader composition without settings', async () => {
+  const ctx = new Context()
+  onTestFinished(() => ctx.fiber.dispose())
+  await ctx.plugin(LlmRuntime)
+  ctx.llm.registerAdapter(['test'], new Adapter())
+  await liveConfig(ctx, ModelAccess)
+
+  expect(await ctx.modelAccess.allowed('test')).toEqual(new Set(['original']))
+  ctx.llm.registerAdapter(['late'], new Adapter())
+  expect(await ctx.modelAccess.allowed('late')).toEqual(new Set())
+  expect(ctx.modelAccess.isEnabled('test', 'new')).toBe(false)
+})
+
+it('honors explicit OFF choices without a Loader namespace even when settings is mounted', async () => {
+  const { ctx } = await fixture()
+  await [...ctx.loader.entries()].find(entry => entry.options.id === 'model-access')!.fiber!.dispose()
+  await ctx.plugin(ModelAccess, { providers: { test: { enabled: false, models: ['original'] } } })
+
+  expect(await ctx.modelAccess.allowed('test')).toEqual(new Set())
+  expect(await ctx.modelAccess.allowed('test')).toEqual(new Set())
+  expect(ctx.modelAccess.isEnabled('test', 'original')).toBe(false)
+})
+
+it('recognizes own provider keys without inheriting routes from Object.prototype', async () => {
+  const ctx = new Context()
+  onTestFinished(() => ctx.fiber.dispose())
+  await ctx.plugin(LlmRuntime)
+  await ctx.plugin(ModelAccess, { initialized: true, providers: { constructor: { enabled: true, models: ['original'] } } })
+
+  expect(await ctx.modelAccess.allowed('constructor')).toEqual(new Set(['original']))
+  expect(ctx.modelAccess.isEnabled('constructor', 'original')).toBe(true)
+  expect(await ctx.modelAccess.allowed('__proto__')).toEqual(new Set())
+  expect(ctx.modelAccess.isEnabled('toString', 'original')).toBe(false)
 })

@@ -7,16 +7,20 @@ import AuthorizationService from '@deepseek-ai/dsh-authorization'
 import type { AuthorizationInteraction, AuthorizationNotice, AuthorizationPrompt } from '@deepseek-ai/dsh-authorization'
 import LocalCredentialProvider from '@deepseek-ai/dsh-credentials-local'
 import type { CredentialKey } from '@deepseek-ai/dsh-credentials'
-import type { AuthEvent, AuthInteraction, AuthPrompt, AuthType, Credential } from '@earendil-works/pi-ai'
+import type { AuthEvent, AuthInteraction, AuthPrompt, AuthType, Credential, CreateModelsOptions } from '@earendil-works/pi-ai'
 
 const login = vi.hoisted(() => vi.fn())
+const collections = vi.hoisted(() => vi.fn<(options?: CreateModelsOptions) => void>())
 
 // The whole of what this module does with pi-ai is run one provider's login
 // against a collection built with the harness store, so the collection is the
 // boundary worth observing; a real login would open a browser.
 vi.mock('../src/models.ts', async importOriginal => ({
   ...await importOriginal<typeof import('../src/models.ts')>(),
-  createModels: () => ({ setProvider: () => {}, login }),
+  createModels: (options?: CreateModelsOptions) => {
+    collections(options)
+    return { setProvider: () => {}, login }
+  },
 }))
 
 const { credentialStoreFrom, authContextFrom, recordKeyFor } = await import('../src/auth.ts')
@@ -77,6 +81,7 @@ async function attempt(
 
 afterEach(async () => {
   login.mockReset()
+  collections.mockReset()
   await Promise.all(dirs.splice(0).map(dir => rm(dir, { recursive: true, force: true })))
 })
 
@@ -118,6 +123,24 @@ describe('pi-ai login flows', () => {
     await expect(ctx.credentials.readRecord(CODEX)).resolves.toEqual({
       kind: 'grant',
       payload: { type: 'oauth', access: 'at', refresh: 'rt', expires: 1 },
+    })
+  })
+
+  it('commits the Pi login store through the authorization transaction', async () => {
+    const ctx = await harness()
+    login.mockImplementation(async () => {
+      const store = collections.mock.calls.at(-1)?.[0]?.credentials
+      if (store === undefined) throw new Error('login collection has no credential store')
+      return await store.modify('openai-codex', () => Promise.resolve({
+        type: 'oauth', access: 'new-access', refresh: 'new-refresh', expires: 42,
+      }))
+    })
+
+    await expect(ctx.authorization.begin({ key: CODEX, interaction: surface() }))
+      .resolves.toEqual({ status: 'authorized' })
+
+    await expect(ctx.credentials.readRecord(CODEX)).resolves.toEqual({
+      kind: 'grant', payload: { type: 'oauth', access: 'new-access', refresh: 'new-refresh', expires: 42 },
     })
   })
 

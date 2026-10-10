@@ -5,7 +5,9 @@ import LlmRuntime, { LlmAdapter, type GenerateOptions, type StreamChunk } from '
 /** Records actual dispatch, including calls made directly by auxiliary consumers. */
 class ProbeAdapter extends LlmAdapter {
   calls = 0
+  available: ReadonlySet<string> | undefined
   override async listModels() { return ['one', 'two'].map(id => ({ provider: 'test', id, name: id })) }
+  override async availableModelIds() { return this.available }
   async *stream(_options: GenerateOptions): AsyncIterable<StreamChunk> {
     this.calls++
     yield { type: 'finish', reason: { kind: 'stop' } }
@@ -23,7 +25,7 @@ async function setup() {
     child.llm.registerModelAccess({ allowed: async () => enabled, isEnabled: (_provider, model) => enabled.has(model) })
   } })
   await policy.await()
-  return { ctx, adapter, policy, disable: () => { enabled = new Set() } }
+  return { ctx, adapter, policy, disable: () => { enabled = new Set() }, allowAll: () => { enabled = new Set(['one', 'two']) } }
 }
 
 async function collect(stream: AsyncIterable<StreamChunk>) {
@@ -37,6 +39,39 @@ describe('live model access at the LLM executor', () => {
     const { ctx } = await setup()
     expect((await ctx.llm.listModels('test')).map(model => model.id)).toEqual(['one'])
     expect((await ctx.llm.listModelCandidates('test')).map(model => model.id)).toEqual(['one', 'two'])
+  })
+
+  it('keeps authenticated candidates available to Settings while their provider is OFF', async () => {
+    const { ctx, adapter, disable } = await setup()
+    adapter.available = new Set(['two'])
+    expect(await ctx.llm.listModels('test')).toEqual([])
+    disable()
+    expect(await ctx.llm.listModels('test')).toEqual([])
+    expect((await ctx.llm.availableModelCandidates('test')).map(model => model.id)).toEqual(['two'])
+    expect((await ctx.llm.remoteModelCandidates('test')).map(model => model.id)).toEqual(['one', 'two'])
+    adapter.available = undefined
+    expect((await ctx.llm.availableModelCandidates('test')).map(model => model.id)).toEqual(['one', 'two'])
+  })
+
+  it('intersects enabled models with authentication availability', async () => {
+    const { ctx, adapter, allowAll } = await setup()
+    allowAll()
+    adapter.available = new Set(['two'])
+    expect((await ctx.llm.listModels('test')).map(model => model.id)).toEqual(['two'])
+    adapter.available = new Set()
+    expect(await ctx.llm.availableModelCandidates('test')).toEqual([])
+  })
+
+  it('refuses a second policy without replacing the original and permits registration after unload', async () => {
+    const { ctx, policy } = await setup()
+    const replacement = { allowed: async () => new Set(['two']), isEnabled: (_provider: string, model: string) => model === 'two' }
+    expect(() => ctx.llm.registerModelAccess(replacement)).toThrow('model access is already registered')
+    expect((await ctx.llm.listModels('test')).map(model => model.id)).toEqual(['one'])
+    await policy.dispose()
+    expect((await ctx.llm.remoteModelCandidates('test')).map(model => model.id)).toEqual(['one', 'two'])
+    const dispose = ctx.llm.registerModelAccess(replacement)
+    expect((await ctx.llm.listModels('test')).map(model => model.id)).toEqual(['two'])
+    await dispose()
   })
 
   it('rejects disabled models through preparation, resolution and direct auxiliary streams', async () => {

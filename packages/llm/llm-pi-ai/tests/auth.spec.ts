@@ -120,6 +120,37 @@ describe('pi-ai credential store over harness records', () => {
     expect(unchanged).toEqual({ type: 'oauth', access: 'first', refresh: 'r', expires: 1 })
   })
 
+  it('lets the authorization transaction commit a replacement grant exactly once', async () => {
+    const ctx = await stored()
+    const previous = { type: 'oauth' as const, access: 'old', refresh: 'old-refresh', expires: 1 }
+    await credentialStoreFrom(ctx).modify('openai-codex', () => Promise.resolve(previous))
+    const commit = vi.fn(async (record: import('@deepseek-ai/dsh-credentials').CredentialRecord) => {
+      await ctx.credentials.modifyRecord(CODEX, () => Promise.resolve(record))
+    })
+    const store = credentialStoreFrom(ctx, commit)
+    const granted = { type: 'oauth' as const, access: 'new', refresh: 'new-refresh', expires: 2 }
+    const mutate = vi.fn(() => Promise.resolve(granted))
+
+    await expect(store.modify('openai-codex', mutate)).resolves.toEqual(granted)
+
+    expect(mutate).toHaveBeenCalledWith(previous)
+    expect(commit).toHaveBeenCalledExactlyOnceWith({ kind: 'grant', payload: granted })
+    await expect(credentialStoreFrom(ctx).read('openai-codex')).resolves.toEqual(granted)
+  })
+
+  it('refuses a declined sign-in without committing or discarding the existing grant', async () => {
+    const ctx = await stored()
+    const previous = { type: 'oauth' as const, access: 'old', refresh: 'old-refresh', expires: 1 }
+    await credentialStoreFrom(ctx).modify('openai-codex', () => Promise.resolve(previous))
+    const commit = vi.fn(() => Promise.resolve())
+
+    await expect(credentialStoreFrom(ctx, commit).modify('openai-codex', () => Promise.resolve(undefined)))
+      .rejects.toMatchObject({ code: 'AUTH' })
+
+    expect(commit).not.toHaveBeenCalled()
+    await expect(credentialStoreFrom(ctx).read('openai-codex')).resolves.toEqual(previous)
+  })
+
   it('lists only the records this adapter family owns', async () => {
     const ctx = await stored()
     const store = credentialStoreFrom(ctx)

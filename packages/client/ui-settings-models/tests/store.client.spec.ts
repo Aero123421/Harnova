@@ -1,6 +1,6 @@
 /** Page-store join: directory × namespaces × credentials, with last-good rows on failure. */
 import { describe, expect, it } from 'vitest'
-import type { RpcResponse } from '@deepseek-ai/dsh-api-remotes/client'
+import type { RpcResponse, ProviderAuthorizationView, SettingsNamespaceView } from '@deepseek-ai/dsh-api-remotes/client'
 import { RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
 import { SettingsDescribeMirror } from '@deepseek-ai/dsh-client-ui-settings/src/client/settings-mirror.ts'
 import { settingsSchema } from './settings-schema.client.ts'
@@ -84,8 +84,10 @@ const NAMESPACES = [
 
 function api(overrides: {
   accountAvailable?: boolean
+  authorization?: () => Promise<RemoteAnswer<readonly ProviderAuthorizationView[]>>
+  modelCandidates?: (provider: string) => Promise<RemoteAnswer<readonly { id: string; name: string; provider: string }[]>>
   providers?: () => Promise<RpcResponse<{ providers: typeof DIRECTORY }>>
-  describeSettings?: () => Promise<RemoteAnswer<{ writable: boolean; hasDocument: boolean; namespaces: typeof NAMESPACES }>>
+  describeSettings?: () => Promise<RemoteAnswer<{ writable: boolean; hasDocument: boolean; namespaces: readonly SettingsNamespaceView[] }>>
   describeCredentials?: (refs: readonly string[]) => Promise<RemoteAnswer<Record<string, unknown>>>
 } = {}) {
   const seenRefs: string[][] = []
@@ -110,7 +112,7 @@ function api(overrides: {
   const face = {
     session: { modelCatalog: async () => remoteOk({ groups: overrides.accountAvailable
       ? [{ id: 'deepseek-account', models: [{ id: 'deepseek-flash' }] }] : [] }) },
-    authorization: { list: async () => ({ ok: true as const, value: [] }) },
+    authorization: { list: overrides.authorization ?? (async () => remoteOk([])) },
     llm: {
       listProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.active)
@@ -118,7 +120,7 @@ function api(overrides: {
       listConfigurableProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.settingsNs !== '')
         .map(({ active: _active, ...row }) => row)),
-      modelCandidates: (provider: string) => Promise.resolve(remoteOk([{ id: 'model', name: 'Model', provider }])),
+      modelCandidates: overrides.modelCandidates ?? ((provider: string) => Promise.resolve(remoteOk([{ id: 'model', name: 'Model', provider }]))),
       availableModelCandidates: (provider: string) => Promise.resolve(remoteOk(provider === 'deepseek-account' && !overrides.accountAvailable ? [] : [{ id: 'model', name: 'Model', provider }])),
       discoverModels: () => Promise.resolve(remoteOk([])),
     },
@@ -387,4 +389,83 @@ it('removes the account row after sign-out and restores it after sign-in', async
   overrides.accountAvailable = true
   await store.load()
   expect(store.store.getSnapshot().rows[0]?.entry.provider).toBe('deepseek-account')
+})
+
+
+it('joins authorization by key and retains the last model catalog when a provider read fails', async () => {
+  let failCandidates = false
+  const authorization = {
+    key: 'pi/openai-codex', label: 'ChatGPT', methods: [{ id: 'oauth', label: 'ChatGPT' }],
+    configured: true, inFlight: false,
+  }
+  const { ctx, mirror } = api({
+    providers: async () => ok({ providers: [{
+      provider: 'openai-codex', displayName: 'ChatGPT', settingsNs: 'llm-pi-ai',
+      settingsPath: ['providers', 'openai-codex'], active: true, authorizationKey: authorization.key,
+    }] }),
+    authorization: async () => remoteOk([authorization, { ...authorization, key: 'another/provider' }]),
+    modelCandidates: async provider => failCandidates ? remoteFail('catalog unavailable') : remoteOk([{ id: 'gpt', name: 'GPT', provider }]),
+  })
+  const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+  await store.load()
+  expect(store.store.getSnapshot().rows[0]).toMatchObject({
+    authorization, candidates: [{ id: 'gpt', name: 'GPT', provider: 'openai-codex' }],
+  })
+  failCandidates = true
+  await store.load()
+  expect(store.store.getSnapshot().rows[0]).toMatchObject({
+    authorization, candidates: [{ id: 'gpt', name: 'GPT', provider: 'openai-codex' }], candidateError: 'catalog unavailable',
+  })
+})
+
+it('isolates authorization and candidate failures without making a fresh catalog up', async () => {
+  const { ctx, mirror } = api({
+    authorization: async () => remoteFail('login service unavailable'),
+    modelCandidates: async () => remoteFail('catalog unavailable'),
+  })
+  const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+  await store.load()
+  expect(store.store.getSnapshot().status).toBe('ready')
+  expect(store.store.getSnapshot().rows.every(row => row.authorization === undefined && row.candidates === undefined)).toBe(true)
+  expect(store.store.getSnapshot().rows.filter(row => row.entry.active).every(row => row.candidateError === 'catalog unavailable')).toBe(true)
+})
+
+it('uses only well-formed model choices from saved settings and keeps missing provider preferences OFF', async () => {
+  const access: SettingsNamespaceView = {
+    ns: 'model-access', schema: {}, revision: 3, autoGenerate: false, applies: 'live', secrets: [],
+    value: { providers: { openai: { enabled: true, models: ['gpt', 7, null] }, anthropic: null } },
+  }
+  const { ctx, mirror } = api({
+    describeSettings: async () => remoteOk({ writable: true, hasDocument: true, namespaces: [...NAMESPACES, access] }),
+  })
+  const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+  await store.load()
+  const rows = new Map(store.store.getSnapshot().rows.map(row => [row.entry.provider, row]))
+  expect(rows.get('openai')).toMatchObject({ enabled: true, enabledModels: ['gpt'] })
+  expect(rows.get('anthropic')).toMatchObject({ enabled: false, enabledModels: [] })
+  expect(rows.get('ghost')).toMatchObject({ enabled: false, enabledModels: [] })
+})
+
+it.each([null, [], { providers: null }])('does not invent enabled choices from a malformed model-access document: %j', async (value) => {
+  const access: SettingsNamespaceView = {
+    ns: 'model-access', schema: {}, revision: 3, autoGenerate: false, applies: 'live', secrets: [], value,
+  }
+  const { ctx, mirror } = api({
+    describeSettings: async () => remoteOk({ writable: true, hasDocument: true, namespaces: [...NAMESPACES, access] }),
+  })
+  const store = new ModelsSettingsStore(ctx, settingsSchema, mirror)
+  await store.load()
+  expect(store.store.getSnapshot().rows.every(row => row.enabled !== true)).toBe(true)
+})
+
+it('requires a confirmed OAuth session for an OAuth-only route and accepts non-OAuth credential paths', () => {
+  const row = {
+    entry: { provider: 'oauth', displayName: 'OAuth', settingsNs: 'llm-pi-ai', settingsPath: [], active: true },
+    configured: true, removable: false, apiKeyEnv: undefined, credential: undefined,
+    authorization: { key: 'pi/oauth', label: 'OAuth', methods: [{ id: 'oauth', label: 'Login' }], configured: false, inFlight: false },
+  }
+  expect(providerUsable(row)).toBe(false)
+  expect(providerUsable({ ...row, authorization: { ...row.authorization, configured: true } })).toBe(true)
+  expect(providerUsable({ ...row, authorization: { ...row.authorization, methods: [{ id: 'api-key', label: 'Key' }] } })).toBe(true)
+  expect(providerUsable({ ...row, enabled: false, authorization: { ...row.authorization, configured: true } })).toBe(false)
 })

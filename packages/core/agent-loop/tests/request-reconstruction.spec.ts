@@ -82,6 +82,24 @@ function registerEcho(ctx: Context) {
 }
 
 describe('request stability across the loop', () => {
+  it('records an explicit initial speed in the first request header', async () => {
+    class SpeedAdapter extends MockAdapter {
+      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+        return { ...await super.resolveModel(provider, model), fastMode: true }
+      }
+    }
+    const adapter = new SpeedAdapter([textResponse('done')])
+    const ctx = await harness(adapter)
+    try {
+      const agent = await ctx.agentLoop.create(SessionId('initial-speed'), { provider: 'mock', model: 'mock', speed: 'fast' })
+      const idle = waitForIdle(ctx, agent)
+      send(agent, 'Use the selected speed')
+      await idle
+      expect(adapter.requests[0]?.speed).toBe('fast')
+      expect(agent.session.requestHeader()?.config.speed).toBe('fast')
+    } finally { await ctx.fiber.dispose() }
+  })
+
   it('records speed changes without changing prompt assembly or reasoning', async () => {
     class SpeedAdapter extends MockAdapter {
       override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {

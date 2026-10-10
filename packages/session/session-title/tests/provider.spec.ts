@@ -1,5 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, onTestFinished } from 'vitest'
 import LlmRuntime, { createUserMessage, markAgentLoopRequest } from '@deepseek-ai/dsh-llm'
 import { deepFreeze } from '@deepseek-ai/dsh-util-values'
 import SessionStore, { SessionId, SessionSeq } from '@deepseek-ai/dsh-session'
@@ -289,6 +289,37 @@ describe('SessionTitleService Provider lifecycle', () => {
     await disposeReplacement()
   })
 
+  it('drains a provider disposal that overlaps service unload without publishing a late title', async () => {
+    const ctx = new Context()
+    const started = Promise.withResolvers<SessionTitleProviderRequest>()
+    const result = Promise.withResolvers<SessionTitleProviderResult>()
+    onTestFinished(async () => {
+      result.resolve({ title: 'Late title', messageSeqs: [] })
+      await ctx.fiber.dispose()
+    })
+    await ctx.plugin(SessionStore)
+    await ctx.plugin(SessionProjectionRegistry)
+    const service = ctx.plugin(SessionTitleService, CONFIG)
+    await service
+    const disposeProvider = ctx.sessionTitle.register({
+      id: SessionTitleProviderId('overlapping-disposal'),
+      automatic: 'first-prompt',
+      generate(request) { started.resolve(request); return result.promise },
+    })
+    const session = ctx.sessions.create(SessionId('overlapping-disposal'))
+    session.append('turn/start', { turn: 1 })
+    const source = appendHumanPrompt(session, 'Generate a title before unloading')
+    const refresh = ctx.sessionTitle.refresh(session).then(() => 'success', () => 'cancelled')
+    const request = await started.promise
+    const providerDisposal = disposeProvider()
+    const serviceDisposal = service.dispose()
+    expect(request.signal.aborted).toBe(true)
+    result.resolve({ title: 'Late title', messageSeqs: [source.seq] })
+    await Promise.all([providerDisposal, serviceDisposal])
+    expect(await refresh).toBe('cancelled')
+    expect(session.snapshotEvents().some(event => event.type === 'session/title' && event.data.title === 'Late title')).toBe(false)
+  })
+
   it('supersedes an older all-messages revision and cannot commit an ignored abort', async () => {
     const ctx = new Context()
     await ctx.plugin(SessionStore)
@@ -406,17 +437,20 @@ describe('SessionTitleService Provider lifecycle', () => {
     })
     const options = { provider: 'main-route', model: 'chat-model', messages: [] }
 
-    void ctx.llm.stream(deepFreeze(options))
-    void ctx.llm.stream(markAgentLoopRequest(deepFreeze({ ...options, sessionId: SessionId('missing') })))
+    const consume = async (request: Parameters<Context['llm']['stream']>[0]): Promise<void> => {
+      for await (const _chunk of ctx.llm.stream(request)) { /* execute middleware and drain the keyless adapter failure */ }
+    }
+    await consume(deepFreeze(options))
+    await consume(markAgentLoopRequest(deepFreeze({ ...options, sessionId: SessionId('missing') })))
     const quiet = ctx.sessions.create(SessionId('quiet'))
-    void ctx.llm.stream(markAgentLoopRequest(deepFreeze({ ...options, sessionId: quiet.id })))
+    await consume(markAgentLoopRequest(deepFreeze({ ...options, sessionId: quiet.id })))
     const pending = ctx.sessions.create(SessionId('unmatched-boundary'))
     pending.append('turn/start', {
       turn: 1,
     })
     appendHumanPrompt(pending, 'Wait for a matching request boundary')
     await settle()
-    void ctx.llm.stream(markAgentLoopRequest(deepFreeze({ ...options, sessionId: pending.id })))
+    await consume(markAgentLoopRequest(deepFreeze({ ...options, sessionId: pending.id })))
     await settle()
 
     expect(generate).not.toHaveBeenCalled()

@@ -87,6 +87,7 @@ async function harness(logged?: {
   provider: string
   model: string
   reasoningEffort?: ReasoningEffortId
+  speed?: NonNullable<LlmCallConfig['speed']>
   adapterDefaults?: LlmCallConfigAdapterDefaults
 }, ctx = new Context()): Promise<{
   ctx: Context
@@ -157,6 +158,26 @@ function currentSelection(ctx: Context, sessionId: SessionId) {
 }
 
 describe('Web session model selection', () => {
+  it('restores a logged Fast selection without publishing a new user selection', async () => {
+    const selected = { provider: 'fast-provider', model: 'fast-model', speed: 'fast' as const }
+    const { ctx, agent, sessionId } = await harness(selected)
+    onTestFinished(() => ctx.fiber.dispose())
+    ctx.llm.registerAdapter(['fast-provider'], new class extends CatalogAdapter {
+      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+        return { ...await super.resolveModel(provider, model), fastMode: true }
+      }
+    }('Fast Provider', [{ provider: 'fast-provider', id: 'fast-model', name: 'Fast Model' }]))
+    createSessionTestRemote(ctx, { defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }), cwd: '/tmp' })
+    expect(new ApiSessionAgentController(ctx).selectionFor(agent).current).toEqual(selected)
+    expect(currentSelection(ctx, sessionId)).toEqual(selected)
+    await ctx.systemPrompt.assemble()
+    expect(await agentEvents(ctx, agent).waterfall(
+      'agent/request', { turn: 1, step: 0, signal: new AbortController().signal },
+      () => Promise.resolve({ provider: 'seed', model: 'seed' }),
+    )).toMatchObject(selected)
+    expect(agent.session.snapshotEvents().filter(event => event.type === 'model/selection')).toEqual([])
+  })
+
   it('validates an ordered image batch before persisting any member', async () => {
     const { ctx, agent, sessionId } = await harness()
     const validateImage = vi.fn((_input: { data: Uint8Array }) => Promise.resolve())
@@ -500,6 +521,8 @@ describe('Web session model selection', () => {
       defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
       saveDefaultModelSelection: async (selection) => { saved.push(selection) }, cwd: '/tmp',
     })
+    expect(expectValue(await remote.modelCatalog()).groups.find(group => group.id === 'fast-provider')?.models)
+      .toContainEqual(expect.objectContaining({ id: 'fast-model', fastMode: true }))
     const seed: LlmCallConfig = { provider: 'seed', model: 'seed' }
     const signal = new AbortController().signal
     let prompt: string | undefined

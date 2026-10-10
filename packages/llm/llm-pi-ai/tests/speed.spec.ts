@@ -1,7 +1,11 @@
 import { expect, it, vi } from 'vitest'
+import { getBuiltinModels } from '@earendil-works/pi-ai/providers/all'
+import type { Api, Model } from '@earendil-works/pi-ai'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { PiAiAdapter } from '../src/adapter.ts'
 import { resolveProfiles } from '../src/config.ts'
+import { supportsFastMode } from '../src/speed.ts'
+import * as modelCollections from '../src/models.ts'
 import { memoryAuth } from './auth-double.ts'
 
 it('sends the real service tier and preserves model, effort, prompt, and tools', async () => {
@@ -47,4 +51,47 @@ it('keeps full candidates while local authentication controls available models',
   expect((await adapter.availableModelIds('openai-codex')).size).toBe(0)
   auth.stored.set('openai-codex', { type: 'oauth', access: 'fixture-access', refresh: 'fixture-refresh', expires: Date.now() + 60_000 })
   expect((await adapter.availableModelIds('openai-codex')).size).toBeGreaterThan(0)
+})
+
+it.each([
+  ['openai', 'openai-responses', 'https://api.openai.com/v1', true],
+  ['openai-codex', 'openai-codex-responses', 'https://chatgpt.com/backend-api/codex', true],
+  ['openai-codex', 'openai-codex-responses', 'https://api.openai.com/v1', false],
+  ['deepseek', 'openai-responses', 'https://api.openai.com/v1', false],
+  ['openai', 'openai-completions', 'https://api.openai.com/v1', false],
+  ['openai', 'openai-responses', 'http://api.openai.com/v1', false],
+  ['openai', 'openai-responses', 'https://gateway.example/v1', false],
+] as const)('only advertises Fast for the supported protocol and official HTTPS route: %s / %s / %s', (provider, api, baseUrl, supported) => {
+  const profile = resolveProfiles({ [provider]: {} }).get(provider)
+  const base = getBuiltinModels('openai').find(model => model.id === 'gpt-6.1-sol')
+  if (profile === undefined || base === undefined) throw new Error('missing configured fixture model')
+  const model: Model<Api> = { ...base, api, baseUrl }
+
+  expect(supportsFastMode(profile, model)).toBe(supported)
+})
+
+it('withholds Fast even when the explicitly overridden protocol matches the catalog', () => {
+  const profile = resolveProfiles({ openai: { api: 'openai-responses' } }).get('openai')
+  const model = profile?.piProvider?.getModels().find(model => model.id === 'gpt-6.1-sol')
+  if (profile === undefined || model === undefined) throw new Error('missing configured fixture model')
+
+  expect(supportsFastMode(profile, model)).toBe(false)
+})
+
+it.each([{ payload: null }, { payload: [] }, { payload: 'unexpected payload' }])('rejects a non-object Pi payload when speed is explicitly selected: $payload', async ({ payload }) => {
+  const createModels = modelCollections.createModels
+  const factory = vi.spyOn(modelCollections, 'createModels').mockImplementation((options) => {
+    const collection = createModels(options)
+    vi.spyOn(collection, 'streamSimple').mockImplementation((model, _context, streamOptions) => {
+      void streamOptions?.onPayload?.(payload, model)
+      throw new Error('invalid speed payload was accepted')
+    })
+    return collection
+  })
+  try {
+    const profiles = resolveProfiles({ openai: {} })
+    const adapter = new PiAiAdapter({ profiles: () => profiles, resolveApiKey: async () => 'test-key', auth: memoryAuth() })
+    await expect(adapter.stream({ provider: 'openai', model: 'gpt-6.1-sol', messages: [], speed: 'fast' })[Symbol.asyncIterator]().next())
+      .rejects.toMatchObject({ code: 'INVALID_REQUEST', message: 'Invalid request payload for speed selection' })
+  } finally { factory.mockRestore() }
 })
