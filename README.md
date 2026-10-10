@@ -19,7 +19,7 @@ WebとDesktopの画面は、日本語・英語・中国語に標準対応して�
 
 - ソースコードの監査、依存関係の確認、許可されたセキュリティ診断を行うSecurity Mode。
 - 選択したホスト上でファイル操作やコマンド実行を行うSSHリモートワークスペース。
-- Windows・macOS・Linux向けのDesktopアプリ配布。上流のDesktopはWindows・macOS向けに配布されており、開発者向けネイティブパッケージはLinux x64用です。macOS・Linuxのデスクトップインストーラーは含みません。署名なしWindows版は自動更新と強制更新サービスを使用しません。
+- macOS・Linux向けのDesktopアプリ配布。
 
 <a id="development-and-distribution"></a>
 ## 開発と配布

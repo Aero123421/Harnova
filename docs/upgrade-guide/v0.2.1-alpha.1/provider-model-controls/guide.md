@@ -15,6 +15,8 @@ Pi依存関係は0.87.1から1.1.0へ更新する。`openai`のAPIキーと`open
 
 外部Codex・Claude Code・ACPや別プロセスのSDKサブエージェントは、Hostの有効モデル設定を確実に適用できないため、このポリシーをmountする構成では起動を拒否する。
 
+ACPサーバーとして起動する標準`acp` profileは、現在のDeepSeekカタログにある`deepseek-official/deepseek-flash`を既定にする。ACP handshakeはこのモデルの入力能力に基づき、画像入力も利用可能として返す。以前の`deepseek-v4-flash`を独自の接続で使う場合は、そのモデルを接続設定の`models`へ明示し、利用モデルとしてONにする。
+
 ## Migration
 
 1. 更新後に「設定 → モデル」を開く。既存経路は初回に一度だけ移行する。Piの旧カタログと明示的なprofile設定のモデルを保持し、新SDKで増えたモデルは自動でONにしない。候補取得に失敗した経路は設定を修復してからONにする。

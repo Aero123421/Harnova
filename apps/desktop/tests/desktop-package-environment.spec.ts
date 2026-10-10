@@ -32,8 +32,8 @@ describe('Desktop local packaging configuration', () => {
       ].join('\n'))
       const environment = loadDesktopPackageEnvironment('win32', {}, directory)
       expect(environment.HARNOVA_DESKTOP_MANDATORY_UPDATE_DISABLED).toBe('1')
-      expect(() => validateDesktopPackageEnvironment(environment, WINDOWS, { unsigned: true })).not.toThrow()
-      expect(() => validateDesktopPackageEnvironment(environment, WINDOWS)).toThrow(/HARNOVA_DOWNLOAD_PROD_ORIGIN/u)
+      expect(() => { validateDesktopPackageEnvironment(environment, WINDOWS, { unsigned: true }) }).not.toThrow()
+      expect(() => { validateDesktopPackageEnvironment(environment, WINDOWS) }).toThrow(/HARNOVA_DOWNLOAD_PROD_ORIGIN/u)
     })
   })
 
