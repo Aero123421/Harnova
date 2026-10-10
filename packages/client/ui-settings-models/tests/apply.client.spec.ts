@@ -15,6 +15,7 @@ import {
   WELCOME_NOTICE_ACK_FIELD, WELCOME_NOTICE_SETTINGS_NAMESPACE, WELCOME_NOTICE_VERSION,
 } from '../src/onboarding-copy.ts'
 import { ModelsSection } from '../src/client/ModelsSection.tsx'
+import { ModelsLoginStore } from '../src/client/login-store.ts'
 import { DeepSeekOnboardingDialog } from '../src/client/DeepSeekOnboardingDialog.tsx'
 import { WelcomeNotice } from '../src/client/WelcomeNotice.tsx'
 import type { IndexInjection } from '@deepseek-ai/dsh-host-webserver'
@@ -40,9 +41,11 @@ async function bench(isLoopback = true, mock = RemoteMock.create().load(remoteDe
       set: vi.fn(),
       unset: vi.fn(),
     },
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
       listConfigurableProviders: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
+      modelCandidates: vi.fn(async () => ({ ok: true as const, value: [] })),
       discoverModels: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
       ...services,
     },
@@ -110,7 +113,7 @@ describe('ui-settings-models apply', () => {
 
   it('declares the services it uses', () => {
     expect(inject).toEqual([
-      'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings', 'remote.session',
+      'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings', 'remote.session', 'remote.authorization',
       'configForms', 'settingsSchema',
     ])
   })
@@ -158,6 +161,39 @@ describe('ui-settings-models apply', () => {
     expect(after.slots.entries('settings.onboarding')).toHaveLength(2)
     // The self-inflicted ledger notifications hit the duplicate guard.
     expect(after.slots.entries('settings.section')).toHaveLength(1)
+  })
+
+  it('routes the section login callbacks to its owned login controller', async () => {
+    const b = await bench()
+    const begin = vi.spyOn(ModelsLoginStore.prototype, 'begin').mockResolvedValue()
+    const answer = vi.spyOn(ModelsLoginStore.prototype, 'answer')
+    const close = vi.spyOn(ModelsLoginStore.prototype, 'close')
+    try {
+      declare(b.slots)
+      await b.ctx.plugin({ inject: [...inject], apply }).await()
+      const entry = b.slots.entries('settings.section')[0]!
+      const injected = entry.inject!()
+      if (typeof injected.beginLogin !== 'function'
+        || typeof injected.answerLogin !== 'function'
+        || typeof injected.closeLogin !== 'function') {
+        throw new Error('Models section login callbacks are missing')
+      }
+      const row = {
+        entry: { provider: 'openai-codex', displayName: 'ChatGPT', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai-codex'], active: true },
+        configured: true, removable: true, apiKeyEnv: undefined, credential: undefined,
+      }
+      Reflect.apply(injected.beginLogin, undefined, [row, 'oauth'])
+      expect(begin).toHaveBeenCalledExactlyOnceWith(row, 'oauth')
+      Reflect.apply(injected.answerLogin, undefined, [17, 'login answer'])
+      expect(answer).toHaveBeenCalledExactlyOnceWith(17, 'login answer')
+      Reflect.apply(injected.closeLogin, undefined, [])
+      expect(close).toHaveBeenCalledTimes(1)
+    } finally {
+      await b.ctx.fiber.dispose()
+      begin.mockRestore()
+      answer.mockRestore()
+      close.mockRestore()
+    }
   })
 
   it('the label thunk follows the active locale without re-registration', async () => {

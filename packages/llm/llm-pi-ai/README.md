@@ -7,7 +7,7 @@ kind: "package-reference"
 
 ## Summary
 
-`@deepseek-ai/dsh-llm-pi-ai` routes model requests to multiple pi-ai providers, OpenAI-compatible gateways, or self-hosted servers from one configuration. Installed pi-ai providers supply endpoint, protocol, and model-catalog defaults; custom routes can declare those values without code changes. Profiles and credentials are resolved for each request, so settings changes take effect on the next request without a restart. Supported providers can use stored OAuth or interactive-key sign-in with cross-process refresh locking. The package may start with no routes and activate when user settings add them.
+`@deepseek-ai/dsh-llm-pi-ai` routes model requests to multiple pi-ai providers, OpenAI-compatible gateways, or self-hosted servers from one configuration. The pinned pi-ai 1.1.0 providers supply endpoint, protocol, and model-catalog defaults; custom routes can declare those values without code changes. Profiles and credentials are resolved for each request, so settings changes take effect on the next request without a restart. Supported providers can use stored OAuth or interactive-key sign-in with cross-process refresh locking. The package may start with no routes and activate when user settings add them.
 
 ## Table of Contents
 
@@ -91,6 +91,20 @@ The generated [configuration catalog](../../../docs/config-catalog.md#deepseek-a
 ### Sign in to a provider
 
 A provider pi-ai ships a login for can be signed into through the harness authorization seam: the flow offers OAuth or an interactive key prompt (a key is typed into pi-ai's own login prompt, not into the settings form), and the resulting credential is stored in the harness credential store at `llm-pi-ai/<provider id>`. The stored sign-in authenticates its route beneath any `apiKeyEnv` override and refreshes itself under the store's cross-process lock; signing out deletes the stored record. A hand-declared route key outside the record grammar — a lowercase hyphenated identifier — cannot be signed into, because a record write for it refuses with `LlmError('UNSTORABLE_PROVIDER_ID')`; such a route authenticates through `apiKeyEnv` or ambient provider settings instead.
+
+ChatGPT sign-in uses Pi's existing `openai-codex` OAuth flow. The `openai` route remains API-key capable; its new 1.1.0 OAuth flow is withheld until its separate registration and token-validation requirements are covered. The Settings dialog supports browser/device-code notices and pasted callbacks through the same authorization seam. Login commits through `AuthorizationSession.commit`, so closing the attempt cannot overwrite a previously stored grant with a late result.
+
+### Enabled and usable models
+
+The [model-access plugin](../model-access/README.md) owns the enabled set separately from this adapter's model definitions. Full candidates remain available to Settings while OFF. In compositions with that policy, usable catalogs additionally check explicit credential references or Pi's native authentication and account model filters. This is local availability, not a network entitlement check. OFF routes do not start a new native availability check or refresh through catalog loading; an already-started rotating-grant refresh still commits its result.
+
+The old `azure-openai-responses` provider ID resolves against Pi 1.1.0's `azure` catalog while keeping the saved route identity. The API protocol name remains `azure-openai-responses`.
+
+### Fast mode
+
+`speed: 'fast'` requests `service_tier: 'priority'`; `speed: 'standard'` requests `service_tier: 'default'`. Omission leaves the provider default unchanged. Speed is independent of reasoning effort and does not alter model input, tools, or prompt assembly. The tier actually served and account eligibility remain the provider's decision.
+
+The capability is advertised only for known models (`gpt-6.1-sol`, `gpt-6-astra`, `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-sol`, `gpt-5.5`) on official HTTPS OpenAI Responses or Codex Responses routes. Custom endpoints and explicit protocol overrides do not inherit it. Unsupported speed options fail before network I/O. Maintain the exact capability list in [speed.ts](src/speed.ts) alongside SDK upgrades and the [official speed guide](https://developers.openai.com/codex/speed).
 
 ### Resolve the model catalog
 
@@ -227,7 +241,7 @@ These limits define where the adapter stops and future work begins. They are cur
 - **Only a leading in-history `system` message becomes pi-ai's `systemPrompt`** — this adapter uses pi-ai's single `systemPrompt` input, so a later `system` message, or a leading one when `GenerateOptions.system` is also set, folds into a `user` message at its position; provider-specific placement of the prompt follows pi-ai rather than a harness-owned wire override. Images in system or assistant history, including the leading system message, fail with `UNSUPPORTED_CONTENT` on both conversion paths.
 - **Provider HTTP status is unavailable** — pi-ai error events do not expose a stable HTTP status across providers.
 - **Retry policy is provider-owned, not an SDK retry** — pi-ai SDK retries stay disabled so durable agent steps and `llm/retry` events own every visible attempt, and direct `ctx.llm.stream()` calls remain single-attempt.
-- **Streamed tool-call arguments are parsed once, when the call ends** — the installed pi-ai carries [`patches/@earendil-works__pi-ai@0.87.1.patch`](../../../patches/@earendil-works__pi-ai@0.87.1.patch), which removes the per-delta re-parse of the whole accumulated argument JSON in every stream adapter (upstream [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)); unpatched, a multi-megabyte argument stream costs O(n²) CPU on the event loop and stalls every session in the process. Until `toolcall_end`, a pi-ai partial's tool-call `arguments` stays `{}`; this adapter reads only the delta strings and the finalized arguments. Re-apply or retire the patch on every pi-ai upgrade.
+- **Streamed tool-call arguments are parsed once, when the call ends** — the installed pi-ai carries [`patches/@earendil-works__pi-ai@1.1.0.patch`](../../../patches/@earendil-works__pi-ai@1.1.0.patch), which removes the per-delta re-parse of the whole accumulated argument JSON in every stream adapter (upstream [earendil-works/pi#9265](https://github.com/earendil-works/pi/issues/9265)); unpatched, a multi-megabyte argument stream costs O(n²) CPU on the event loop and stalls every session in the process. Until `toolcall_end`, a pi-ai partial's tool-call `arguments` stays `{}`; this adapter reads only the delta strings and the finalized arguments. Re-apply or retire the patch on every pi-ai upgrade.
 
 <a id="dev-note"></a>
 ### Dev Note

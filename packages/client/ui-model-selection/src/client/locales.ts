@@ -10,6 +10,9 @@
 
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh = {
+  'speed.label': 'Fast 模式',
+  'speed.hint': '请求更快的处理。用量或价格可能增加，是否可用取决于账户。',
+  'selection.unavailable': '此模型目前不可用。请在设置 → 模型中启用，或选择其他模型。',
   'provider.account': 'DeepSeek 账号',
   'command.label': '模型',
   'command.description': '选择本会话使用的模型',
@@ -40,6 +43,9 @@ export type ModelKey = keyof typeof zh
 
 /** English dictionary, checked complete against the zh key set. */
 export const en = {
+  'speed.label': 'Fast mode',
+  'speed.hint': 'Request faster processing. Usage or pricing may be higher; availability depends on your account.',
+  'selection.unavailable': 'This selection is unavailable. Enable the model in Settings → Models or choose another model.',
   'provider.account': 'DeepSeek Account',
   'command.label': 'Model',
   'command.description': 'Select the model for this conversation',
@@ -67,6 +73,9 @@ export const en = {
 
 /** Japanese copy shipped with Harnova. */
 export const ja = {
+  'speed.label': 'Fastモード',
+  'speed.hint': '高速な処理をリクエストします。利用枠の消費や料金が増える場合があり、利用可否はアカウントによります。',
+  'selection.unavailable': 'このモデルは現在使えません。設定 → モデルでONにするか、別のモデルを選択してください。',
   'provider.account': 'DeepSeekアカウント',
   'command.label': 'モデル',
   'command.description': 'この会話のモデルを選択',

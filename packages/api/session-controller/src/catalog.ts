@@ -41,6 +41,7 @@ export async function buildModelCatalog(
           }
         return {
           id: model.id,
+          ...resolved.fastMode === undefined ? {} : { fastMode: resolved.fastMode },
           name: model.name,
           ...(model.description === undefined ? {} : { description: model.description }),
           ...(reasoning === undefined ? {} : { reasoning }),

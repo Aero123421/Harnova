@@ -101,6 +101,16 @@ const GROUP_ORDER = [
 
 const SERVICE_ROLES: ServiceRole[] = [
   {
+    key: 'modelAccess', pkg: 'model-access', title: 'Profile-owned enabled model policy',
+    mode: 'core', consumers: ['llm', 'subagent'],
+    note: 'Keeps provider switches and explicit model choices separate from credentials; the Host LLM enforces the policy at dispatch.',
+  },
+  {
+    key: 'authorizationController', pkg: 'api-settings-controller', title: 'Private provider sign-in Remote controller',
+    mode: 'core', consumers: ['client-ui-settings-models'],
+    note: 'Relays provider sign-in notices and questions only to the initiating invocation; credential grants remain on the Host.',
+  },
+  {
     key: 'hmr',
     pkg: 'hmr',
     title: 'Serialized module and configuration reloads',

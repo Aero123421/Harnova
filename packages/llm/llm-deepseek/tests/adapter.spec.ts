@@ -63,6 +63,19 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 describe('direct Messages HTTP', () => {
+  it('keeps configured candidates while authentication controls available model IDs', async () => {
+    const discoverModels = vi.fn(async () => [{ provider: 'deepseek-official', id: MODEL, name: 'DeepSeek Flash' }])
+    const llm = adapter({ models: [{ id: MODEL }, { id: 'deepseek-flash' }] }, { discoverModels })
+
+    expect((await llm.listModelCandidates('deepseek-official')).map(model => model.id)).toEqual([MODEL, 'deepseek-flash'])
+    expect(await llm.availableModelIds('deepseek-official')).toEqual(new Set([MODEL]))
+    expect(discoverModels).toHaveBeenCalledWith('deepseek-official')
+
+    discoverModels.mockResolvedValueOnce([])
+    expect(await llm.availableModelIds('deepseek-official')).toEqual(new Set())
+    expect((await llm.listModelCandidates('deepseek-official')).map(model => model.id)).toEqual([MODEL, 'deepseek-flash'])
+  })
+
   it('continues through Messages with assistant blocks in saved user history', async () => {
     const http = await endpoint()
     const notice = createUserMessage({ source: { kind: 'saved-notice' }, content: [

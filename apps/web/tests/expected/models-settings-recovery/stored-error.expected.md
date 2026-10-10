@@ -8,20 +8,29 @@
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
-  - paragraph: 填入各提供商的 API 密钥即可使用其模型。
+  - paragraph: 连接提供商并选择整个 Harnova 中可用的模型。
   - list:
     - listitem:
       - text: openrouter
+      - img "API 密钥缺失"
+      - button "登录"
       - button "编辑 openrouter": 编辑
       - button "删除 openrouter": 删除
+      - text: 0 个模型已启用
+      - switch "使用 openrouter" [checked]
       - alert: "llm-pi-ai: provider \"openrouter\" model \"111\" needs an api; the installed catalog does not describe it, so set the route's api to the wire protocol its endpoint speaks"
     - listitem:
       - text: zai
+      - img "API 密钥缺失"
       - button "编辑 zai": 编辑
       - button "删除 zai": 删除
+      - text: 7 个模型已启用
+      - switch "使用 zai" [checked]
     - listitem:
       - text: acme-gateway 自定义
       - button "编辑 acme-gateway": 编辑
       - button "删除 acme-gateway": 删除
+      - text: 0 个模型已启用
+      - switch "使用 acme-gateway" [checked]
       - alert: "llm-pi-ai: provider \"acme-gateway\" model \"custom-model\" needs an api; the installed catalog does not describe it, so set the route's api to the wire protocol its endpoint speaks"
   - button "添加模型提供商"

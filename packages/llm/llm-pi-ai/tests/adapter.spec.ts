@@ -491,6 +491,7 @@ describe('provider profile lifecycle', () => {
     const models = await ctx.llm.listModels('openai')
     expect(models.find(model => model.id === 'gpt-4.1')).toEqual({
       provider: 'openai', id: 'gpt-4.1', name: 'GPT-4.1',
+      initiallyEnabled: true,
       inputModalities: ['text', 'image'],
     })
     expect(models.every(model => model.provider === 'openai')).toBe(true)
@@ -1057,4 +1058,17 @@ it.each([
     auth: memoryAuth(),
   })
   expect(await adapter.listModels('deepseek')).not.toHaveLength(0)
+  if (error instanceof LlmError && error.code === 'MISSING_CREDENTIAL') {
+    expect(await adapter.availableModelIds('deepseek')).toEqual(new Set())
+  } else {
+    await expect(adapter.availableModelIds('deepseek')).rejects.toBe(error)
+  }
+})
+
+it('makes explicitly authenticated catalog models available without changing the full candidate list', async () => {
+  const profiles = resolveProfiles({ deepseek: { apiKeyEnv: 'PI_TEST_KEY' } })
+  const adapter = new PiAiAdapter({ profiles: () => profiles, resolveApiKey: async () => 'test-key', auth: memoryAuth() })
+  const candidates = await adapter.listModels('deepseek')
+
+  expect(await adapter.availableModelIds('deepseek')).toEqual(new Set(candidates.map(model => model.id)))
 })

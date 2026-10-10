@@ -14,7 +14,12 @@ const modelSelectionSchema = z.object({
   provider: z.string().min(1),
   model: z.string().min(1),
   reasoningEffort: z.string().min(1).optional(),
-}) as unknown as z.ZodType<ModelSelection>
+  speed: z.enum(['standard', 'fast']).optional(),
+}).transform(({ provider, model, reasoningEffort, speed }): ModelSelection => ({
+  provider, model,
+  ...reasoningEffort === undefined ? {} : { reasoningEffort },
+  ...speed === undefined ? {} : { speed },
+}))
 
 const modelSelectionProjectionStateSchema = z.object({
   lastUsed: modelSelectionSchema.nullable(),
@@ -45,6 +50,7 @@ function applyModelSelectionProjection(
   const lastUsed: ModelSelection = {
     provider: event.data.header.config.provider,
     model: event.data.header.config.model,
+    ...event.data.header.config.speed === undefined ? {} : { speed: event.data.header.config.speed },
     ...(event.data.header.config.reasoningEffort === undefined
       ? {}
       : { reasoningEffort: String(event.data.header.config.reasoningEffort) }),
@@ -64,14 +70,15 @@ const modelSelectionProjection = {
     viewSchema: modelSelectionProjectionSchema,
     view: state => ({ lastUsed: state.lastUsed, next: state.pending ?? state.lastUsed }),
   },
-  stateVersion: 2,
+  stateVersion: 3,
 } satisfies ProjectionDefinition<'modelSelection', ModelSelectionProjectionState>
 
 function sameSelection(left: ModelSelection | null, right: ModelSelection | null): boolean {
   return left === right || (left !== null && right !== null
     && left.provider === right.provider
     && left.model === right.model
-    && left.reasoningEffort === right.reasoningEffort)
+    && left.reasoningEffort === right.reasoningEffort
+    && left.speed === right.speed)
 }
 
 /**

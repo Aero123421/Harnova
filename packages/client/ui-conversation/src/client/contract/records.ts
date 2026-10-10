@@ -19,6 +19,7 @@ export interface AssistantRequestConfig {
   purpose?: string
   thinking?: string
   reasoningEffort?: string
+  speed?: 'standard' | 'fast'
   temperature?: number
   maxTokens?: number
   stop?: readonly string[]

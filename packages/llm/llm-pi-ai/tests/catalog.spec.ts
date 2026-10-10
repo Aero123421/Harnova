@@ -14,6 +14,7 @@ import type { Api, Model, OpenAICompletionsCompat, Provider } from '@earendil-wo
 import { resolveProfiles } from '../src/config.ts'
 import { createModels, createProvider, getSupportedThinkingLevels } from '../src/models.ts'
 import { buildProvider, supportedProtocols } from '../src/provider.ts'
+import * as catalog from '../src/catalog.ts'
 import { assemble } from './assemble.ts'
 import { memoryAuth } from './auth-double.ts'
 import { closeMockServers, mockServer, textEvents } from './mock-server.ts'
@@ -70,6 +71,44 @@ async function harness(config: LlmPiAi.Options): Promise<Context> {
 }
 
 describe('hand-declared providers', () => {
+  it('preserves the first-upgrade model defaults while requiring new catalog models to be enabled', async () => {
+    const profiles = resolveProfiles({ openai: {} })
+    const adapter = new PiAiAdapter({ profiles: () => profiles, resolveApiKey: async () => undefined, auth: memoryAuth() })
+
+    const candidates = await adapter.listModels('openai')
+    expect(candidates.find(model => model.id === 'gpt-6-sol')?.initiallyEnabled).toBe(true)
+    expect(candidates.find(model => model.id === 'gpt-6.1-sol')?.initiallyEnabled).toBe(false)
+
+    const explicitlyConfigured = resolveProfiles({ openai: { models: [{ id: 'gpt-6.1-sol' }] } })
+    const configuredAdapter = new PiAiAdapter({
+      profiles: () => explicitlyConfigured, resolveApiKey: async () => undefined, auth: memoryAuth(),
+    })
+    expect(await configuredAdapter.listModels('openai')).toMatchObject([{ id: 'gpt-6.1-sol', initiallyEnabled: true }])
+  })
+
+  it('delegates credential-specific model filtering with the original catalog provider as receiver', () => {
+    const base = catalog.catalogProvider('openai')
+    if (base === undefined) throw new Error('missing OpenAI catalog provider')
+    const credential = { type: 'api_key' as const, key: 'account-key' }
+    const withFilter: Provider = {
+      ...base,
+      filterModels(models, grant) {
+        expect(this).toBe(withFilter)
+        expect(grant).toBe(credential)
+        return models.slice(0, 1)
+      },
+    }
+    const catalogProvider = vi.spyOn(catalog, 'catalogProvider').mockReturnValue(withFilter)
+    try {
+      const models = base.getModels()
+      const provider = buildProvider({ provider: 'openai', displayName: 'OpenAI', models, namesCredential: false })
+
+      expect(provider.getModels()).toBe(models)
+      expect(provider.filterModels?.(models, credential)).toEqual(models.slice(0, 1))
+      expect(provider.auth).toBe(base.auth)
+    } finally { catalogProvider.mockRestore() }
+  })
+
   it('serves a route pi-ai has never heard of from its own declaration', async () => {
     const server = await mockServer([{ events: textEvents }])
     const ctx = await harness(gateway(`${server.url}/v1`))
@@ -1245,6 +1284,7 @@ describe('configurable-provider directory', () => {
 
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
       provider: 'openai-codex',
+      authorizationKey: 'llm-pi-ai/openai-codex',
       displayName: 'openai-codex',
       settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openai-codex'],

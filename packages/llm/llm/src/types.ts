@@ -243,6 +243,8 @@ export type ModelModality = ModelModalityMap[keyof ModelModalityMap]
  * provider alongside its live/dormant state.
  */
 export interface LlmConfigurableProvider {
+  /** Optional credential-obtaining flow offered for this route. */
+  authorizationKey?: string
   /** Provider route key this entry activates when configured. */
   provider: string
   /** Human-readable provider name for configuration surfaces. */
@@ -328,6 +330,8 @@ export interface LlmDiscoveredModel {
 
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 export interface LlmModelInfo {
+  /** First allowlist migration only: false excludes models added by the same SDK upgrade. */
+  initiallyEnabled?: boolean
   /** Provider route that owns this model entry. */
   provider: string
   /** Model id passed to {@link GenerateOptions.model}. */
@@ -408,6 +412,8 @@ export type ToolUpdate = 'in-history' | 'addition-only'
 
 /** Exact-route model metadata resolved by its owning adapter. */
 export interface LlmResolvedModelInfo extends LlmModelInfo {
+  /** Adapter can request standard or fast processing for this exact route. */
+  fastMode?: boolean
   /** Provider-owned context capacity when known. */
   context?: LlmModelContext
   /** Adapter-configured per-request output cap materialized when callers omit one. */
@@ -514,6 +520,8 @@ export interface GenerateOptions {
   model: string
   /** Adapter-owned reasoning effort selected for this exact model. */
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
   /**
    * Ordered conversation messages, exactly as the provider sees them. A
    * loop-built request passes the derived history (dsh-agent-loop), whose

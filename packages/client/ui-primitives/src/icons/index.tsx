@@ -1656,3 +1656,13 @@ export const IconMicrophoneOutlineRegular = (props: IconProps) => (
 export const IconMicrophoneOutlineMedium = (props: IconProps) => (
   <IconMicrophoneOutlineArtwork {...props} strokeWidth={ICON_MEDIUM_STROKE} />
 )
+
+/** Filled lightning mark for an explicit Fast processing preference. */
+export const IconBoltFillRegular = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+    <path d="M9.6 1 3 9h4l-.6 6L13 7H9l.6-6Z" />
+  </svg>
+)
+
+/** Filled marks use the same silhouette at both weights. */
+export const IconBoltFillMedium = IconBoltFillRegular

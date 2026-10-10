@@ -28,13 +28,16 @@ export interface Config {
   model: Volatile<string>
   /** Adapter-owned reasoning effort; omission follows the provider default. */
   reasoningEffort: Volatile<string | undefined>
+  /** Optional speed tier request, independent of effort; omission uses the provider default. */
+  speed: Volatile<'standard' | 'fast' | undefined>
 }
 
 /** Project stored settings onto the Agent-facing selection type. */
-function selection(settings: { provider: string; model: string; reasoningEffort?: string }): ModelSelection {
+function selection(settings: { provider: string; model: string; reasoningEffort?: string; speed?: 'standard' | 'fast' }): ModelSelection {
   return {
     provider: settings.provider,
     model: settings.model,
+    ...settings.speed === undefined ? {} : { speed: settings.speed },
     ...settings.reasoningEffort === undefined
       ? {}
       : { reasoningEffort: ReasoningEffortId(settings.reasoningEffort) },
@@ -52,6 +55,7 @@ export class AgentDefaultModelConfig extends Service {
     provider: z.string().required().volatile(),
     model: z.string().required().volatile(),
     reasoningEffort: z.string().volatile(),
+    speed: z.union(['standard', 'fast']).volatile(),
   })
 
   constructor(private readonly ownerContext: Context, private config: Config) {
@@ -66,9 +70,11 @@ export class AgentDefaultModelConfig extends Service {
    */
   currentSelection(): ModelSelection {
     const reasoningEffort = this.config.reasoningEffort.get()
+    const speed = this.config.speed.get()
     return selection({
       provider: this.config.provider.get(), model: this.config.model.get(),
       ...reasoningEffort === undefined ? {} : { reasoningEffort },
+      ...speed === undefined ? {} : { speed },
     })
   }
 
@@ -86,6 +92,7 @@ export class AgentDefaultModelConfig extends Service {
     if (editor === undefined) return
     const config = {
       provider: next.provider, model: next.model,
+      ...next.speed === undefined ? {} : { speed: next.speed },
       ...next.reasoningEffort === undefined ? {} : { reasoningEffort: String(next.reasoningEffort) },
     }
     const saved = this.saves.then(() => editor.edit(entry, () => config))

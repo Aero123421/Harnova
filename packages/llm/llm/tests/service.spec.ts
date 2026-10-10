@@ -343,6 +343,7 @@ describe('LlmRuntime', () => {
       expect(projected, fixture.name).toMatchObject({ type: 'text' })
       if (projected?.type !== 'text') throw new Error(`expected projected text for ${fixture.name}`)
       expect(projected.text, fixture.name).toContain(fixture.expected)
+      expect(ctx.llm.fileRequestText(attachment), fixture.name).toBe(projected.text)
       if (fixture.fs !== undefined) {
         expect(projected.text, fixture.name).toContain('include this saved path in the delegation prompt')
       }
@@ -1261,6 +1262,17 @@ describe('LlmRuntime', () => {
       [metadata as unknown as LlmModelInfo],
     ))
     await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
+  })
+
+  it('rejects malformed migration flags before exposing a model catalog', async () => {
+    const ctx = new Context()
+    await ctx.plugin(LlmRuntime)
+    try {
+      const model: LlmModelInfo = { provider: 'route', id: 'model', name: 'Model' }
+      Reflect.set(model, 'initiallyEnabled', 'yes')
+      ctx.llm.registerAdapter(['route'], new CatalogAdapter({ id: 'route', name: 'Route' }, [model]))
+      await expect(ctx.llm.listModels('route')).rejects.toMatchObject({ code: 'INVALID_CATALOG' })
+    } finally { await ctx.fiber.dispose() }
   })
 
   it('rejects duplicate model ids in one provider catalog', async () => {

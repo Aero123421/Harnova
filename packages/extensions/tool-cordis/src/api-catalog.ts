@@ -549,6 +549,30 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'authorizationController',
+    summary: 'No token reads, URL broadcasts, durable attempts, or provider-specific UI protocol.',
+    description: 'No token reads, URL broadcasts, durable attempts, or provider-specific UI protocol.',
+    methods: [
+      {
+        signature: '@Remote async list(): Promise<ProviderAuthorizationView[]>',
+        description: 'List non-secret provider sign-in choices.',
+        parameters: [],
+        returns: 'registered flow identities, methods, and local credential presence.',
+      },
+      {
+        signature: '@Remote async forget(scope: string, id: string): Promise<void>',
+        description: 'Local credential removal is distinct from provider/model OFF and server revocation.',
+        parameters: [{ name: 'scope', description: 'owning credential scope.' }, { name: 'id', description: 'provider ID within that scope.' }],
+      },
+      {
+        signature: '@Remote({ mode: \'stream\' }) async *login( scope: string, id: string, method: string, signal: AbortSignal, ): RemoteStream<ProviderAuthorizationFrame, ProviderAuthorizationAnswer>',
+        description: 'Run one sign-in through the initiating invocation\'s private interaction stream.',
+        parameters: [{ name: 'scope', description: 'owning credential scope.' }, { name: 'id', description: 'provider ID within that scope.' }, { name: 'method', description: 'method ID advertised by the flow.' }, { name: 'signal', description: 'invocation cancellation.' }],
+        returns: 'notices, numbered questions, and the attempt\'s final status.',
+      },
+    ],
+  },
+  {
     key: 'browserUse',
     summary: 'Owns one optional provider registration in the shared browser-use service.',
     description: 'Owns one optional provider registration in the shared browser-use service.',
@@ -1386,6 +1410,17 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     description: 'The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.',
     methods: [
       {
+        signature: 'registerModelAccess(policy: LlmModelAccessPolicy): () => Promise<void>',
+        description: 'Register the product\'s live model allowlist; library-only compositions remain unrestricted.',
+        parameters: [{ name: 'policy', description: 'live profile policy shared by model catalogs and dispatch.' }],
+        returns: 'lifecycle-owned policy disposer.',
+      },
+      {
+        signature: 'async assertModelEnabled(provider: string, model: string): Promise<void>',
+        description: 'Reject a disabled route before resolving credentials, preparing, or dispatching a request.',
+        parameters: [{ name: 'provider', description: 'registered provider route.' }, { name: 'model', description: 'exact model ID.' }],
+      },
+      {
         signature: 'registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle',
         description: 'Register an adapter for the given provider routes. Throws `LlmError` with code `DUPLICATE_ADAPTER` if any provider already has an adapter (all-or-nothing). Disposed with the fiber.',
         parameters: [{ name: 'providers', description: 'every provider route this adapter should serve.' }, { name: 'adapter', description: 'the adapter that streams calls for those providers.' }],
@@ -1404,10 +1439,16 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         returns: 'a handle that withdraws all of them, and can atomically replace them.',
       },
       {
-        signature: '@Remote listConfigurableProviders(): LlmConfigurableProvider[]',
+        signature: 'listConfigurableProviders(): LlmConfigurableProvider[]',
         description: 'List every declared configurable provider, registered or dormant.',
         parameters: [],
         returns: 'detached directory entries in declaration order.',
+      },
+      {
+        signature: '@Remote(\'listConfigurableProviders\') async remoteConfigurableProviders(): Promise<LlmConfigurableProvider[]>',
+        description: 'Prepare initial model preferences before Settings can add a new connection.',
+        parameters: [],
+        returns: 'detached configurable directory entries, including dormant routes.',
       },
       {
         signature: 'registerModelDiscovery( settingsNs: string, discover: ( request: LlmModelDiscoveryRequest, signal?: AbortSignal, ) => Promise<readonly LlmDiscoveredModel[]>, ): () => void',
@@ -1448,13 +1489,31 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
       },
       {
         signature: 'async listModels(provider: string): Promise<LlmModelInfo[]>',
-        description: 'Discover models advertised by one registered provider. Catalog membership does not constrain core routing. Catalog-driven entry points may restrict selection and submission to the advertised models.',
+        description: 'Discover models advertised by one registered provider. Catalog membership is separate from the optional model access policy. Entry points may restrict selection and submission to the advertised models.',
         parameters: [{ name: 'provider', description: 'registered provider route to inspect.' }],
         returns: 'detached model metadata in adapter-preferred order.',
       },
       {
+        signature: '@Remote(\'modelCandidates\') async remoteModelCandidates(provider: string): Promise<LlmModelInfo[]>',
+        description: 'Full adapter catalog for Settings; disabling never deletes candidate definitions.',
+        parameters: [{ name: 'provider', description: 'registered provider route.' }],
+        returns: 'detached candidate metadata, including disabled models.',
+      },
+      {
+        signature: '@Remote(\'availableModelCandidates\') async availableModelCandidates(provider: string): Promise<LlmModelInfo[]>',
+        description: 'Locally usable candidates, independent of saved provider/model switches.',
+        parameters: [{ name: 'provider', description: 'registered adapter route.' }],
+        returns: 'catalog entries usable with the current authentication.',
+      },
+      {
+        signature: 'async listModelCandidates(provider: string): Promise<LlmModelInfo[]>',
+        description: 'Query unfiltered candidates without invoking the product policy\'s migration.',
+        parameters: [{ name: 'provider', description: 'registered provider route.' }],
+        returns: 'detached candidate metadata in adapter order.',
+      },
+      {
         signature: 'async resolveModelInfo( provider: string, model: string, signal?: AbortSignal, ): Promise<LlmResolvedModelInfo>',
-        description: 'Resolve and validate all metadata from the adapter that owns one exact route. The result is detached from adapter-owned objects; catalog membership remains advisory and does not control request routing.',
+        description: 'Resolve and validate all metadata from the adapter that owns one exact route. The result is detached from adapter-owned objects; catalog membership remains advisory; the optional access policy controls request routing.',
         parameters: [{ name: 'provider', description: 'registered provider route to inspect.' }, { name: 'model', description: 'exact model id passed to the adapter.' }, { name: 'signal', description: 'optional cancellation for adapter-owned asynchronous lookup.' }],
         returns: 'exact model identity plus available context and reasoning metadata.',
       },
@@ -1507,6 +1566,25 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
         description: 'Register one server and expose resource tools while that scope has providers.',
         parameters: [{ name: 'server', description: 'configured server name, unique in this scope.' }, { name: 'provider', description: 'connection-owned resource operations.' }],
         returns: 'the effect disposer for this exact registration.',
+      },
+    ],
+  },
+  {
+    key: 'modelAccess',
+    summary: 'No provider credentials are read or changed by this service.',
+    description: 'No provider credentials are read or changed by this service.',
+    methods: [
+      {
+        signature: 'async allowed(provider: string): Promise<ReadonlySet<string>>',
+        description: 'Read the latest provider switch and preserved model choices on each call.',
+        parameters: [{ name: 'provider', description: 'registered LLM route identity.' }],
+        returns: 'the detached allowed model IDs, or an empty set for a disabled route.',
+      },
+      {
+        signature: 'isEnabled(provider: string, model: string): boolean',
+        description: 'Re-read live configuration in the same synchronous section as dispatch.',
+        parameters: [{ name: 'provider', description: 'registered LLM route identity.' }, { name: 'model', description: 'exact model ID to dispatch.' }],
+        returns: 'whether this provider and model are currently enabled.',
       },
     ],
   },
@@ -4174,6 +4252,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'info', description: 'the run identity and terminal outcome.' }],
   },
   {
+    name: 'subagent/pre-start',
+    mode: 'serial',
+    signature: '\'subagent/pre-start\'(provider: SubagentProvider): Promise<void> | void',
+    summary: 'Product policies check delegation backends before child resources are acquired.',
+    description: 'Product policies check delegation backends before child resources are acquired.',
+    parameters: [{ name: 'provider', description: 'backend about to create or resume a delegated run.' }],
+  },
+  {
     name: 'subagent/provider-added',
     mode: 'emit',
     signature: '\'subagent/provider-added\'(provider: SubagentProvider): void',
@@ -4415,7 +4501,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'AgentOptions',
-    declaration: 'export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    reasoningEffort?: ReasoningEffortId;\n    maxTokens?: number;\n}',
+    declaration: 'export interface AgentOptions {\n    provider?: string;\n    model?: string;\n    reasoningEffort?: ReasoningEffortId;\n    speed?: \'standard\' | \'fast\';\n    maxTokens?: number;\n}',
   },
   {
     name: 'AgentPresetComposition',
@@ -5231,7 +5317,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'GenerateOptions',
-    declaration: 'export interface GenerateOptions {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    messages: RequestMessage[];\n    system?: string;\n    tools?: ToolSchema[];\n    toolHistory?: ToolHistory;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n    signal?: AbortSignal;\n    sessionId?: Branded<\'SessionId\'>;\n    purpose?: \'compaction\' | \'session-title\';\n}',
+    declaration: 'export interface GenerateOptions {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    speed?: \'standard\' | \'fast\';\n    messages: RequestMessage[];\n    system?: string;\n    tools?: ToolSchema[];\n    toolHistory?: ToolHistory;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n    signal?: AbortSignal;\n    sessionId?: Branded<\'SessionId\'>;\n    purpose?: \'compaction\' | \'session-title\';\n}',
   },
   {
     name: 'GenericCallView',
@@ -5559,7 +5645,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmAdapter',
-    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
+    declaration: 'export abstract class LlmAdapter {\n    providerInfo(provider: string): LlmProviderInfo;\n    providerRetryPolicy(_provider: string): ResolvedRetryPolicy | undefined;\n    imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;\n    availableModelIds(_provider: string): Promise<ReadonlySet<string> | undefined>;\n    listModels(_provider: string): Promise<readonly LlmModelInfo[]>;\n    listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]>;\n    resolveModel(provider: string, model: string, _signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;\n    abstract stream(options: GenerateOptions): AsyncIterable<StreamChunk>;\n}',
   },
   {
     name: 'LlmAttemptId',
@@ -5567,7 +5653,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmCallConfig',
-    declaration: 'export interface LlmCallConfig {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n}',
+    declaration: 'export interface LlmCallConfig {\n    provider: string;\n    model: string;\n    reasoningEffort?: ReasoningEffortId;\n    speed?: \'standard\' | \'fast\';\n    temperature?: number;\n    maxTokens?: number;\n    stop?: string[];\n}',
   },
   {
     name: 'LlmCallConfigAdapterDefaults',
@@ -5575,7 +5661,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmConfigurableProvider',
-    declaration: 'export interface LlmConfigurableProvider {\n    provider: string;\n    displayName: string;\n    settingsNs: string;\n    settingsPath: readonly string[];\n    declared?: boolean;\n    error?: string;\n}',
+    declaration: 'export interface LlmConfigurableProvider {\n    authorizationKey?: string;\n    provider: string;\n    displayName: string;\n    settingsNs: string;\n    settingsPath: readonly string[];\n    declared?: boolean;\n    error?: string;\n}',
   },
   {
     name: 'LlmDiscoveredModel',
@@ -5594,6 +5680,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface LlmImageRequestPricing {\n    priceImages(images: readonly ImageBlock[]): readonly LlmImageRequestPrice[];\n}',
   },
   {
+    name: 'LlmModelAccessPolicy',
+    declaration: 'export interface LlmModelAccessPolicy {\n    allowed(provider: string): Promise<ReadonlySet<string>>;\n    isEnabled(provider: string, model: string): boolean;\n}',
+  },
+  {
     name: 'LlmModelContext',
     declaration: 'export interface LlmModelContext {\n    contextWindow: number;\n}',
   },
@@ -5603,7 +5693,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmModelInfo',
-    declaration: 'export interface LlmModelInfo {\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n}',
+    declaration: 'export interface LlmModelInfo {\n    initiallyEnabled?: boolean;\n    provider: string;\n    id: string;\n    name: string;\n    description?: string;\n    inputModalities?: readonly ModelModality[];\n}',
   },
   {
     name: 'LlmModelReasoningInfo',
@@ -5619,11 +5709,11 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'LlmResolvedModelInfo',
-    declaration: 'export interface LlmResolvedModelInfo extends LlmModelInfo {\n    context?: LlmModelContext;\n    defaultMaxTokens?: number;\n    reasoning?: LlmModelReasoningInfo;\n    systemPromptUpdate?: SystemPromptUpdate;\n    toolUpdate?: ToolUpdate;\n}',
+    declaration: 'export interface LlmResolvedModelInfo extends LlmModelInfo {\n    fastMode?: boolean;\n    context?: LlmModelContext;\n    defaultMaxTokens?: number;\n    reasoning?: LlmModelReasoningInfo;\n    systemPromptUpdate?: SystemPromptUpdate;\n    toolUpdate?: ToolUpdate;\n}',
   },
   {
     name: 'LlmRuntime',
-    declaration: 'export class LlmRuntime extends TypertRemoteService {\n    constructor(ctx: Context);\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    @Remote\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    @Remote\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest, signal?: AbortSignal) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal?: AbortSignal): Promise<LlmDiscoveredModel[]>;\n    @Remote(\'discoverModels\')\n    async remoteDiscoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal: AbortSignal): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    imageRequestPricing(provider: string, model: string): LlmImageRequestPricing | undefined;\n    fileRequestText(ref: FileAttachmentRef): string;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    async resolveModelInfo(provider: string, model: string, signal?: AbortSignal): Promise<LlmResolvedModelInfo>;\n    async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig>;\n    async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;\n    stream(options: GenerateOptions) /* …truncated — full shape in source */',
+    declaration: 'export class LlmRuntime extends TypertRemoteService {\n    constructor(ctx: Context);\n    registerModelAccess(policy: LlmModelAccessPolicy): () => Promise<void>;\n    async assertModelEnabled(provider: string, model: string): Promise<void>;\n    registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;\n    @Remote\n    listProviders(): LlmProviderInfo[];\n    registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;\n    listConfigurableProviders(): LlmConfigurableProvider[];\n    @Remote(\'listConfigurableProviders\')\n    async remoteConfigurableProviders(): Promise<LlmConfigurableProvider[]>;\n    registerModelDiscovery(settingsNs: string, discover: (request: LlmModelDiscoveryRequest, signal?: AbortSignal) => Promise<readonly LlmDiscoveredModel[]>): () => void;\n    async discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal?: AbortSignal): Promise<LlmDiscoveredModel[]>;\n    @Remote(\'discoverModels\')\n    async remoteDiscoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal: AbortSignal): Promise<LlmDiscoveredModel[]>;\n    providerRetryPolicy(provider: string): ResolvedRetryPolicy;\n    imageRequestPricing(provider: string, model: string): LlmImageRequestPricing | undefined;\n    fileRequestText(ref: FileAttachmentRef): string;\n    async listModels(provider: string): Promise<LlmModelInfo[]>;\n    @Remote(\'modelCandidates\')\n    async remoteModelCandidates(provider: string):  /* …truncated — full shape in source */',
   },
   {
     name: 'LocalAtInput',
@@ -5723,7 +5813,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'ModelCatalogModel',
-    declaration: 'export interface ModelCatalogModel {\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
+    declaration: 'export interface ModelCatalogModel {\n    readonly fastMode?: boolean;\n    readonly id: string;\n    readonly name: string;\n    readonly description?: string;\n    readonly reasoning?: ModelReasoning;\n}',
   },
   {
     name: 'ModelMessageSource',
@@ -6042,6 +6132,18 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type PromptSubmitResult = {\n    text: string;\n    context?: readonly string[];\n    drop?: undefined;\n} | {\n    drop: string;\n    text?: undefined;\n    context?: undefined;\n};',
   },
   {
+    name: 'ProviderAuthorizationAnswer',
+    declaration: 'export interface ProviderAuthorizationAnswer {\n    id: number;\n    value: string;\n}',
+  },
+  {
+    name: 'ProviderAuthorizationFrame',
+    declaration: 'export type ProviderAuthorizationFrame = {\n    type: \'notice\';\n    message: string;\n    url?: string;\n    code?: string;\n} | {\n    type: \'prompt\';\n    id: number;\n    kind: \'text\' | \'secret\' | \'select\';\n    message: string;\n    placeholder?: string;\n    options?: {\n        id: string;\n        label: string;\n    }[];\n} | {\n    type: \'withdraw\';\n    id: number;\n} | {\n    type: \'result\';\n    status: \'authorized\' | \'cancelled\' | \'failed\';\n};',
+  },
+  {
+    name: 'ProviderAuthorizationView',
+    declaration: 'export interface ProviderAuthorizationView {\n    key: string;\n    label: string;\n    methods: {\n        id: string;\n        label: string;\n    }[];\n    inFlight: boolean;\n    configured: boolean;\n}',
+  },
+  {
     name: 'ProviderRequestId',
     declaration: 'export type ProviderRequestId = Branded<\'ProviderRequestId\'>;',
   },
@@ -6148,6 +6250,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'RemoteEventHostInfo',
     declaration: 'export interface RemoteEventHostInfo {\n    readonly home: string;\n}',
+  },
+  {
+    name: 'RemoteStream',
+    declaration: 'export type RemoteStream<Out, In = never> = AsyncIterable<Out> & {\n    readonly [STREAM_UPLINK]?: In;\n};',
   },
   {
     name: 'RenderedDocumentBytes',
@@ -7235,7 +7341,7 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   },
   {
     name: 'SubagentProvider',
-    declaration: 'export interface SubagentProvider {\n    readonly name: string;\n    readonly capabilities: SubagentCapabilities;\n    readonly inheritsParentContext: boolean;\n    readonly agentRouteDefaults?: Readonly<{\n        provider: string;\n        model: string;\n    }>;\n    start(request: ResolvedSubagentStartRequest): Promise<SubagentRun>;\n    prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>;\n}',
+    declaration: 'export interface SubagentProvider {\n    readonly modelRouting?: \'host\';\n    readonly name: string;\n    readonly capabilities: SubagentCapabilities;\n    readonly inheritsParentContext: boolean;\n    readonly agentRouteDefaults?: Readonly<{\n        provider: string;\n        model: string;\n    }>;\n    start(request: ResolvedSubagentStartRequest): Promise<SubagentRun>;\n    prepareContinuable?(request: ContinuableCreateRequest): Promise<ContinuableCreateSpec>;\n}',
   },
   {
     name: 'SubagentResult',

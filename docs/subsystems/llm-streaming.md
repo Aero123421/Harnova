@@ -476,6 +476,8 @@ Adapter plugins additionally declare which routes *could* run through `registerC
  * provider alongside its live/dormant state.
  */
 interface LlmConfigurableProvider {
+  /** Optional credential-obtaining flow offered for this route. */
+  authorizationKey?: string
   /** Provider route key this entry activates when configured. */
   provider: string
   /** Human-readable provider name for configuration surfaces. */
@@ -504,6 +506,8 @@ interface LlmConfigurableProvider {
 ```ts type-equiv
 /** One adapter-discovered model; catalog membership is advisory, not request validation. */
 interface LlmModelInfo {
+  /** First allowlist migration only: false excludes models added by the same SDK upgrade. */
+  initiallyEnabled?: boolean
   /** Provider route that owns this model entry. */
   provider: string
   /** Model id passed to {@link GenerateOptions.model}. */
@@ -562,6 +566,8 @@ interface LlmModelReasoningInfo {
 ```ts type-equiv
 /** Exact-route model metadata resolved by its owning adapter. */
 interface LlmResolvedModelInfo extends LlmModelInfo {
+  /** Adapter can request standard or fast processing for this exact route. */
+  fastMode?: boolean
   /** Provider-owned context capacity when known. */
   context?: LlmModelContext
   /** Adapter-configured per-request output cap materialized when callers omit one. */
@@ -600,6 +606,8 @@ interface GenerateOptions {
   model: string
   /** Adapter-owned reasoning effort selected for this exact model. */
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
   /**
    * Ordered conversation messages, exactly as the provider sees them. A
    * loop-built request passes the derived history (dsh-agent-loop), whose
@@ -753,6 +761,8 @@ interface LlmCallConfig {
   provider: string
   model: string
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
   temperature?: number
   maxTokens?: number
   stop?: string[]
@@ -838,6 +848,11 @@ declare abstract class LlmAdapter {
    * @returns route-owned image pricing, or `undefined` when the route declares none.
    */
   imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;
+  /** Local authentication and account filtering, without changing candidate definitions.
+   * @param _provider - provider route owned by this adapter.
+   * @returns locally usable model IDs, or undefined to keep the advertised catalog.
+   */
+  availableModelIds(_provider: string): Promise<ReadonlySet<string> | undefined>;
   /**
    * List models this adapter can currently advertise for one owned provider.
    * Core routing accepts unlisted model ids; catalog-driven entry points such
@@ -847,6 +862,11 @@ declare abstract class LlmAdapter {
    * @returns discoverable models in adapter-preferred order.
    */
   listModels(_provider: string): Promise<readonly LlmModelInfo[]>;
+  /** Full catalog for settings, including routes awaiting authentication.
+   * @param provider - registered adapter route.
+   * @returns candidate models before authentication and user choices are applied.
+   */
+  listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]>;
   /**
    * Resolve all metadata available for one exact model. This query is
    * independent of the advisory catalog and does not validate request routing.
@@ -924,6 +944,18 @@ Source: [`packages/llm/deepseek-llm-api-extensions/src/index.ts`](../../packages
 The abstract `llm` service: an adapter registry plus a streaming model-call API, interceptable via the `llm/stream` waterfall.
 
 ```ts cordis-catalog
+/** Register the product's live model allowlist; library-only compositions remain unrestricted.
+ * @param policy - live profile policy shared by model catalogs and dispatch.
+ * @returns lifecycle-owned policy disposer.
+ */
+registerModelAccess(policy: LlmModelAccessPolicy): () => Promise<void>
+
+/** Reject a disabled route before resolving credentials, preparing, or dispatching a request.
+ * @param provider - registered provider route.
+ * @param model - exact model ID.
+ */
+async assertModelEnabled(provider: string, model: string): Promise<void>
+
 /**
  * Register an adapter for the given provider routes. Throws `LlmError` with code
  * `DUPLICATE_ADAPTER` if any provider already has an adapter (all-or-nothing).
@@ -954,7 +986,12 @@ registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): Dire
  * List every declared configurable provider, registered or dormant.
  * @returns detached directory entries in declaration order.
  */
-@Remote listConfigurableProviders(): LlmConfigurableProvider[]
+listConfigurableProviders(): LlmConfigurableProvider[]
+
+/** Prepare initial model preferences before Settings can add a new connection.
+ * @returns detached configurable directory entries, including dormant routes.
+ */
+@Remote('listConfigurableProviders') async remoteConfigurableProviders(): Promise<LlmConfigurableProvider[]>
 
 /**
  * Offer to interrogate provider endpoints on behalf of the settings
@@ -1018,17 +1055,35 @@ fileRequestText(ref: FileAttachmentRef): string
 
 /**
  * Discover models advertised by one registered provider. Catalog membership
- * does not constrain core routing. Catalog-driven entry points may restrict
+ * is separate from the optional model access policy. Entry points may restrict
  * selection and submission to the advertised models.
  * @param provider - registered provider route to inspect.
  * @returns detached model metadata in adapter-preferred order.
  */
 async listModels(provider: string): Promise<LlmModelInfo[]>
 
+/** Full adapter catalog for Settings; disabling never deletes candidate definitions.
+ * @param provider - registered provider route.
+ * @returns detached candidate metadata, including disabled models.
+ */
+@Remote('modelCandidates') async remoteModelCandidates(provider: string): Promise<LlmModelInfo[]>
+
+/** Locally usable candidates, independent of saved provider/model switches.
+ * @param provider - registered adapter route.
+ * @returns catalog entries usable with the current authentication.
+ */
+@Remote('availableModelCandidates') async availableModelCandidates(provider: string): Promise<LlmModelInfo[]>
+
+/** Query unfiltered candidates without invoking the product policy's migration.
+ * @param provider - registered provider route.
+ * @returns detached candidate metadata in adapter order.
+ */
+async listModelCandidates(provider: string): Promise<LlmModelInfo[]>
+
 /**
  * Resolve and validate all metadata from the adapter that owns one exact
  * route. The result is detached from adapter-owned objects; catalog
- * membership remains advisory and does not control request routing.
+ * membership remains advisory; the optional access policy controls request routing.
  * @param provider - registered provider route to inspect.
  * @param model - exact model id passed to the adapter.
  * @param signal - optional cancellation for adapter-owned asynchronous lookup.
@@ -1075,6 +1130,29 @@ stream(options: GenerateOptions): AsyncIterable<StreamChunk>
 Types: [FileAttachmentRef](attachment.md)
 
 Source: [`packages/llm/llm/src/index.ts`](../../packages/llm/llm/src/index.ts)
+
+<a id="ctxmodelaccess--modelaccess"></a>
+
+### `ctx.modelAccess` — `ModelAccess`
+
+No provider credentials are read or changed by this service.
+
+```ts cordis-catalog
+/** Read the latest provider switch and preserved model choices on each call.
+ * @param provider - registered LLM route identity.
+ * @returns the detached allowed model IDs, or an empty set for a disabled route.
+ */
+async allowed(provider: string): Promise<ReadonlySet<string>>
+
+/** Re-read live configuration in the same synchronous section as dispatch.
+ * @param provider - registered LLM route identity.
+ * @param model - exact model ID to dispatch.
+ * @returns whether this provider and model are currently enabled.
+ */
+isEnabled(provider: string, model: string): boolean
+```
+
+Source: [`packages/llm/model-access/src/index.ts`](../../packages/llm/model-access/src/index.ts)
 
 <a id="llm-events"></a>
 

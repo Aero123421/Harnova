@@ -37,6 +37,7 @@ import type {
   SimpleStreamOptions,
   ThinkingLevel,
 } from '@earendil-works/pi-ai'
+import { legacyModelIds } from './legacy-model-ids.ts'
 import {
   attributionHeaders,
   contentHasImage,
@@ -60,6 +61,7 @@ import { idleWatchdog, timeoutOf } from '@deepseek-ai/dsh-timeout'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
 import { toPiContext } from './context.ts'
 import { createModels, getSupportedThinkingLevels } from './models.ts'
+import { supportsFastMode } from './speed.ts'
 import { toStreamChunks } from './stream.ts'
 
 /** One resolution's frozen view: the profiles and the collection built from them. */
@@ -276,14 +278,29 @@ export class PiAiAdapter extends LlmAdapter {
   override listModels(provider: string): Promise<readonly LlmModelInfo[]> {
     return Promise.resolve().then(() => {
       const snapshot = this.current()
-      this.profileOf(snapshot, provider)
+      const profile = this.profileOf(snapshot, provider)
+      const legacyIds = legacyModelIds[provider]
       return snapshot.models.getModels(provider).map(model => ({
         provider,
         id: model.id,
         name: model.name,
         inputModalities: [...model.input],
+        ...legacyIds === undefined ? {} : {
+          initiallyEnabled: legacyIds.includes(model.id) || profile.configuredModelIds.includes(model.id),
+        },
       }))
     })
+  }
+
+  override async availableModelIds(provider: string): Promise<ReadonlySet<string>> {
+    const snapshot = this.current()
+    const profile = this.profileOf(snapshot, provider)
+    if (profile.apiKeyEnv !== undefined) {
+      try { await this.config.resolveApiKey(provider, profile) }
+      catch (error) { if (error instanceof LlmError && error.code === 'MISSING_CREDENTIAL') return new Set(); throw error }
+      return new Set(snapshot.models.getModels(provider).map(model => model.id))
+    }
+    return new Set((await snapshot.models.getAvailable(provider)).map(model => model.id))
   }
 
   override resolveModel(
@@ -310,6 +327,7 @@ export class PiAiAdapter extends LlmAdapter {
       name: resolvedModel.name,
       inputModalities: [...resolvedModel.input],
       context: { contextWindow: resolvedModel.contextWindow },
+      ...supportsFastMode(profile, resolvedModel) ? { fastMode: true } : {},
       ...configuredMaxTokens === undefined ? {} : { defaultMaxTokens: configuredMaxTokens },
       ...reasoningInfo(resolvedModel, defaultLevel),
     }
@@ -345,6 +363,9 @@ export class PiAiAdapter extends LlmAdapter {
       model,
       options.reasoningEffort ?? profile.reasoning,
     )
+    if (options.speed !== undefined && !supportsFastMode(profile, model)) {
+      throw new LlmError('This model route does not support an explicit speed mode', 'UNSUPPORTED_SPEED')
+    }
     const apiKey = await this.config.resolveApiKey(options.provider, profile)
 
     const consumer = new AbortController()
@@ -379,6 +400,10 @@ export class PiAiAdapter extends LlmAdapter {
         }, onReplayDegrade)
       const events = snapshot.models.streamSimple(model, context, {
         ...profileOptions(profile, reasoning, apiKey),
+        ...options.speed === undefined ? {} : { onPayload: (payload: unknown) => {
+          if (typeof payload !== 'object' || payload === null || Array.isArray(payload)) throw new LlmError('Invalid request payload for speed selection', 'INVALID_REQUEST')
+          return { ...payload, service_tier: options.speed === 'fast' ? 'priority' : 'default' }
+        } },
         ...options.temperature === undefined ? {} : { temperature: options.temperature },
         ...options.maxTokens === undefined ? {} : { maxTokens: options.maxTokens },
         ...options.sessionId === undefined ? {} : { sessionId: String(options.sessionId) },

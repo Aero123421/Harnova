@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 /** Model-list editing, endpoint interrogation, and hand-declared provider creation. */
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { within, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Schema from '@deepseek-ai/schemastery'
@@ -113,6 +114,7 @@ function scriptedFace(options: {
   const mutate = options.mutate ?? vi.fn(() => Promise.resolve(remoteOk(namespace)))
   const set = options.set ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const face = {
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: vi.fn(() => Promise.resolve(ok(
         Object.keys(providers).map(provider => ({ id: provider, name: provider })),
@@ -126,6 +128,7 @@ function scriptedFace(options: {
           declared: options.declaredRoutes?.includes(provider) ?? false,
         })),
       ))),
+      modelCandidates: async (provider: string) => ({ ok: true as const, value: [{ id: 'model', name: 'Model', provider }] }),
       discoverModels: discover,
     },
     settings: {
@@ -209,6 +212,8 @@ async function mountSection(options: Parameters<typeof scriptedFace>[0] = {}) {
   const injected: ModelsSectionProps = {
     controller,
     useSnapshot: bindSnapshotSelector(controller.store),
+    useLogin: bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null })),
+    beginLogin: () => {}, answerLogin: () => {}, closeLogin: () => {},
     operations: operationsWith(scripted.face),
     schema: settingsSchema,
     t,
@@ -826,6 +831,8 @@ describe('provider rows', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(scripted.face)}
       schema={settingsSchema}

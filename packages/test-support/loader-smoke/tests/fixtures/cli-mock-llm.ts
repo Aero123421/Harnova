@@ -17,6 +17,9 @@ const SHELL_COMMAND = process.platform === 'win32'
 
 /** Keyless headless-agent adapter: one production shell call followed by a final answer. */
 class CliMockAdapter extends LlmAdapter {
+  override async listModels(provider: string) {
+    return [await this.resolveModel(provider, 'cli-mock')]
+  }
   override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
     return {
       provider,

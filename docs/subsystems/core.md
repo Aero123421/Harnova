@@ -199,6 +199,8 @@ interface AgentOptions {
   model?: string
   /** Adapter-owned reasoning effort for the selected provider/model route. */
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
   /** Maximum output tokens for each conversation-model request. */
   maxTokens?: number
 }

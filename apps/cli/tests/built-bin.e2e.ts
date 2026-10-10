@@ -193,7 +193,7 @@ function createEnvironmentProbeProfile(home: string, project: string): void {
     "    let text = ''",
     '    for await (const chunk of ctx.llm.stream({',
     "      provider: 'deepseek-official',",
-    "      model: 'deepseek-v4-flash',",
+    "      model: 'deepseek-flash',",
     '      messages: [],',
     '      maxTokens: 32,',
     '    })) {',
@@ -490,7 +490,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         jsonrpc: '2.0',
         id: 1,
         method: 'initialize',
-        params: { cwd: home, provider: 'deepseek-official', model: 'deepseek-v4-flash' },
+        params: { cwd: home, provider: 'deepseek-official', model: 'deepseek-flash' },
       })}\n`)
       const initialized = await response(1)
       expect(initialized, `${JSON.stringify(initialized)}\n${stderr}`).toMatchObject({
@@ -565,7 +565,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
       expect(initialized.agentInfo).toMatchObject({ name: 'deepseek-harness-acp' })
       expect(initialized.agentCapabilities).toEqual({
         mcpCapabilities: { http: true },
-        promptCapabilities: { image: false, audio: false, embeddedContext: false },
+        promptCapabilities: { image: true, audio: false, embeddedContext: false },
         sessionCapabilities: { close: {}, list: {}, resume: {} },
       })
       expect('_meta' in initialized).toBe(false)
@@ -1255,6 +1255,7 @@ describe.skipIf(!existsSync(dshBin))('dsh BUILT bin (node lib/bin.js, no tsx)', 
         ['terminal-pwsh', '@deepseek-ai/dsh-terminal-bash'],
         ['timer', '@deepseek-ai/cordis-plugin-timer'],
         ['llm', '@deepseek-ai/dsh-llm'],
+        ['model-access', '@deepseek-ai/dsh-model-access'],
         ['session', '@deepseek-ai/dsh-session'],
         ['session-title', '@deepseek-ai/dsh-session-title'],
         ['system-prompt', '@deepseek-ai/dsh-system-prompt'],

@@ -2,6 +2,7 @@
 /** Section, setup-card, and hand-written editor behavior over a scripted wire face. */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 import Schema from '@deepseek-ai/schemastery'
 import { Context } from '@deepseek-ai/cordis'
 import { bindSnapshotSelector, RemoteError } from '@deepseek-ai/dsh-client-test-runtime'
@@ -191,6 +192,7 @@ function scriptedFace(overrides: {
   const set = overrides.set ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const unset = overrides.unset ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const face = {
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: vi.fn(() => Promise.resolve(remoteOk([
         { id: 'deepseek-official', name: 'DeepSeek' },
@@ -204,6 +206,7 @@ function scriptedFace(overrides: {
         { provider: 'broken', displayName: 'broken', settingsNs: 'llm-pi-ai', settingsPath: ['nope', 'x'], active: false },
         { provider: 'plain', displayName: 'plain', settingsNs: 'llm-plain', settingsPath: ['profiles', 'plain'], active: false },
       ].map(({ active: _active, ...entry }) => entry)))),
+      modelCandidates: vi.fn(async (provider: string) => remoteOk([{ id: 'model', name: 'Model', provider }])),
       discoverModels: vi.fn(() => Promise.resolve(remoteOk([]))),
     },
     settings: {
@@ -290,16 +293,19 @@ async function mountFace(scripted: ReturnType<typeof scriptedFace>) {
   const controller = new ModelsSettingsStore(ctx, settingsSchema, mirror)
   await controller.load()
   const renderSlot = stubRenderSlot()
+  const beginLogin = vi.fn()
   const injected: ModelsSectionProps = {
     controller,
     useSnapshot: bindSnapshotSelector(controller.store),
+    useLogin: bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null })),
+    beginLogin, answerLogin: () => {}, closeLogin: () => {},
     operations: operationsWith(face),
     schema: settingsSchema,
     t,
     renderSlot: renderSlot as unknown as ModelsSectionProps['renderSlot'],
   }
   const view = render(<ModelsSection {...injected} />)
-  return { view, ctx, face, update, mutate, set, unset, controller, mirror, renderSlot }
+  return { view, ctx, face, update, mutate, set, unset, controller, mirror, renderSlot, beginLogin }
 }
 
 async function mountSection(overrides: Parameters<typeof scriptedFace>[0] = {}) {
@@ -329,6 +335,102 @@ async function mountDeepSeekCard(overrides: Parameters<typeof scriptedFace>[0] =
   fireEvent.click(screen.getByRole('button', { name: deepSeekCopy(en.editProvider) }))
   return mounted
 }
+
+describe('ModelsSection provider authorization and model preferences', () => {
+  const authorization = {
+    key: 'pi/provider', label: 'Provider login', configured: false, inFlight: false,
+    methods: [{ id: 'oauth', label: 'Account login' }, { id: 'api-key', label: 'API key' }],
+  }
+
+  it('starts login from the first-run setup card and saves model choices through its shared controls', async () => {
+    const f = await mountFirstRun()
+    const access: SettingsNamespaceView = {
+      ...wireNamespaces()[2]!, ns: 'model-access', revision: 8,
+      value: { providers: { 'deepseek-official': { enabled: false, models: ['model'] } } },
+    }
+    f.face.settings.describe.mockResolvedValue(remoteOk({ writable: true, hasDocument: false, namespaces: [...wireNamespaces(), access] }))
+    await act(async () => { await f.mirror.load(); await f.controller.load() })
+    act(() => { f.controller.store.update((state) => {
+      state.rows = state.rows.map(row => row.entry.provider === 'deepseek-official' ? { ...row, authorization } : row)
+    }) })
+    const row = f.controller.store.getSnapshot().rows.find(row => row.entry.provider === 'deepseek-official')!
+    fireEvent.click(screen.getByRole('button', { name: en.providerLogin }))
+    expect(f.beginLogin).toHaveBeenCalledExactlyOnceWith(row, 'oauth')
+    expect(screen.queryByRole('button', { name: 'API key' })).toBeNull()
+    fireEvent.click(screen.getByRole('switch', { name: 'Use DeepSeek' }))
+    await waitFor(() => { expect(f.mutate).toHaveBeenCalledTimes(1) })
+    expect(f.mutate).toHaveBeenCalledWith('model-access', [{ op: 'set', path: ['providers', 'deepseek-official'], value: { enabled: true, models: ['model'] } }], 8)
+    await screen.findByText(en.modelAccessSaved)
+    expect(f.set).not.toHaveBeenCalled()
+    expect(f.unset).not.toHaveBeenCalled()
+  })
+
+  it('disables setup login while another attempt is active or settings are read-only', async () => {
+    const f = await mountFirstRun()
+    const update = (inFlight: boolean, writable: boolean): void => {
+      act(() => { f.controller.store.update((state) => {
+        state.writable = writable
+        state.rows = state.rows.map(row => row.entry.provider === 'deepseek-official' ? { ...row, authorization: { ...authorization, inFlight } } : row)
+      }) })
+    }
+    update(true, true)
+    expect(screen.getByRole('button', { name: en.providerLogin })).toHaveProperty('disabled', true)
+    update(false, false)
+    fireEvent.click(screen.getByRole('button', { name: en.providerLogin }))
+    expect(f.beginLogin).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: en.providerLogin })).toHaveProperty('disabled', true)
+  })
+
+  it('offers initial login and reauthentication on an existing row and reloads its model preferences', async () => {
+    const f = await mountSection()
+    const access: SettingsNamespaceView = {
+      ...wireNamespaces()[2]!, ns: 'model-access', revision: 9,
+      value: { providers: { openai: { enabled: true, models: ['model'] } } },
+    }
+    f.face.settings.describe.mockResolvedValue(remoteOk({ writable: true, hasDocument: false, namespaces: [...wireNamespaces(), access] }))
+    await act(async () => { await f.mirror.load(); await f.controller.load() })
+    const update = (configured: boolean, inFlight: boolean): void => {
+      act(() => { f.controller.store.update((state) => {
+        state.rows = state.rows.map(row => row.entry.provider === 'openai' ? { ...row, authorization: { ...authorization, configured, inFlight } } : row)
+      }) })
+    }
+    update(false, false)
+    fireEvent.click(screen.getByRole('button', { name: en.providerLogin }))
+    const row = f.controller.store.getSnapshot().rows.find(row => row.entry.provider === 'openai')!
+    expect(f.beginLogin).toHaveBeenLastCalledWith(row, 'oauth')
+    update(true, false)
+    fireEvent.click(screen.getByRole('button', { name: en.providerLoginAgain }))
+    expect(f.beginLogin).toHaveBeenCalledTimes(2)
+    update(true, true)
+    expect(screen.getByRole('button', { name: en.providerLoginAgain })).toHaveProperty('disabled', true)
+    fireEvent.click(screen.getByRole('switch', { name: 'Use openai' }))
+    await waitFor(() => { expect(f.mutate).toHaveBeenCalledTimes(1) })
+    expect(f.mutate).toHaveBeenCalledWith('model-access', [{ op: 'set', path: ['providers', 'openai'], value: { enabled: false, models: ['model'] } }], 9)
+    await screen.findByText(en.modelAccessSaved)
+  })
+
+  it('offers OAuth login for a dormant provider in the add card without showing API-key methods as login actions', async () => {
+    const f = await mountSection()
+    act(() => { f.controller.store.update((state) => {
+      state.rows = state.rows.map(row => row.entry.provider === 'anthropic' ? { ...row, authorization } : row)
+    }) })
+    fireEvent.click(screen.getByRole('button', { name: en.add }))
+    fireEvent.click(screen.getByRole('button', { name: en.providerLogin }))
+    const row = f.controller.store.getSnapshot().rows.find(row => row.entry.provider === 'anthropic')!
+    expect(f.beginLogin).toHaveBeenCalledExactlyOnceWith(row, 'oauth')
+    expect(screen.queryByRole('button', { name: 'API key' })).toBeNull()
+    act(() => { f.controller.store.update((state) => {
+      state.rows = state.rows.map(row => row.entry.provider === 'anthropic' ? { ...row, authorization: { ...authorization, inFlight: true } } : row)
+    }) })
+    expect(screen.getByRole('button', { name: en.providerLogin })).toHaveProperty('disabled', true)
+    act(() => { f.controller.store.update((state) => {
+      state.writable = false
+      state.rows = state.rows.map(row => row.entry.provider === 'anthropic' ? { ...row, authorization: { ...authorization, inFlight: false } } : row)
+    }) })
+    fireEvent.click(screen.getByRole('button', { name: en.providerLogin }))
+    expect(f.beginLogin).toHaveBeenCalledTimes(1)
+  })
+})
 
 describe('ModelsSection', () => {
   it('hides the add action when no settings namespace can open an editor', async () => {
@@ -483,6 +585,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -508,6 +612,8 @@ describe('ModelsSection', () => {
     cleanup()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1290,6 +1396,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1424,6 +1532,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face.face)}
       schema={settingsSchema}
@@ -1447,6 +1557,8 @@ describe('ModelsSection', () => {
     cleanup()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1756,6 +1868,8 @@ describe('ModelsSection', () => {
     const controller = new ModelsSettingsStore(ctxWith(face), settingsSchema, new SettingsDescribeMirror(ctxWith(face)))
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1763,6 +1877,44 @@ describe('ModelsSection', () => {
       renderSlot={() => null}
     />)
     await screen.findByText('DeepSeek')
+  })
+
+  it('revokes model permissions before deleting a connection and its key', async () => {
+    const { face, controller, mirror, mutate, unset } = await mountSection()
+    const access: SettingsNamespaceView = {
+      ...wireNamespaces()[2]!, ns: 'model-access', revision: 7,
+      value: { initialized: true, providers: { openai: { enabled: true, models: ['gpt-6-astra'] } } },
+    }
+    face.settings.describe.mockResolvedValue(remoteOk({
+      writable: true, hasDocument: true, namespaces: [...wireNamespaces(), access],
+    }))
+    await act(async () => { await mirror.load(); await controller.load() })
+    const failure = await removeProviderProfile(operationsWith(face), controller, {
+      provider: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], credentialRef: 'OPENAI_API_KEY',
+    })
+    expect(failure).toBeUndefined()
+    expect(mutate.mock.calls[0]).toEqual(['model-access', [{
+      op: 'set', path: ['providers', 'openai'], value: { enabled: false, models: [] },
+    }], 7])
+    expect(mutate.mock.invocationCallOrder[0]).toBeLessThan(unset.mock.invocationCallOrder[0]!)
+    expect(unset.mock.invocationCallOrder[0]).toBeLessThan(mutate.mock.invocationCallOrder[1]!)
+    expect(mutate.mock.calls[1]).toEqual(['llm-pi-ai', [{ op: 'unset', path: ['providers', 'openai'] }], undefined])
+  })
+
+  it('keeps the connection and key when permission revocation is refused', async () => {
+    const { face, controller, mirror, mutate, unset } = await mountSection({
+      mutate: vi.fn(() => Promise.resolve(remoteFail('permissions changed', 'settings/conflict'))),
+    })
+    const access: SettingsNamespaceView = { ...wireNamespaces()[2]!, ns: 'model-access', revision: 7 }
+    face.settings.describe.mockResolvedValue(remoteOk({
+      writable: true, hasDocument: true, namespaces: [...wireNamespaces(), access],
+    }))
+    await act(async () => { await mirror.load(); await controller.load() })
+    expect(await removeProviderProfile(operationsWith(face), controller, {
+      provider: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], credentialRef: 'OPENAI_API_KEY',
+    })).toBe('permissions changed')
+    expect(unset).not.toHaveBeenCalled()
+    expect(mutate).toHaveBeenCalledOnce()
   })
 
   it('removes by unsetting the profile path, never by rebuilding the section', async () => {

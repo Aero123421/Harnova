@@ -400,6 +400,8 @@ Each provider is a named child-agent transport, and multiple providers may coexi
  * settlement or cleanup to a sibling.
  */
 interface SubagentProvider {
+  /** Same-Host LLM dispatch obeys the Host's live model policy. Omission is an external route. */
+  readonly modelRouting?: 'host'
   /** Unique registry name (e.g. `spawn`, `fork`, `acp`). */
   readonly name: string
   /** The start-time features this provider supports (see {@link SubagentCapabilities}). */
@@ -694,6 +696,23 @@ A published child settled. Scope-filtered dispatch uses the same delegating pare
 ```
 
 Types: [Scoped](scope.md)
+
+Source: [`packages/subagent/subagent/src/index.ts`](../../packages/subagent/subagent/src/index.ts)
+
+<a id="subagentpre-start--serial"></a>
+
+#### `subagent/pre-start` — serial
+
+Product policies check delegation backends before child resources are acquired.
+
+```ts cordis-catalog
+/**
+ * Product policies check delegation backends before child resources are acquired.
+ * @param provider - backend about to create or resume a delegated run.
+ * @mode serial
+ */
+'subagent/pre-start'(provider: SubagentProvider): Promise<void> | void
+```
 
 Source: [`packages/subagent/subagent/src/index.ts`](../../packages/subagent/subagent/src/index.ts)
 

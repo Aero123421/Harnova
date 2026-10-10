@@ -9,6 +9,7 @@
   disabled: true
 
 - id: agent-loop
+  inject: [sessionPersistence]
   config:
     agents:
       - id: main
@@ -24,3 +25,12 @@
 - insert:
     - id: llm-replay
       name: '@deepseek-ai/dsh-llm-replay'
+
+# Replay middleware advertises no catalog; explicitly enable this recorded route.
+- id: model-access
+  config:
+    initialized: true
+    providers:
+      deepseek-official:
+        enabled: true
+        models: [deepseek-v4-flash]

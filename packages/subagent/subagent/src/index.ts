@@ -141,6 +141,12 @@ declare module '@deepseek-ai/cordis' {
 
   interface Events {
     /**
+     * Product policies check delegation backends before child resources are acquired.
+     * @param provider - backend about to create or resume a delegated run.
+     * @mode serial
+     */
+    'subagent/pre-start'(provider: SubagentProvider): Promise<void> | void
+    /**
      * A provider became resolvable in the registry.
      * @param provider - the registered provider.
      * @mode emit
@@ -556,6 +562,7 @@ export class SubagentRuntime extends TypertRemoteService {
    */
   async start(name: string, request: SubagentStartRequest): Promise<SubagentRun> {
     const provider = this.expectProvider(name)
+    await this.ctx.serial('subagent/pre-start', provider)
     this.assertCapabilities(provider, request)
     assertSubagentMaxDepth(request.maxDepth)
     if (request.outputSchema !== undefined) assertObjectJsonSchema(request.outputSchema)
@@ -596,6 +603,7 @@ export class SubagentRuntime extends TypertRemoteService {
     request: ContinuableCreateRequest,
   ): Promise<ContinuableCreateSpec> {
     const provider = this.expectProvider(name)
+    await this.ctx.serial('subagent/pre-start', provider)
     if (provider.prepareContinuable === undefined) {
       throw new SubagentError(
         `subagent provider "${provider.name}" does not support continuable children `

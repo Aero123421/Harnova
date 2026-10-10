@@ -26,6 +26,8 @@ export interface ModelSelection {
   model: string
   /** Adapter-owned reasoning effort, or provider/default behavior when absent. */
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
 }
 
 /** Mutable model selection plus the value captured for the current step. */
@@ -99,11 +101,12 @@ export function installModelSelection(agentCtx: Context, selection: ModelSelecti
       const resolved = await next()
       const selected = selection.assembled
       if (selected === undefined) return resolved
-      const { reasoningEffort: _inheritedEffort, ...withoutInheritedEffort } = resolved
+      const { reasoningEffort: _inheritedEffort, speed: _inheritedSpeed, ...withoutInheritedEffort } = resolved
       return {
         ...withoutInheritedEffort,
         provider: selected.provider,
         model: selected.model,
+        ...selected.speed === undefined ? {} : { speed: selected.speed },
         ...selected.reasoningEffort === undefined
           ? {}
           : { reasoningEffort: selected.reasoningEffort },

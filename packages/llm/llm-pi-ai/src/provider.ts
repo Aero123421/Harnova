@@ -151,6 +151,8 @@ function reuseCatalogProvider(base: Provider, spec: ProviderSpec): Provider {
     ...baseUrl === undefined ? {} : { baseUrl },
     auth: routeAuth(spec, base),
     getModels: () => spec.models,
+    ...base.filterModels === undefined ? {} : { filterModels: base.filterModels.bind(base) },
+    ...base.filterAllModels === undefined ? {} : { filterAllModels: base.filterAllModels.bind(base) },
     // Delegated rather than copied: the catalog provider stays the receiver, so
     // an implementation holding state on itself keeps working.
     stream: (model, context, options) => base.stream(model, context, options),

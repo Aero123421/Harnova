@@ -23,3 +23,7 @@
 - id: llm-deepseek
   name: '@deepseek-ai/dsh-llm-deepseek-api-key'
   disabled: true
+
+# Qualify the external delegation protocol without the host-only model policy.
+- id: model-access
+  disabled: true

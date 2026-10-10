@@ -156,6 +156,7 @@ export class SessionCommandController {
         const resolved = await this.ctx.llm.resolveCallConfig({
           provider: request.provider,
           model: request.model,
+          ...request.speed === undefined ? {} : { speed: request.speed },
           ...(request.reasoningEffort === undefined
             ? {}
             : { reasoningEffort: ReasoningEffortId(request.reasoningEffort) }),
@@ -163,6 +164,7 @@ export class SessionCommandController {
         const selected: AgentModelSelection = {
           provider: resolved.provider,
           model: resolved.model,
+          ...resolved.speed === undefined ? {} : { speed: resolved.speed },
           ...(resolved.reasoningEffort === undefined
             ? {}
             : { reasoningEffort: resolved.reasoningEffort }),

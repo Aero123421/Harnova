@@ -9,6 +9,7 @@
   disabled: true
 
 - id: agent-loop
+  inject: [sessionPersistence]
   config:
     agents:
       - id: main
@@ -28,3 +29,12 @@
     # Hold the parent's second step until the manager notice enters its inbox.
     - id: settlement-fence
       name: './tests/fixtures/subagent-settlement-fence.ts'
+
+# Replay middleware advertises no catalog; explicitly enable this recorded route.
+- id: model-access
+  config:
+    initialized: true
+    providers:
+      deepseek-official:
+        enabled: true
+        models: [deepseek-v4-flash]

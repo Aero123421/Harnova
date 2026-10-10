@@ -82,6 +82,47 @@ function registerEcho(ctx: Context) {
 }
 
 describe('request stability across the loop', () => {
+  it('records an explicit initial speed in the first request header', async () => {
+    class SpeedAdapter extends MockAdapter {
+      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+        return { ...await super.resolveModel(provider, model), fastMode: true }
+      }
+    }
+    const adapter = new SpeedAdapter([textResponse('done')])
+    const ctx = await harness(adapter)
+    try {
+      const agent = await ctx.agentLoop.create(SessionId('initial-speed'), { provider: 'mock', model: 'mock', speed: 'fast' })
+      const idle = waitForIdle(ctx, agent)
+      send(agent, 'Use the selected speed')
+      await idle
+      expect(adapter.requests[0]?.speed).toBe('fast')
+      expect(agent.session.requestHeader()?.config.speed).toBe('fast')
+    } finally { await ctx.fiber.dispose() }
+  })
+
+  it('records speed changes without changing prompt assembly or reasoning', async () => {
+    class SpeedAdapter extends MockAdapter {
+      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+        return { ...await super.resolveModel(provider, model), fastMode: true }
+      }
+    }
+    const adapter = new SpeedAdapter([textResponse('first'), textResponse('second')])
+    const ctx = await harness(adapter)
+    const agent = await ctx.agentLoop.create(SessionId('speed-log'), { provider: 'mock', model: 'mock' })
+    ctx.on('agent/request', async ({ turn }, next) => ({ ...await next(), speed: turn === 1 ? 'fast' : 'standard' }))
+    for (const text of ['first', 'second']) {
+      const idle = waitForIdle(ctx, agent)
+      send(agent, text)
+      await idle
+    }
+    expect(adapter.requests.map(request => request.speed)).toEqual(['fast', 'standard'])
+    const headers = agent.session.snapshotEvents().filter(event => event.type === 'request/header')
+    expect(headers.map(event => event.data.header.config.speed)).toEqual(['fast', 'standard'])
+    expectPrefixExtension(adapter.requests[0]!, adapter.requests[1]!)
+    expect(adapter.requests[1]?.reasoningEffort).toBe(adapter.requests[0]?.reasoningEffort)
+    await ctx.fiber.dispose()
+  })
+
   it('each step request within a turn append-extends the previous, frozen end to end', async () => {
     const adapter = new MockAdapter([
       toolCallResponse('c1', 'echo', { text: 'one' }, 'first'),

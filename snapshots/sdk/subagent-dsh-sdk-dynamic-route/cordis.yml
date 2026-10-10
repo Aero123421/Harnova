@@ -59,3 +59,7 @@
       disabled: !!js process.env.DSH_SNAPSHOT !== 'record'
       config:
         maxTokensAsSuccess: true
+
+# Qualify the external delegation protocol without the host-only model policy.
+- id: model-access
+  disabled: true

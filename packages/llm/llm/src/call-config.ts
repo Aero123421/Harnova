@@ -24,6 +24,8 @@ export interface LlmCallConfig {
   provider: string
   model: string
   reasoningEffort?: ReasoningEffortId
+  /** Explicit service speed; omission retains the provider default. */
+  speed?: 'standard' | 'fast'
   temperature?: number
   maxTokens?: number
   stop?: string[]
@@ -51,6 +53,7 @@ export function callConfigEquals(a: LlmCallConfig, b: LlmCallConfig): boolean {
     a.provider !== b.provider
     || a.model !== b.model
     || a.reasoningEffort !== b.reasoningEffort
+    || a.speed !== b.speed
     || a.temperature !== b.temperature
     || a.maxTokens !== b.maxTokens
   ) return false

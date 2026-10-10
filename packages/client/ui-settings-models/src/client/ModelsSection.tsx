@@ -34,6 +34,9 @@ import type { ModelsSettingsStore, ProviderRow } from './store.ts'
 import type { ModelsOperations } from './operations.ts'
 import type { SettingsSchemaOperations } from './schema-operations.ts'
 import { ProviderEditor, type ProviderEditorProps } from './ProviderEditor.tsx'
+import { ProviderModelControls } from './ProviderModelControls.tsx'
+import { ModelsLoginDialog } from './ModelsLoginDialog.tsx'
+import type { ModelsLoginStore } from './login-store.ts'
 import type { en } from './locales.ts'
 import styles from './ModelsSection.module.css'
 
@@ -44,6 +47,7 @@ export interface ModelsSectionInjected {
   hooks: {
     /** Page snapshot bound by the UI renderer as useSnapshot. */
     snapshot: ModelsSettingsStore['store']
+    login: ModelsLoginStore['store']
   }
   /** The Host operations the section and its cards invoke. */
   operations: ModelsOperations
@@ -51,6 +55,9 @@ export interface ModelsSectionInjected {
   schema: SettingsSchemaOperations
   /** Section copy. */
   t: (key: keyof typeof en) => string
+  beginLogin: (row: ProviderRow, method: string) => void
+  answerLogin: (id: number, value: string) => void
+  closeLogin: () => void
 }
 
 /**
@@ -128,9 +135,9 @@ function renderProviderEditor({ target, ...props }: ProviderEditorRenderProps): 
 }
 
 /**
- * Remove one user-added provider and its page-managed credential. Credential
- * removal comes first so a second-step failure leaves the provider row visible
- * and the whole operation safely retryable; both unsets are idempotent.
+ * Revoke a user-added provider's model permissions, then remove its profile
+ * and page-managed credential. A partial failure leaves the row visible and
+ * blocked, with refreshed revisions so the operation remains retryable.
  * The settings removal names the profile rather than rebuilding its whole
  * namespace from a partial view.
  * @param operations - the page's Host operations.
@@ -141,8 +148,18 @@ function renderProviderEditor({ target, ...props }: ProviderEditorRenderProps): 
 export async function removeProviderProfile(
   operations: ModelsOperations,
   controller: ModelsSettingsStore,
-  target: { settingsNs: string; settingsPath: readonly string[]; credentialRef?: string },
+  target: { provider?: string; settingsNs: string; settingsPath: readonly string[]; credentialRef?: string },
 ): Promise<string | undefined> {
+  const access = controller.store.getSnapshot().namespaces.get('model-access')
+  if (target.provider !== undefined && access !== undefined) {
+    const revoked = await operations.writeSettings(access.ns, [{
+      op: 'set', path: ['providers', target.provider], value: { enabled: false, models: [] },
+    }], access.revision)
+    // Refresh after either result: a successful revoke or a revision conflict
+    // must not leave retries fenced against an outdated namespace revision.
+    await controller.load()
+    if (revoked.kind !== 'written') return revoked.message
+  }
   if (target.credentialRef !== undefined) {
     const credential = await operations.removeCredential(target.credentialRef)
     if (credential !== undefined) return credential
@@ -182,7 +199,7 @@ export function needsSetup(row: ProviderRow, anyUsable: boolean): boolean {
 function keyConfiguredOf(row: ProviderRow): boolean {
   return row.apiKeyEnv !== undefined
     ? row.credential?.configured === true
-    : row.derivedCredential?.configured === true
+    : row.authorization?.configured === true || row.derivedCredential?.configured === true
 }
 
 function targetOf(row: ProviderRow): EditorTarget {
@@ -221,17 +238,20 @@ export function providerCopy(template: string, target: ProviderIdentity): string
  * @returns the section, or null while the shell has not injected yet.
  */
 export function ModelsSection(props: ModelsSectionProps): ReactNode {
-  const { controller, useSnapshot, operations, schema, t, renderSlot } = props
+  const { controller, useSnapshot, useLogin, beginLogin, answerLogin, closeLogin, operations, schema, t, renderSlot } = props
   if (
     controller === undefined || useSnapshot === undefined || operations === undefined
-    || schema === undefined || t === undefined
+    || schema === undefined || t === undefined || useLogin === undefined
+    || beginLogin === undefined || answerLogin === undefined || closeLogin === undefined
   ) return null
-  return <Loaded injected={{ controller, useSnapshot, operations, schema, t }} renderSlot={renderSlot} />
+  return <Loaded injected={{ controller, useSnapshot, useLogin, beginLogin, answerLogin, closeLogin, operations, schema, t }}
+    renderSlot={renderSlot} />
 }
 
 function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderSlot: ModelsRenderSlot }): ReactNode {
   const { controller, operations, schema, t } = injected
   const snapshot = injected.useSnapshot(value => value)
+  const login = injected.useLogin(value => value)
   const state = { ...snapshot, rows: snapshot.rows.map(row => row.entry.provider === 'deepseek-account'
     ? { ...row, entry: { ...row.entry, displayName: t('deepSeekAccount') } } : row) }
   const [editing, setEditing] = useState<EditorTarget | undefined>(undefined)
@@ -337,6 +357,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
 
   // One fact decides both first-run postures on this page and the onboarding
   // step: whether the user already has a provider to talk to.
+  const modelAccess = state.namespaces.get('model-access')
   const anyUsable = state.rows.some(providerUsable)
   const configured = state.rows.filter(row => row.configured)
   const configurable = state.rows.filter(row => state.namespaces.has(row.entry.settingsNs))
@@ -409,6 +430,15 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             return (
               <li key={row.entry.provider} className={styles['setupCard']}>
                 {error}
+                {row.authorization?.methods.filter(method => method.id === 'oauth').map(method => (
+                  <button key={method.id} type="button" className={styles['secondaryButton']}
+                    disabled={row.authorization?.inFlight || !state.writable}
+                    onClick={() => { injected.beginLogin(row, method.id) }}>{t('providerLogin')}</button>
+                ))}
+                {modelAccess === undefined ? null : (
+                  <ProviderModelControls row={row} namespace={modelAccess}
+                    operations={operations} expanded readOnly={!state.writable} reload={() => controller.load()} t={t} />
+                )}
                 {renderProviderEditor({
                   target,
                   namespace,
@@ -427,10 +457,9 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             )
           }
           const open = !addOpen && editing?.provider === row.entry.provider
-          const credentialConfigured = row.credential?.configured === true
+          const credentialConfigured = keyConfiguredOf(row)
           const credentialMissing = !credentialConfigured
-            && row.apiKeyEnv !== undefined
-            && row.credential?.configured === false
+            && (row.apiKeyEnv !== undefined ? row.credential?.configured === false : row.authorization?.configured === false)
           return (
             <li key={row.entry.provider} className={styles['rowCard']}>
               <div className={styles['rowHead']}>
@@ -463,6 +492,11 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                       : null}
                 </span>
                 <span className={styles['rowActions']}>
+                  {row.authorization?.methods.filter(method => method.id === 'oauth').map(method => (
+                    <button key={method.id} type="button" className={styles['secondaryButton']}
+                      disabled={row.authorization?.inFlight || !state.writable}
+                      onClick={() => { injected.beginLogin(row, method.id) }}>{t(row.authorization?.configured ? 'providerLoginAgain' : 'providerLogin')}</button>
+                  ))}
                   <button
                     type="button"
                     className={styles['secondaryButton']}
@@ -497,6 +531,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                     : null}
                 </span>
               </div>
+              {modelAccess === undefined ? null : (
+                <ProviderModelControls row={row} namespace={modelAccess}
+                  operations={operations} expanded={open} readOnly={!state.writable} reload={() => controller.load()} t={t} />
+              )}
               {error}
               {renderSlot(
                 'settings.models.provider-card',
@@ -588,6 +626,10 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
                         ))}
                       </select>
                     </div>
+                    {addRow?.authorization?.methods.filter(method => method.id === 'oauth').map(method => (
+                      <button key={method.id} type="button" className={styles['secondaryButton']} disabled={catalogBusy || addRow.authorization?.inFlight || !state.writable}
+                        onClick={() => { injected.beginLogin(addRow, method.id) }}>{t('providerLogin')}</button>
+                    ))}
                     <ProviderEditor
                       key={draft.target.provider}
                       provider={draft.target.provider}
@@ -665,6 +707,7 @@ function Loaded({ injected, renderSlot }: { injected: ModelsSectionFace; renderS
             : null}
       </div>
       {renderSlot('settings.models.footer', {})}
+      <ModelsLoginDialog state={login} answer={injected.answerLogin} close={injected.closeLogin} t={t} />
       <Modal
         open={deleteTarget !== undefined}
         onClose={closeDelete}

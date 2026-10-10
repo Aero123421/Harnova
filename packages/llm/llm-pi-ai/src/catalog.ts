@@ -182,7 +182,7 @@ function catalogProviders(): Map<string, Provider> {
  * @returns the catalog provider, or `undefined` for a route pi-ai does not ship.
  */
 export function catalogProvider(provider: string): Provider | undefined {
-  return catalogProviders().get(provider)
+  return catalogProviders().get(provider === 'azure-openai-responses' ? 'azure' : provider)
 }
 
 /**
@@ -199,8 +199,9 @@ export function catalogProviderIds(): readonly string[] {
  * @returns catalog models by id; empty for a route pi-ai does not ship.
  */
 export function catalogModels(provider: string): Map<string, Model<Api>> {
-  if (!catalogProviders().has(provider)) return new Map()
-  const models = getBuiltinModels(provider as BuiltinProvider) as Model<Api>[]
+  if (catalogProvider(provider) === undefined) return new Map()
+  const catalogId = provider === 'azure-openai-responses' ? 'azure' : provider
+  const models = getBuiltinModels(catalogId as BuiltinProvider) as Model<Api>[]
   return new Map(models.map(model => [model.id, model]))
 }
 

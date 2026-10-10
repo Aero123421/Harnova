@@ -56,6 +56,18 @@ async function boot(
 }
 
 describe('login flows in a real composition', () => {
+  it('retains the old Azure route identity and authorization address after upgrading Pi', async () => {
+    const ctx = await boot(await home(), { providers: { 'azure-openai-responses': {} } })
+
+    expect(ctx.llm.listProviders()).toEqual([{ id: 'azure-openai-responses', name: 'azure-openai-responses' }])
+    expect(ctx.llm.listConfigurableProviders()).toContainEqual({
+      provider: 'azure-openai-responses', displayName: 'azure-openai-responses',
+      authorizationKey: 'llm-pi-ai/azure-openai-responses', settingsNs: 'llm-pi-ai',
+      settingsPath: ['providers', 'azure-openai-responses'], declared: false,
+    })
+    expect(await ctx.llm.listModelCandidates('azure-openai-responses')).not.toHaveLength(0)
+  })
+
   it('offers a sign-in for a provider no route names, once the seam is mounted', async () => {
     const ctx = await boot(await home(), {}, { authorization: true })
 
@@ -92,7 +104,7 @@ describe('request-level dynamic profiles', () => {
 
     expect(ctx.llm.listProviders()).toEqual([{ id: 'openrouter', name: 'openrouter' }])
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
-      provider: 'openrouter', displayName: 'openrouter', settingsNs: 'llm-pi-ai',
+      provider: 'openrouter', authorizationKey: 'llm-pi-ai/openrouter', displayName: 'openrouter', settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openrouter'], declared: false, error: failure,
     })
     expect((await ctx.llm.listModels('openrouter')).map(model => model.id)).toEqual([known.id])
@@ -159,6 +171,7 @@ describe('request-level dynamic profiles', () => {
     expect(directory.length).toBeGreaterThan(30)
     expect(directory).toContainEqual({
       provider: 'openai',
+      authorizationKey: 'llm-pi-ai/openai',
       displayName: 'openai',
       settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openai'],

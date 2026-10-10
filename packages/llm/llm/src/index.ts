@@ -237,6 +237,14 @@ export abstract class LlmAdapter {
     return undefined
   }
 
+  /** Local authentication and account filtering, without changing candidate definitions.
+   * @param _provider - provider route owned by this adapter.
+   * @returns locally usable model IDs, or undefined to keep the advertised catalog.
+   */
+  availableModelIds(_provider: string): Promise<ReadonlySet<string> | undefined> {
+    return Promise.resolve(undefined)
+  }
+
   /**
    * List models this adapter can currently advertise for one owned provider.
    * Core routing accepts unlisted model ids; catalog-driven entry points such
@@ -247,6 +255,14 @@ export abstract class LlmAdapter {
    */
   listModels(_provider: string): Promise<readonly LlmModelInfo[]> {
     return Promise.resolve([])
+  }
+
+  /** Full catalog for settings, including routes awaiting authentication.
+   * @param provider - registered adapter route.
+   * @returns candidate models before authentication and user choices are applied.
+   */
+  listModelCandidates(provider: string): Promise<readonly LlmModelInfo[]> {
+    return this.listModels(provider)
   }
 
   /**
@@ -335,12 +351,19 @@ export interface DirectoryRegistrationHandle {
   replace(entries: readonly LlmConfigurableProvider[]): void
 }
 
+/** Product policy with asynchronous initialization and a synchronous dispatch check. */
+export interface LlmModelAccessPolicy {
+  allowed(provider: string): Promise<ReadonlySet<string>>
+  isEnabled(provider: string, model: string): boolean
+}
+
 /**
  * The abstract `llm` service: an adapter registry plus a streaming model-call
  * API, interceptable via the `llm/stream` waterfall.
  */
 export class LlmRuntime extends TypertRemoteService {
   private adapters = new Map<string, AdapterRegistration>()
+  private modelAccess: LlmModelAccessPolicy | undefined
   private directory = new Map<string, LlmConfigurableProvider>()
   private discoveries = new Map<
     string,
@@ -349,6 +372,33 @@ export class LlmRuntime extends TypertRemoteService {
 
   constructor(ctx: Context) {
     super(ctx, 'llm')
+  }
+
+  /** Register the product's live model allowlist; library-only compositions remain unrestricted.
+   * @param policy - live profile policy shared by model catalogs and dispatch.
+   * @returns lifecycle-owned policy disposer.
+   */
+  registerModelAccess(policy: LlmModelAccessPolicy): () => Promise<void> {
+    return this.ctx.effect(() => {
+      if (this.modelAccess !== undefined) throw new LlmError('model access is already registered', 'DUPLICATE_MODEL_ACCESS')
+      this.modelAccess = policy
+      return () => { this.modelAccess = undefined }
+    }, 'llm.registerModelAccess()')
+  }
+
+  /** Reject a disabled route before resolving credentials, preparing, or dispatching a request.
+   * @param provider - registered provider route.
+   * @param model - exact model ID.
+   */
+  async assertModelEnabled(provider: string, model: string): Promise<void> {
+    await this.modelAccess?.allowed(provider)
+    this.checkModelEnabled(provider, model)
+  }
+
+  private checkModelEnabled(provider: string, model: string): void {
+    if (this.modelAccess !== undefined && !this.modelAccess.isEnabled(provider, model)) {
+      throw new LlmError(`Model "${provider}/${model}" is disabled. Enable it in Settings → Models or choose an enabled model.`, 'MODEL_DISABLED')
+    }
   }
 
   /** Notify topology observers without letting one broken listener veto the commit. */
@@ -539,9 +589,17 @@ export class LlmRuntime extends TypertRemoteService {
    * List every declared configurable provider, registered or dormant.
    * @returns detached directory entries in declaration order.
    */
-  @Remote
   listConfigurableProviders(): LlmConfigurableProvider[] {
     return [...this.directory.values()].map(entry => ({ ...entry, settingsPath: [...entry.settingsPath] }))
+  }
+
+  /** Prepare initial model preferences before Settings can add a new connection.
+   * @returns detached configurable directory entries, including dormant routes.
+   */
+  @Remote('listConfigurableProviders')
+  async remoteConfigurableProviders(): Promise<LlmConfigurableProvider[]> {
+    await this.modelAccess?.allowed('')
+    return this.listConfigurableProviders()
   }
 
   /**
@@ -687,14 +745,51 @@ export class LlmRuntime extends TypertRemoteService {
 
   /**
    * Discover models advertised by one registered provider. Catalog membership
-   * does not constrain core routing. Catalog-driven entry points may restrict
+   * is separate from the optional model access policy. Entry points may restrict
    * selection and submission to the advertised models.
    * @param provider - registered provider route to inspect.
    * @returns detached model metadata in adapter-preferred order.
    */
   async listModels(provider: string): Promise<LlmModelInfo[]> {
+    const allowed = await this.modelAccess?.allowed(provider)
+    if (allowed?.size === 0) return []
+    const models = await this.adapterModels(provider, false)
+    const available = this.modelAccess === undefined ? undefined : await this.registration(provider).adapter.availableModelIds(provider)
+    return models.filter(model => (allowed === undefined || allowed.has(model.id)) && (available === undefined || available.has(model.id)))
+  }
+
+  /** Full adapter catalog for Settings; disabling never deletes candidate definitions.
+   * @param provider - registered provider route.
+   * @returns detached candidate metadata, including disabled models.
+   */
+  @Remote('modelCandidates')
+  async remoteModelCandidates(provider: string): Promise<LlmModelInfo[]> {
+    await this.modelAccess?.allowed(provider)
+    return this.listModelCandidates(provider)
+  }
+
+  /** Locally usable candidates, independent of saved provider/model switches.
+   * @param provider - registered adapter route.
+   * @returns catalog entries usable with the current authentication.
+   */
+  @Remote('availableModelCandidates')
+  async availableModelCandidates(provider: string): Promise<LlmModelInfo[]> {
+    const models = await this.adapterModels(provider, false)
+    const available = await this.registration(provider).adapter.availableModelIds(provider)
+    return models.filter(model => available === undefined || available.has(model.id))
+  }
+
+  /** Query unfiltered candidates without invoking the product policy's migration.
+   * @param provider - registered provider route.
+   * @returns detached candidate metadata in adapter order.
+   */
+  async listModelCandidates(provider: string): Promise<LlmModelInfo[]> {
+    return this.adapterModels(provider, true)
+  }
+
+  private async adapterModels(provider: string, candidates: boolean): Promise<LlmModelInfo[]> {
     const adapter = this.registration(provider).adapter
-    const models = await adapter.listModels(provider)
+    const models = await (candidates ? adapter.listModelCandidates(provider) : adapter.listModels(provider))
     const seen = new Set<string>()
     return models.map((model) => {
       if (
@@ -705,6 +800,7 @@ export class LlmRuntime extends TypertRemoteService {
         || typeof model.name !== 'string'
         || model.name.length === 0
         || (model.description !== undefined && typeof model.description !== 'string')
+        || (model.initiallyEnabled !== undefined && typeof model.initiallyEnabled !== 'boolean')
         || seen.has(model.id)
       ) {
         throw new LlmError(`adapter returned invalid or duplicate model metadata for provider "${provider}"`, 'INVALID_CATALOG')
@@ -717,6 +813,7 @@ export class LlmRuntime extends TypertRemoteService {
         name: model.name,
         ...model.description === undefined ? {} : { description: model.description },
         ...inputModalities === undefined ? {} : { inputModalities },
+        ...model.initiallyEnabled === undefined ? {} : { initiallyEnabled: model.initiallyEnabled },
       }
     })
   }
@@ -724,7 +821,7 @@ export class LlmRuntime extends TypertRemoteService {
   /**
    * Resolve and validate all metadata from the adapter that owns one exact
    * route. The result is detached from adapter-owned objects; catalog
-   * membership remains advisory and does not control request routing.
+   * membership remains advisory; the optional access policy controls request routing.
    * @param provider - registered provider route to inspect.
    * @param model - exact model id passed to the adapter.
    * @param signal - optional cancellation for adapter-owned asynchronous lookup.
@@ -762,6 +859,7 @@ export class LlmRuntime extends TypertRemoteService {
       || typeof resolved.name !== 'string'
       || resolved.name.length === 0
       || (resolved.description !== undefined && typeof resolved.description !== 'string')
+      || (resolved.fastMode !== undefined && typeof resolved.fastMode !== 'boolean')
     ) {
       throw new LlmError(
         `adapter returned invalid exact model metadata for provider "${provider}" model "${model}"`,
@@ -812,6 +910,7 @@ export class LlmRuntime extends TypertRemoteService {
       ...defaultMaxTokens === undefined ? {} : { defaultMaxTokens },
       ...resolved.systemPromptUpdate === undefined ? {} : { systemPromptUpdate: resolved.systemPromptUpdate },
       ...resolved.toolUpdate === undefined ? {} : { toolUpdate: resolved.toolUpdate },
+      ...resolved.fastMode === undefined ? {} : { fastMode: resolved.fastMode },
     }
     const reasoning = resolved.reasoning
     if (reasoning === undefined) return info
@@ -869,6 +968,7 @@ export class LlmRuntime extends TypertRemoteService {
    * @returns a detached config only when a default must be materialized.
    */
   async resolveCallConfig(config: LlmCallConfig, signal?: AbortSignal): Promise<LlmCallConfig> {
+    await this.assertModelEnabled(config.provider, config.model)
     return (await this.resolveCallFor(this.registration(config.provider), config, signal)).config
   }
 
@@ -889,6 +989,9 @@ export class LlmRuntime extends TypertRemoteService {
     const defaulted = config.maxTokens === undefined && info.defaultMaxTokens !== undefined
       ? { ...config, maxTokens: info.defaultMaxTokens }
       : config
+    if (config.speed !== undefined && (info.fastMode !== true || !['standard', 'fast'].includes(config.speed))) {
+      throw new LlmError(`provider "${config.provider}" model "${config.model}" does not support speed "${config.speed}"`, 'UNSUPPORTED_SPEED')
+    }
     const reasoning = info.reasoning
     const requested = defaulted.reasoningEffort
     let resolvedConfig = defaulted
@@ -927,8 +1030,10 @@ export class LlmRuntime extends TypertRemoteService {
    * @returns a prepared config and its registration-bound stream entry point.
    */
   async prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall> {
+    await this.assertModelEnabled(config.provider, config.model)
     const registration = this.registration(config.provider)
     const adapterCall = await registration.adapter.prepareCall(config.provider, config.model, signal)
+    this.checkModelEnabled(config.provider, config.model)
     const modelInfo = this.normalizeModelInfo(registration, config.model, adapterCall.model)
     const resolved = this.resolveCallWithInfo(config, modelInfo)
     const resolvedConfig = deepFreeze(structuredClone(resolved.config))
@@ -1029,6 +1134,7 @@ export class LlmRuntime extends TypertRemoteService {
   ): AsyncGenerator<StreamChunk> {
     let iterator: AsyncIterator<StreamChunk>
     try {
+      await this.assertModelEnabled(options.provider, options.model)
       const registration = prepared?.registration ?? this.registration(options.provider)
       const adapter = registration.adapter
       let modelInfo: LlmResolvedModelInfo
@@ -1077,6 +1183,7 @@ export class LlmRuntime extends TypertRemoteService {
         }
         if (Object.isFrozen(resolvedOptions)) deepFreeze(projectedOptions)
       }
+      this.checkModelEnabled(options.provider, options.model)
       const stream = dispatch(this.forAdapter(projectedOptions, adapter))
       iterator = stream[Symbol.asyncIterator]()
     } catch (error: unknown) {
@@ -1129,11 +1236,13 @@ export class LlmRuntime extends TypertRemoteService {
     return this.streamWithRegistration(options)
   }
 
-  private streamWithRegistration(
+  private async * streamWithRegistration(
     options: GenerateOptions,
     prepared?: PreparedDispatch,
   ): AsyncIterable<StreamChunk> {
-    return this.ctx.waterfall(
+    try { await this.assertModelEnabled(options.provider, options.model) }
+    catch (error: unknown) { yield adapterFailureChunk(error, options.signal); return }
+    yield * this.ctx.waterfall(
       this,
       'llm/stream',
       options,

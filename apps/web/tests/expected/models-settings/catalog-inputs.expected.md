@@ -8,17 +8,33 @@
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
-  - paragraph: 填入各提供商的 API 密钥即可使用其模型。
+  - paragraph: 连接提供商并选择整个 Harnova 中可用的模型。
   - list:
     - listitem:
       - text: minimax-cn
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
       - button "删除 minimax-cn": 删除
+      - text: 1 个模型已启用
+      - switch "使用 minimax-cn" [checked]
     - listitem:
       - text: openai
+      - img "API 密钥缺失"
       - button "编辑 openai": 编辑
       - button "删除 openai": 删除
+      - text: 已关闭 · 保留 0 个模型的选择
+      - switch "使用 openai"
+      - paragraph: 这些选择适用于聊天、子代理、工作流、摘要和标题。关闭后仍会保留凭证。
+      - textbox "搜索模型"
+      - checkbox "仅显示已启用"
+      - text: 仅显示已启用
+      - button "启用显示的模型"
+      - button "关闭显示的模型"
+      - list:
+        - listitem:
+          - text: GPT-6 Astra
+          - switch "使用 GPT-6 Astra"
+      - paragraph: 提供商已关闭。凭证和模型选择仍会保留。
       - text: openai API 密钥
       - textbox "API 密钥":
         - /placeholder: 输入 API 密钥，或留空使用环境认证
@@ -59,4 +75,6 @@
       - text: Acme 网关 自定义
       - button "编辑 Acme 网关 (acme-gateway)": 编辑
       - button "删除 Acme 网关 (acme-gateway)": 删除
+      - text: 已关闭 · 保留 0 个模型的选择
+      - switch "使用 Acme 网关"
   - button "添加模型提供商"

@@ -73,6 +73,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   deepseekAccount: 'credentials.md',
   credentials: 'credentials.md',
   credentialsController: 'credentials.md',
+  authorizationController: 'credentials.md',
   settingsController: 'settings.md',
   directoryPicker: 'workspace.md',
   deepseekLlmApiExtensions: 'llm-streaming.md',
@@ -85,6 +86,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   inspector: 'extensions.md',
   webServer: 'web-server.md',
   llm: 'llm-streaming.md',
+  modelAccess: 'llm-streaming.md',
   lsp: 'lsp.md',
   permissionPresets: 'permission-presets.md',
   planMode: 'plan.md',
@@ -321,6 +323,7 @@ export const LINK_MAP: Readonly<Record<string, string>> = {
   DeepSeekLlmApiExtensionProvider: 'llm-streaming.md',
   DeepSeekLlmApiExtensionRequest: 'llm-streaming.md',
   LlmCallConfig: 'llm-streaming.md',
+  LlmModelAccessPolicy: 'llm-streaming.md',
   LlmModelContext: 'llm-streaming.md',
   LlmModelReasoningInfo: 'llm-streaming.md',
   LlmResolvedModelInfo: 'llm-streaming.md',
@@ -816,6 +819,7 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
   'Record',
   'Readonly',
   'ReadonlyMap',
+  'ReadonlySet',
   'Request',
   'Response',
   'IncomingMessage',
@@ -826,6 +830,10 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
 
 /** Project types deliberately documented outside the subsystems catalog. */
 export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
+  ProviderAuthorizationView: 'private authorization Remote contract is owned by packages/api/settings-controller/README.md',
+  ProviderAuthorizationFrame: 'private authorization Remote contract is owned by packages/api/settings-controller/README.md',
+  ProviderAuthorizationAnswer: 'private authorization Remote contract is owned by packages/api/settings-controller/README.md',
+  RemoteStream: 'Remote stream generator contract is owned by packages/typert/protocol/README.md',
   ProductEvent: 'Desktop event fields are owned by packages/client/product-analytics/README.md and src/events.ts',
   ConnectionFetchHandler: 'shared Fetch dispatch is owned by packages/client/connection/src/rpc.ts',
   ConnectionRequestRejection: 'transport rejection status is owned by packages/client/connection/src/rpc.ts',

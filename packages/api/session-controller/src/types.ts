@@ -101,6 +101,7 @@ export interface ModelSelection {
   readonly provider: string
   readonly model: string
   readonly reasoningEffort?: string
+  readonly speed?: 'standard' | 'fast'
 }
 
 /** Host fold state for durable model selection. */
@@ -134,6 +135,7 @@ export interface ModelReasoning {
 
 /** One model displayed inside its provider group. */
 export interface ModelCatalogModel {
+  readonly fastMode?: boolean
   readonly id: string
   readonly name: string
   readonly description?: string

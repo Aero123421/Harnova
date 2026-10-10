@@ -91,6 +91,7 @@ function harness(options: {
     return Promise.resolve(remoteOk(undefined))
   })
   const face = {
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: () => {
         if (options.providersFailure !== undefined) return Promise.resolve(remoteFail(options.providersFailure))
@@ -110,6 +111,7 @@ function harness(options: {
             settingsPath: [],
           }],
       )),
+      modelCandidates: async (provider: string) => ({ ok: true as const, value: [{ id: 'model', name: 'Model', provider }] }),
       discoverModels: () => Promise.resolve(remoteOk([])),
     },
     settings: {

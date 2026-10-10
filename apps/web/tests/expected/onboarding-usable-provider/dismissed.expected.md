@@ -8,12 +8,14 @@
   - button "打开配置文件"
   - button "关闭"
   - heading "模型" [level=2]
-  - paragraph: 填入各提供商的 API 密钥即可使用其模型。
+  - paragraph: 连接提供商并选择整个 Harnova 中可用的模型。
   - list:
     - listitem:
       - text: DeepSeek
       - img "API 密钥缺失"
       - button "编辑 DeepSeek (deepseek-official)": 编辑
+      - text: 2 个模型已启用
+      - switch "使用 DeepSeek" [checked]
   - tablist "添加方式":
     - tab "第三方模型提供商" [selected]
     - tab "自定义模型 API"
@@ -24,7 +26,7 @@
       - option "amazon-bedrock"
       - option "ant-ling"
       - option "anthropic"
-      - option "azure-openai-responses"
+      - option "azure"
       - option "baseten"
       - option "cerebras"
       - option "cloudflare-ai-gateway"
@@ -54,6 +56,7 @@
       - option "qwen-token-plan-individual"
       - option "radius"
       - option "together"
+      - option "typesafe"
       - option "vercel-ai-gateway"
       - option "xai"
       - option "xiaomi"
