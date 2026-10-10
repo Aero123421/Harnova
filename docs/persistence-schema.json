@@ -10612,7 +10612,7 @@
       "kind": "event",
       "event": "model/selection",
       "surface": false,
-      "digest": "35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc",
+      "digest": "223bbd4af26f2ec8a42a9c03df8907daa270d1b0d0ba3d22c73a7a6c734dc25c",
       "schema": {
         "root": 0,
         "nodes": [
@@ -10626,22 +10626,22 @@
               },
               {
                 "name": "ignorable",
-                "type": 3,
+                "type": 6,
                 "optional": true
               },
               {
                 "name": "seq",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "time",
-                "type": 4,
+                "type": 7,
                 "optional": false
               },
               {
                 "name": "type",
-                "type": 5,
+                "type": 8,
                 "optional": false
               }
             ],
@@ -10664,6 +10664,11 @@
                 "name": "reasoningEffort",
                 "type": 2,
                 "optional": true
+              },
+              {
+                "name": "speed",
+                "type": 3,
+                "optional": true
               }
             ],
             "indices": []
@@ -10671,6 +10676,21 @@
           {
             "kind": "primitive",
             "type": "string"
+          },
+          {
+            "kind": "union",
+            "types": [
+              4,
+              5
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "fast"
+          },
+          {
+            "kind": "literal",
+            "value": "standard"
           },
           {
             "kind": "literal",
@@ -10921,7 +10941,7 @@
       "kind": "event",
       "event": "request/header",
       "surface": false,
-      "digest": "4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41",
+      "digest": "936146a267a68a9daecea732783c588416fd588efdac79b8c8bf595ebea46fe2",
       "schema": {
         "root": 0,
         "nodes": [
@@ -10950,7 +10970,7 @@
               },
               {
                 "name": "type",
-                "type": 19,
+                "type": 22,
                 "optional": false
               }
             ],
@@ -10966,7 +10986,7 @@
               },
               {
                 "name": "reason",
-                "type": 14,
+                "type": 17,
                 "optional": false
               },
               {
@@ -10992,12 +11012,12 @@
               },
               {
                 "name": "system",
-                "type": 9,
+                "type": 12,
                 "optional": true
               },
               {
                 "name": "tools",
-                "type": 10,
+                "type": 13,
                 "optional": true
               }
             ],
@@ -11047,8 +11067,13 @@
                 "optional": true
               },
               {
-                "name": "stop",
+                "name": "speed",
                 "type": 8,
+                "optional": true
+              },
+              {
+                "name": "stop",
+                "type": 11,
                 "optional": true
               },
               {
@@ -11068,6 +11093,21 @@
             "type": "string"
           },
           {
+            "kind": "union",
+            "types": [
+              9,
+              10
+            ]
+          },
+          {
+            "kind": "literal",
+            "value": "fast"
+          },
+          {
+            "kind": "literal",
+            "value": "standard"
+          },
+          {
             "kind": "array",
             "element": 7
           },
@@ -11077,7 +11117,7 @@
           },
           {
             "kind": "array",
-            "element": 11
+            "element": 14
           },
           {
             "kind": "object",
@@ -11099,7 +11139,7 @@
               },
               {
                 "name": "parameters",
-                "type": 12,
+                "type": 15,
                 "optional": false
               }
             ],
@@ -11111,7 +11151,7 @@
             "indices": [
               {
                 "key": 7,
-                "value": 13
+                "value": 16
               }
             ]
           },
@@ -11122,10 +11162,10 @@
           {
             "kind": "union",
             "types": [
-              15,
-              16,
-              17,
-              18
+              18,
+              19,
+              20,
+              21
             ]
           },
           {
@@ -21904,7 +21944,7 @@
         "packages/llm/llm/src/types.ts#ReplayEnvelope"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:430"
+        "packages/llm/llm/src/types.ts:436"
       ]
     },
     {
@@ -22304,6 +22344,15 @@
       "sources": []
     },
     {
+      "digest": "1f56eec2bfbba5a62115feb2ffaa2abb05a09b2c3fb1a81460eb92c906cdd6d1",
+      "names": [
+        "packages/core/session/src/types.ts#EpochHeader"
+      ],
+      "sources": [
+        "packages/core/session/src/types.ts:240"
+      ]
+    },
+    {
       "digest": "1f8c126cfab3df812cd115cfc23e3256f0fa2383400f4ce91ecad313577e59b0",
       "names": [
         "packages/core/session/src/types.ts#TurnEndCancelCause"
@@ -22340,6 +22389,11 @@
     },
     {
       "digest": "21fb6a90d5068f6a0003b7ab316ed2f56342477146a65c00db0f13c4d8df667d",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "223bbd4af26f2ec8a42a9c03df8907daa270d1b0d0ba3d22c73a7a6c734dc25c",
       "names": [],
       "sources": []
     },
@@ -22389,6 +22443,11 @@
     },
     {
       "digest": "260523b412c19ad8c2bb00093b07f64245ff8ba6b2f76c5b545303772ac9704c",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "2653561e1de06892ee52a1e7f496efec323963e0de83451f681f674d5fa944f2",
       "names": [],
       "sources": []
     },
@@ -22457,7 +22516,7 @@
       "digest": "2abb711460e6238d851c30f3e4bdd87a2aa1887ee70575b3d3b7b25610673095",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:455"
+        "packages/llm/llm/src/types.ts:461"
       ]
     },
     {
@@ -22562,7 +22621,7 @@
         "packages/llm/llm/src/call-config.ts#LlmCallConfigAdapterDefaults"
       ],
       "sources": [
-        "packages/llm/llm/src/call-config.ts:36"
+        "packages/llm/llm/src/call-config.ts:38"
       ]
     },
     {
@@ -22590,11 +22649,6 @@
     },
     {
       "digest": "34d1ab5c5df378186d6054b1a1beea9a41e41965d6f336f0bc0025c441a82e66",
-      "names": [],
-      "sources": []
-    },
-    {
-      "digest": "35203ba7ad5ef6f97d556b85df20ae98f04f09c65748cecdf8eefdb8b6405ffc",
       "names": [],
       "sources": []
     },
@@ -22647,6 +22701,11 @@
       ]
     },
     {
+      "digest": "3a539efe6fb409eba18f3fdcb0cf9385bba9662fd2ccb8f95ebded9a7cc918d5",
+      "names": [],
+      "sources": []
+    },
+    {
       "digest": "3abae7324356f155cb42450c00b806d134ec93bd6439d2063b8d724162d58604",
       "names": [],
       "sources": []
@@ -22689,7 +22748,7 @@
       "digest": "3bec87f9e6ab3da03346f49923d3c51621debc0159df68605e543c3b2a026f90",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:453"
+        "packages/llm/llm/src/types.ts:459"
       ]
     },
     {
@@ -22767,11 +22826,6 @@
       "sources": []
     },
     {
-      "digest": "4208123b50df5006b181481ab45fcf1cde807b88d3fd4d340090bc2e202fac41",
-      "names": [],
-      "sources": []
-    },
-    {
       "digest": "42e0916e0dda5f6d1e7bb05d8514717147c036a79c9f36085683469516c1fd3f",
       "names": [],
       "sources": []
@@ -22830,7 +22884,7 @@
         "packages/llm/llm/src/types.ts#StreamChunk"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:452"
+        "packages/llm/llm/src/types.ts:458"
       ]
     },
     {
@@ -22937,7 +22991,7 @@
         "packages/workflow/workflow/src/types.ts#WorkflowRunId"
       ],
       "sources": [
-        "packages/api/session-controller/src/types.ts:398",
+        "packages/api/session-controller/src/types.ts:400",
         "packages/attachment/attachment/src/brand.ts:6",
         "packages/compaction/compaction/src/brand.ts:4",
         "packages/core/session/src/types.ts:20",
@@ -23323,7 +23377,7 @@
         "packages/llm/llm/src/types.ts#ToolSchema"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:473"
+        "packages/llm/llm/src/types.ts:479"
       ]
     },
     {
@@ -23333,15 +23387,6 @@
       ],
       "sources": [
         "packages/skill/skill/src/index.ts:146"
-      ]
-    },
-    {
-      "digest": "67d5f73ceae82f5265258142ad6cf172de2c1fef93ba551b7f0454e0a93bffe0",
-      "names": [
-        "packages/llm/llm/src/call-config.ts#LlmCallConfig"
-      ],
-      "sources": [
-        "packages/llm/llm/src/call-config.ts:23"
       ]
     },
     {
@@ -23380,7 +23425,7 @@
       "digest": "6a4f72e2e179e17b922f2a9392c0e1c8f8c707f32494372454850a3eb184a6e7",
       "names": [],
       "sources": [
-        "packages/api/session-controller/src/types.ts:403"
+        "packages/api/session-controller/src/types.ts:405"
       ]
     },
     {
@@ -23821,7 +23866,7 @@
       "digest": "88a610b831be6d92612a464be5c7d0b88ec24d97bd299837bf74bf7672183c9a",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:456"
+        "packages/llm/llm/src/types.ts:462"
       ]
     },
     {
@@ -23928,6 +23973,13 @@
       "sources": []
     },
     {
+      "digest": "9138edc82c3d75f653fa40add88f4d3135d56ca8743df16a2e3e860716cdfb7a",
+      "names": [],
+      "sources": [
+        "packages/core/session/src/types.ts:390"
+      ]
+    },
+    {
       "digest": "930a6567a10bb62ddd157bd8abdf4b182810c8c3b49d91309b3b009a5fed9731",
       "names": [],
       "sources": [
@@ -23945,6 +23997,11 @@
     },
     {
       "digest": "935c8d486292b13c87b57ca280eb8c58b5b2f5239be86fcd4334c33fdeb87682",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "936146a267a68a9daecea732783c588416fd588efdac79b8c8bf595ebea46fe2",
       "names": [],
       "sources": []
     },
@@ -23979,7 +24036,7 @@
       "digest": "95080295115fbd83544520ba247b68a03790131f6a2eac323d388758cb542f65",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:454"
+        "packages/llm/llm/src/types.ts:460"
       ]
     },
     {
@@ -24052,15 +24109,6 @@
       ],
       "sources": [
         "packages/workflow/tool-workflow/src/types.ts:20"
-      ]
-    },
-    {
-      "digest": "9a930283b91d493d6347146f2475bb107294b379415ca02162354f46a64164f7",
-      "names": [
-        "packages/core/session/src/types.ts#EpochHeader"
-      ],
-      "sources": [
-        "packages/core/session/src/types.ts:240"
       ]
     },
     {
@@ -24162,7 +24210,7 @@
       "digest": "a2b49331716ba0a7078b026d145306a70eae64b7313c3e6204bd931e75ec3bb1",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:459"
+        "packages/llm/llm/src/types.ts:465"
       ]
     },
     {
@@ -24326,13 +24374,6 @@
       "digest": "aba175fb20ffc71112c55efe70458ff5d7dbfb83501892b4ba8d077f0ea5d7ba",
       "names": [],
       "sources": []
-    },
-    {
-      "digest": "ad0c38a0adb82a94c925456df41586d9b5f9202fca18593eae2213d4445b4585",
-      "names": [],
-      "sources": [
-        "packages/core/session/src/types.ts:390"
-      ]
     },
     {
       "digest": "ad22a5ca5bbaab2e1440779cd3648e85ddfc6f73b5207394eda699555cf31430",
@@ -24751,6 +24792,15 @@
       "sources": []
     },
     {
+      "digest": "c76e0217d32d05a0ca71bb7ecc937c01f7ff40ef501983cd56692cabb56fc0f5",
+      "names": [
+        "packages/llm/llm/src/call-config.ts#LlmCallConfig"
+      ],
+      "sources": [
+        "packages/llm/llm/src/call-config.ts:23"
+      ]
+    },
+    {
       "digest": "c8e6f48878cc2a2f0dc59682280d81f407943fb503f32c64bf9ff3d9393c3eff",
       "names": [],
       "sources": []
@@ -24850,7 +24900,7 @@
       "digest": "d4b739491689cc6bb13d07ffac1a32239875abda364c0d5edd8f74faf5e9c00d",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:457"
+        "packages/llm/llm/src/types.ts:463"
       ]
     },
     {
@@ -24914,6 +24964,11 @@
     },
     {
       "digest": "db874d463b0fdec77e9da1c4568f37cb70bd6596781eb93800db44fb8a116965",
+      "names": [],
+      "sources": []
+    },
+    {
+      "digest": "db973d3748efe232f21100e13ea6903ac550cd6626e5f0f9b31a705665fc7d90",
       "names": [],
       "sources": []
     },
@@ -25177,15 +25232,6 @@
       "sources": []
     },
     {
-      "digest": "f09e5e7acf5ff5ccd193ff2eeec015fa2ff7c29d98bc465f8c3302058d47e29b",
-      "names": [
-        "packages/api/session-controller/src/types.ts#ModelSelection"
-      ],
-      "sources": [
-        "packages/api/session-controller/src/types.ts:100"
-      ]
-    },
-    {
       "digest": "f1687f982fa3d41ef29e159feed154ecd13af4dd209acaee16038f223f2e9402",
       "names": [
         "packages/core/session/src/types.ts#TurnEndReason"
@@ -25212,7 +25258,7 @@
       "digest": "f1a96afe7503ac1817de769cd0ba13d9b80111c7034c50106b3344ecc14cc515",
       "names": [],
       "sources": [
-        "packages/llm/llm/src/types.ts:458"
+        "packages/llm/llm/src/types.ts:464"
       ]
     },
     {
@@ -25240,7 +25286,7 @@
         "packages/llm/llm/src/types.ts#SystemPromptUpdate"
       ],
       "sources": [
-        "packages/llm/llm/src/types.ts:396"
+        "packages/llm/llm/src/types.ts:400"
       ]
     },
     {
@@ -25381,6 +25427,15 @@
       "digest": "fd0d91a1f9dd2efb8959bdf5e07f8f0a98b1cdfa38ce8d4732ebde0b44c3abd4",
       "names": [],
       "sources": []
+    },
+    {
+      "digest": "fd923b3634ec24054dd62be936353bce21672b307f373d1d9ff1e85c4d9fd4f8",
+      "names": [
+        "packages/api/session-controller/src/types.ts#ModelSelection"
+      ],
+      "sources": [
+        "packages/api/session-controller/src/types.ts:100"
+      ]
     },
     {
       "digest": "fe1a7acdeed4d0f5ab483396eaa5b3dc97263b7c10eb4da2f0028cb01728bfc9",

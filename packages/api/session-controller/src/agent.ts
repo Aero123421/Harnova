@@ -67,7 +67,7 @@ export type ApiSessionAgentResult =
 
 type InstalledSelection = ModelSelectionRef & {
   current: AgentModelSelection
-  consume(provider: string, model: string, reasoningEffort: string | undefined): boolean
+  consume(provider: string, model: string, reasoningEffort: string | undefined, speed?: 'standard' | 'fast'): boolean
 }
 
 /**
@@ -300,6 +300,7 @@ export class ApiSessionAgentController {
         return {
           provider: logged.provider,
           model: logged.model,
+          ...logged.speed === undefined ? {} : { speed: logged.speed },
           // An effort the adapter defaulted is not a conversation choice: restoring
           // it as one would make an unchanged default read as a request change.
           ...(logged.reasoningEffort === undefined
@@ -311,10 +312,11 @@ export class ApiSessionAgentController {
       set current(next: AgentModelSelection) {
         picked = next
       },
-      consume(provider: string, model: string, reasoningEffort: string | undefined): boolean {
+      consume(provider: string, model: string, reasoningEffort: string | undefined, speed?: 'standard' | 'fast'): boolean {
         if (picked?.provider !== provider
           || picked.model !== model
-          || picked.reasoningEffort !== reasoningEffort) return false
+          || picked.reasoningEffort !== reasoningEffort
+          || picked.speed !== speed) return false
         picked = undefined
         return true
       },
@@ -348,8 +350,9 @@ export class ApiSessionAgentController {
     provider: string,
     model: string,
     reasoningEffort: string | undefined,
+    speed?: 'standard' | 'fast',
   ): boolean {
-    return this.selections.get(agent)?.consume(provider, model, reasoningEffort) ?? false
+    return this.selections.get(agent)?.consume(provider, model, reasoningEffort, speed) ?? false
   }
 
   /**
@@ -529,6 +532,7 @@ function agentModelSelection(selection: ModelSelection): AgentModelSelection {
   return {
     provider: selection.provider,
     model: selection.model,
+    ...selection.speed === undefined ? {} : { speed: selection.speed },
     ...(selection.reasoningEffort === undefined
       ? {}
       : { reasoningEffort: ReasoningEffortId(selection.reasoningEffort) }),

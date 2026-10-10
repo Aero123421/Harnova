@@ -15,10 +15,25 @@
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
       - button "删除 minimax-cn": 删除
+      - text: 1 models ON
+      - switch "Use minimax-cn" [checked]
     - listitem:
       - text: Acme Gateway 自定义
       - button "编辑 Acme Gateway (acme-gateway)": 编辑
       - button "删除 Acme Gateway (acme-gateway)": 删除
+      - text: OFF · 0 model choices saved
+      - switch "Use Acme Gateway"
+      - paragraph: These choices apply to chat, subagents, workflows, summaries, and titles. Disabling keeps your credentials.
+      - textbox "Search models"
+      - checkbox "ON only"
+      - text: ON only
+      - button "Enable shown models"
+      - button "Disable shown models"
+      - list:
+        - listitem:
+          - text: acme-large
+          - switch "Use acme-large"
+      - paragraph: Provider is OFF. Credentials and model choices are saved.
       - text: Acme Gateway acme-gateway API 密钥
       - textbox "API 密钥":
         - /placeholder: 输入 API 密钥，或留空使用环境认证

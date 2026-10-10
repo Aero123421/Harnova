@@ -92,6 +92,8 @@ describe('pi-ai login flows', () => {
     // A provider offering both keeps both, the subscription login first.
     expect(offered.find(entry => entry.key === recordKeyFor('anthropic'))?.methods.map(one => one.id))
       .toEqual(['oauth', 'api-key'])
+    expect(offered.find(entry => entry.key === recordKeyFor('openai'))?.methods.map(one => one.id))
+      .toEqual(['api-key'])
     // A key-only provider still gets a flow, because pi-ai collects the key
     // through its own prompt rather than leaving it to the settings form.
     expect(offered.find(entry => entry.key === recordKeyFor('deepseek'))?.methods.map(one => one.id))
@@ -102,10 +104,10 @@ describe('pi-ai login flows', () => {
     const ctx = await harness()
 
     await attempt(ctx, () => Promise.resolve())
-    expect(login).toHaveBeenLastCalledWith('openai-codex', 'oauth', expect.anything())
+    expect(login).toHaveBeenLastCalledWith('openai-codex', 'oauth', expect.anything(), { agentName: 'Harnova' })
 
     await attempt(ctx, () => Promise.resolve(), { key: recordKeyFor('anthropic'), method: 'api-key' })
-    expect(login).toHaveBeenLastCalledWith('anthropic', 'api_key', expect.anything())
+    expect(login).toHaveBeenLastCalledWith('anthropic', 'api_key', expect.anything(), { agentName: 'Harnova' })
   })
 
   it('commits what the login produced, where the adapter reads it back', async () => {

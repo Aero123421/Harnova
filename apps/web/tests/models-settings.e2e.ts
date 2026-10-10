@@ -128,7 +128,7 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     await row.waitFor({ timeout: 10_000 })
     await dialog.getByText('已保存 minimax-cn。', { exact: true }).waitFor({ timeout: 10_000 })
     expect(await dialog.getByRole('img', { name: 'API 密钥已配置' }).count()).toBe(0)
-    expect(await dialog.getByRole('img', { name: 'API 密钥缺失' }).count()).toBe(0)
+    expect(await dialog.getByRole('img', { name: 'API 密钥缺失' }).count()).toBe(1)
     const document = await readFile(join(scaffold.harnessHome, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8')
     expect(document).toContain('minimax-cn: {}')
     expect(document).not.toContain('MINIMAX_CN_API_KEY')
@@ -195,6 +195,36 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     const snapshot = await captureStableAria(page, '[role="dialog"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(CONFIGURED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
+  }, 60_000)
+
+  it('uses provider and model switches without deleting the saved API key', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-models-switches'))
+    const dialog = page.getByRole('dialog', { name: '设置' })
+    const keyFile = join(scaffold.harnessHome, '.credentials.yaml')
+    const savedKey = await readFile(keyFile, 'utf8')
+    const provider = dialog.getByRole('switch', { name: 'Use minimax-cn', exact: true })
+    await expect.poll(() => provider.getAttribute('aria-checked')).toBe('false')
+    await dialog.getByRole('button', { name: '编辑 minimax-cn' }).click()
+    // Choose one model while the connection remains OFF.
+    const card = provider.locator('xpath=ancestor::li')
+    const target = card.getByRole('switch').nth(1)
+    const label = await target.getAttribute('aria-label')
+    expect(label).toBeTruthy()
+    await target.click()
+    await expect.poll(() => target.getAttribute('aria-checked')).toBe('true')
+    await provider.click()
+    await expect.poll(() => provider.getAttribute('aria-checked')).toBe('true')
+    const active = await scaffold.ctx.llm.listModels('minimax-cn')
+    expect(active).toHaveLength(1)
+    await provider.click()
+    await expect.poll(() => provider.getAttribute('aria-checked')).toBe('false')
+    expect(await target.getAttribute('aria-checked')).toBe('true')
+    expect(await scaffold.ctx.llm.listModels('minimax-cn')).toEqual([])
+    expect(await readFile(keyFile, 'utf8')).toBe(savedKey)
+    await provider.click()
+    await expect.poll(() => provider.getAttribute('aria-checked')).toBe('true')
+    expect(await scaffold.ctx.llm.listModels('minimax-cn')).toEqual(active)
+    await dialog.getByRole('button', { name: '取消', exact: true }).click()
   }, 60_000)
 
   it('filters the discovered model catalog and clears hidden selections', async () => {
@@ -437,10 +467,11 @@ describe('web e2e: Models settings page configures a dormant provider', () => {
     await settingsDialog.getByRole('button', { name: '删除 minimax-cn', exact: true }).click()
     await page.getByRole('dialog', { name: '删除 minimax-cn？' })
       .getByRole('button', { name: '删除 minimax-cn', exact: true }).click()
-    await expect.poll(
-      async () => readFile(join(scaffold.harnessHome, 'profiles', 'scaffold', 'cordis.patch.yml'), 'utf8'),
-      { timeout: 10_000 },
-    ).not.toContain('minimax-cn:')
+    await expect.poll(() => scaffold.ctx.settings.describe().find(row => row.ns === 'llm-pi-ai')?.value)
+      .not.toHaveProperty('providers.minimax-cn')
+    expect(scaffold.ctx.settings.describe().find(row => row.ns === 'model-access')?.value)
+      .toHaveProperty('providers.minimax-cn', { enabled: false, models: [] })
+
     expect(await readFile(join(scaffold.harnessHome, '.credentials.yaml'), 'utf8'))
       .not.toContain('MINIMAX_CN_API_KEY')
     await expect.poll(

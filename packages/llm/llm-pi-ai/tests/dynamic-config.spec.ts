@@ -92,7 +92,7 @@ describe('request-level dynamic profiles', () => {
 
     expect(ctx.llm.listProviders()).toEqual([{ id: 'openrouter', name: 'openrouter' }])
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
-      provider: 'openrouter', displayName: 'openrouter', settingsNs: 'llm-pi-ai',
+      provider: 'openrouter', authorizationKey: 'llm-pi-ai/openrouter', displayName: 'openrouter', settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openrouter'], declared: false, error: failure,
     })
     expect((await ctx.llm.listModels('openrouter')).map(model => model.id)).toEqual([known.id])
@@ -159,6 +159,7 @@ describe('request-level dynamic profiles', () => {
     expect(directory.length).toBeGreaterThan(30)
     expect(directory).toContainEqual({
       provider: 'openai',
+      authorizationKey: 'llm-pi-ai/openai',
       displayName: 'openai',
       settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openai'],

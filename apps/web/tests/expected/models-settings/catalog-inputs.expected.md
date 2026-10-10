@@ -15,10 +15,26 @@
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
       - button "删除 minimax-cn": 删除
+      - text: 1 models ON
+      - switch "Use minimax-cn" [checked]
     - listitem:
       - text: openai
+      - img "API 密钥缺失"
       - button "编辑 openai": 编辑
       - button "删除 openai": 删除
+      - text: OFF · 0 model choices saved
+      - switch "Use openai"
+      - paragraph: These choices apply to chat, subagents, workflows, summaries, and titles. Disabling keeps your credentials.
+      - textbox "Search models"
+      - checkbox "ON only"
+      - text: ON only
+      - button "Enable shown models"
+      - button "Disable shown models"
+      - list:
+        - listitem:
+          - text: GPT-6 Astra
+          - switch "Use GPT-6 Astra"
+      - paragraph: Provider is OFF. Credentials and model choices are saved.
       - text: openai API 密钥
       - textbox "API 密钥":
         - /placeholder: 输入 API 密钥，或留空使用环境认证
@@ -59,4 +75,6 @@
       - text: Acme 网关 自定义
       - button "编辑 Acme 网关 (acme-gateway)": 编辑
       - button "删除 Acme 网关 (acme-gateway)": 删除
+      - text: OFF · 0 model choices saved
+      - switch "Use Acme 网关"
   - button "添加模型提供商"

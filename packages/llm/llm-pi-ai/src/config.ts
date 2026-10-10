@@ -216,6 +216,8 @@ export interface ResolvedPiAiProviderProfile
    * own, so a catalog capability must not appear here.
    */
   configuredMaxTokens: ReadonlyMap<string, number>
+  /** Explicit model IDs retained during the first enablement migration. */
+  configuredModelIds: readonly string[]
 }
 
 /** Plugin configuration: the provider routes this instance owns. */
@@ -501,6 +503,7 @@ export function resolveProfiles(
       ...rest.headers === undefined ? {} : { headers: { ...rest.headers } },
       ...rest.thinkingBudgets === undefined ? {} : { thinkingBudgets: { ...rest.thinkingBudgets } },
       configuredMaxTokens: catalog?.configuredMaxTokens ?? new Map(),
+      configuredModelIds: source.models?.map(model => model.id) ?? Object.keys(source.modelOverrides ?? {}),
       modelErrors: catalog?.modelErrors ?? new Map(),
       ...piProvider === undefined ? {} : { piProvider },
       ...catalogError === undefined ? {} : { catalogError },

@@ -110,6 +110,7 @@ function api(overrides: {
   const face = {
     session: { modelCatalog: async () => remoteOk({ groups: overrides.accountAvailable
       ? [{ id: 'deepseek-account', models: [{ id: 'deepseek-flash' }] }] : [] }) },
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.active)
@@ -117,6 +118,7 @@ function api(overrides: {
       listConfigurableProviders: () => mapProviderBatch(rows => rows
         .filter(row => row.settingsNs !== '')
         .map(({ active: _active, ...row }) => row)),
+      modelCandidates: (provider: string) => Promise.resolve(remoteOk(provider === 'deepseek-account' && !overrides.accountAvailable ? [] : [{ id: 'model', name: 'Model', provider }])),
       discoverModels: () => Promise.resolve(remoteOk([])),
     },
     settings: {

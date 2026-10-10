@@ -1,3 +1,4 @@
+import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
 // @vitest-environment jsdom
 /** Section, setup-card, and hand-written editor behavior over a scripted wire face. */
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -191,6 +192,7 @@ function scriptedFace(overrides: {
   const set = overrides.set ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const unset = overrides.unset ?? vi.fn(() => Promise.resolve(remoteOk(undefined)))
   const face = {
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: vi.fn(() => Promise.resolve(remoteOk([
         { id: 'deepseek-official', name: 'DeepSeek' },
@@ -204,6 +206,7 @@ function scriptedFace(overrides: {
         { provider: 'broken', displayName: 'broken', settingsNs: 'llm-pi-ai', settingsPath: ['nope', 'x'], active: false },
         { provider: 'plain', displayName: 'plain', settingsNs: 'llm-plain', settingsPath: ['profiles', 'plain'], active: false },
       ].map(({ active: _active, ...entry }) => entry)))),
+      modelCandidates: vi.fn(async (provider: string) => remoteOk([{ id: 'model', name: 'Model', provider }])),
       discoverModels: vi.fn(() => Promise.resolve(remoteOk([]))),
     },
     settings: {
@@ -293,6 +296,8 @@ async function mountFace(scripted: ReturnType<typeof scriptedFace>) {
   const injected: ModelsSectionProps = {
     controller,
     useSnapshot: bindSnapshotSelector(controller.store),
+    useLogin: bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null })),
+    beginLogin: () => {}, answerLogin: () => {}, closeLogin: () => {},
     operations: operationsWith(face),
     schema: settingsSchema,
     t,
@@ -483,6 +488,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -508,6 +515,8 @@ describe('ModelsSection', () => {
     cleanup()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1290,6 +1299,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1424,6 +1435,8 @@ describe('ModelsSection', () => {
     await controller.load()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face.face)}
       schema={settingsSchema}
@@ -1447,6 +1460,8 @@ describe('ModelsSection', () => {
     cleanup()
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1756,6 +1771,8 @@ describe('ModelsSection', () => {
     const controller = new ModelsSettingsStore(ctxWith(face), settingsSchema, new SettingsDescribeMirror(ctxWith(face)))
     render(<ModelsSection
       controller={controller}
+      useLogin={bindSnapshotSelector(createSnapshotStore({ provider: null, phase: 'waiting' as const, prompt: null, notice: null }))}
+      beginLogin={() => {}} answerLogin={() => {}} closeLogin={() => {}}
       useSnapshot={bindSnapshotSelector(controller.store)}
       operations={operationsWith(face)}
       schema={settingsSchema}
@@ -1763,6 +1780,44 @@ describe('ModelsSection', () => {
       renderSlot={() => null}
     />)
     await screen.findByText('DeepSeek')
+  })
+
+  it('revokes model permissions before deleting a connection and its key', async () => {
+    const { face, controller, mirror, mutate, unset } = await mountSection()
+    const access: SettingsNamespaceView = {
+      ...wireNamespaces()[2]!, ns: 'model-access', revision: 7,
+      value: { initialized: true, providers: { openai: { enabled: true, models: ['gpt-6-astra'] } } },
+    }
+    face.settings.describe.mockResolvedValue(remoteOk({
+      writable: true, hasDocument: true, namespaces: [...wireNamespaces(), access],
+    }))
+    await act(async () => { await mirror.load(); await controller.load() })
+    const failure = await removeProviderProfile(operationsWith(face), controller, {
+      provider: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], credentialRef: 'OPENAI_API_KEY',
+    })
+    expect(failure).toBeUndefined()
+    expect(mutate.mock.calls[0]).toEqual(['model-access', [{
+      op: 'set', path: ['providers', 'openai'], value: { enabled: false, models: [] },
+    }], 7])
+    expect(mutate.mock.invocationCallOrder[0]).toBeLessThan(unset.mock.invocationCallOrder[0]!)
+    expect(unset.mock.invocationCallOrder[0]).toBeLessThan(mutate.mock.invocationCallOrder[1]!)
+    expect(mutate.mock.calls[1]).toEqual(['llm-pi-ai', [{ op: 'unset', path: ['providers', 'openai'] }], undefined])
+  })
+
+  it('keeps the connection and key when permission revocation is refused', async () => {
+    const { face, controller, mirror, mutate, unset } = await mountSection({
+      mutate: vi.fn(() => Promise.resolve(remoteFail('permissions changed', 'settings/conflict'))),
+    })
+    const access: SettingsNamespaceView = { ...wireNamespaces()[2]!, ns: 'model-access', revision: 7 }
+    face.settings.describe.mockResolvedValue(remoteOk({
+      writable: true, hasDocument: true, namespaces: [...wireNamespaces(), access],
+    }))
+    await act(async () => { await mirror.load(); await controller.load() })
+    expect(await removeProviderProfile(operationsWith(face), controller, {
+      provider: 'openai', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai'], credentialRef: 'OPENAI_API_KEY',
+    })).toBe('permissions changed')
+    expect(unset).not.toHaveBeenCalled()
+    expect(mutate).toHaveBeenCalledOnce()
   })
 
   it('removes by unsetting the profile path, never by rebuilding the section', async () => {

@@ -12,6 +12,7 @@ function parentAgent(): Agent {
       provider: 'parent-provider',
       model: 'parent-model',
       reasoningEffort: ReasoningEffortId('high'),
+      speed: 'fast',
       maxTokens: 512,
     },
     session: Session.create(id),
@@ -24,6 +25,7 @@ describe('child Agent options', () => {
       provider: 'parent-provider',
       model: 'parent-model',
       reasoningEffort: 'high',
+      speed: 'fast',
       maxTokens: 512,
       subagentDepth: 1,
     })
@@ -43,13 +45,21 @@ describe('child Agent options', () => {
       provider: 'child-provider',
       model: 'child-model',
       reasoningEffort: ReasoningEffortId('max'),
+      speed: 'standard',
     }, 1)).toEqual({
       provider: 'child-provider',
       model: 'child-model',
       reasoningEffort: 'max',
+      speed: 'standard',
       maxTokens: 512,
       subagentDepth: 1,
     })
+  })
+
+  it('does not inherit creation-time speed when the latest header omits it', () => {
+    const parent = parentAgent()
+    parent.session.append('request/header', { header: { config: { provider: 'parent-provider', model: 'parent-model' } }, reason: 'initial' })
+    expect(resolveChildAgentOptions(parent, undefined, 1)).not.toHaveProperty('speed')
   })
 
   it('inherits the latest logged request selection over creation-time values', () => {
@@ -60,6 +70,7 @@ describe('child Agent options', () => {
           provider: 'current-provider',
           model: 'current-model',
           reasoningEffort: ReasoningEffortId('low'),
+          speed: 'standard',
         },
       },
       reason: 'initial',
@@ -69,6 +80,7 @@ describe('child Agent options', () => {
       provider: 'current-provider',
       model: 'current-model',
       reasoningEffort: 'low',
+      speed: 'standard',
       maxTokens: 512,
       subagentDepth: 1,
     })

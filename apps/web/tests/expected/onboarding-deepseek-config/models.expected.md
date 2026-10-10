@@ -14,6 +14,21 @@
       - text: DeepSeek
       - img "API 密钥已配置"
       - button "编辑 DeepSeek (deepseek-official)": 编辑
+      - text: 2 models ON
+      - switch "Use DeepSeek" [checked]
+      - paragraph: These choices apply to chat, subagents, workflows, summaries, and titles. Disabling keeps your credentials.
+      - textbox "Search models"
+      - checkbox "ON only"
+      - text: ON only
+      - button "Enable shown models"
+      - button "Disable shown models"
+      - list:
+        - listitem:
+          - text: Configured Flash
+          - switch "Use Configured Flash" [checked]
+        - listitem:
+          - text: DeepSeek-V4-Pro
+          - switch "Use DeepSeek-V4-Pro" [checked]
       - text: DeepSeek deepseek-official API 密钥
       - textbox "API 密钥":
         - /placeholder: 已配置——输入新值可替换

@@ -10,6 +10,7 @@
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type {
   CredentialInfo, LlmConfigurableProvider, LlmProviderInfo, SettingsNamespaceView,
+  ProviderAuthorizationView,
 } from '@deepseek-ai/dsh-api-remotes/client'
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { createSnapshotStore } from '@deepseek-ai/dsh-client-store'
@@ -24,6 +25,7 @@ const PROBE_ROUTE = '\u0000probe'
 
 /** One provider row after joining the configurable directory with live routes. */
 export interface ProviderDirectoryEntry {
+  readonly authorizationKey?: string
   readonly provider: string
   readonly displayName: string
   readonly settingsNs: string
@@ -53,6 +55,7 @@ export function joinProviderDirectory(
     active: active.has(entry.provider),
     ...entry.declared === undefined ? {} : { declared: entry.declared },
     ...entry.error === undefined ? {} : { error: entry.error },
+    ...entry.authorizationKey === undefined ? {} : { authorizationKey: entry.authorizationKey },
   }))
   for (const provider of registered) {
     if (declared.has(provider.id)) continue
@@ -71,6 +74,12 @@ export function joinProviderDirectory(
 
 /** One provider row the page renders. */
 export interface ProviderRow {
+  authorization?: ProviderAuthorizationView
+  /** Full candidate catalog; OFF does not remove rows from Settings. */
+  candidates?: readonly { id: string; name: string }[]
+  candidateError?: string
+  enabled?: boolean
+  enabledModels?: readonly string[]
   /** Account route has usable credentials for the configured inference origin. */
   accountAvailable?: boolean
   /** The directory entry (route id, display name, settings address, live state). */
@@ -189,8 +198,14 @@ export class ModelsSettingsStore {
       this.ctx.remote.llm.listConfigurableProviders(),
       this.describeFace.ensure(),
     ])
+    const authorization = await this.ctx.remote.authorization.list()
     if (!registered.ok) { this.failLoad(generation, registered.error.message); return }
     if (!declared.ok) { this.failLoad(generation, declared.error.message); return }
+    const candidates = new Map(await Promise.all(registered.value.map(async (provider) => {
+      const result = await this.ctx.remote.llm.modelCandidates(provider.id)
+      return [provider.id, result] as const
+    })))
+    await this.describeFace.ensure()
     const mirrored = this.describeFace.getSnapshot()
     if (mirrored.view === undefined) {
       this.failLoad(generation, mirrored.error ?? 'settings are unavailable in this browser')
@@ -201,6 +216,9 @@ export class ModelsSettingsStore {
     const views: readonly SettingsNamespaceView[] = mirrored.view.namespaces
     const namespaces = new Map(views.map(view => [view.ns, view]))
     const rows: ProviderRow[] = providers.map((entry) => {
+      const candidate = candidates.get(entry.provider)
+      const previous = this.store.getSnapshot().rows.find(row => row.entry.provider === entry.provider)
+      const flow = authorization.ok ? authorization.value.find(flow => flow.key === entry.authorizationKey) : undefined
       const namespace = namespaces.get(entry.settingsNs)
       const configured = namespace !== undefined
         && (entry.settingsPath.length === 0 || this.schema.getPath(namespace.value, entry.settingsPath) !== undefined)
@@ -214,13 +232,27 @@ export class ModelsSettingsStore {
         removable,
         apiKeyEnv: entry.provider === 'deepseek-account' ? undefined : apiKeyEnvOf(namespace, entry.settingsPath, this.schema),
         credential: undefined,
+        ...candidate?.ok === true
+          ? { candidates: candidate.value }
+          : previous?.candidates === undefined ? {} : { candidates: previous.candidates },
+        ...candidate?.ok === false ? { candidateError: candidate.error.message } : {},
+        ...flow === undefined ? {} : { authorization: flow },
       }
     })
-    if (rows.some(row => row.entry.provider === 'deepseek-account')) {
-      const catalog = await this.ctx.remote.session.modelCatalog()
+    const accessView = namespaces.get('model-access')
+    if (accessView !== undefined && typeof accessView.value === 'object' && accessView.value !== null && !Array.isArray(accessView.value)) {
+      const access: unknown = accessView.value['providers']
       for (const row of rows) {
-        if (row.entry.provider === 'deepseek-account') row.accountAvailable = catalog.ok
-          && catalog.value.groups.some(group => group.id === 'deepseek-account' && group.models.length > 0)
+        const value: unknown = typeof access === 'object' && access !== null && Object.hasOwn(access, row.entry.provider)
+          ? Reflect.get(access, row.entry.provider) : undefined
+        row.enabled = typeof value === 'object' && value !== null && Reflect.get(value, 'enabled') === true
+        const models: unknown = typeof value === 'object' && value !== null ? Reflect.get(value, 'models') : undefined
+        row.enabledModels = Array.isArray(models) ? models.filter((id: unknown): id is string => typeof id === 'string') : []
+      }
+    }
+    if (rows.some(row => row.entry.provider === 'deepseek-account')) {
+      for (const row of rows) {
+        if (row.entry.provider === 'deepseek-account') row.accountAvailable = (row.candidates?.length ?? 0) > 0
       }
     }
     const refs = [...new Set(rows.filter(row => row.entry.provider !== 'deepseek-account').map(row => row.apiKeyEnv ?? deriveKeyRef(row.entry.provider)))]
@@ -275,9 +307,10 @@ export class ModelsSettingsStore {
  * @returns whether the user already has this provider to talk to.
  */
 export function providerUsable(row: ProviderRow): boolean {
+  if (row.enabled === false || row.enabledModels?.length === 0) return false
   if (!row.entry.active) return false
   if (row.entry.provider === 'deepseek-account') return row.accountAvailable === true
-  if (row.apiKeyEnv === undefined) return true
+  if (row.apiKeyEnv === undefined) return row.authorization?.methods.every(method => method.id === 'oauth') !== true || row.authorization.configured
   return row.credential?.configured === true
 }
 

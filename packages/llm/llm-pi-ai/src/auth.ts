@@ -138,9 +138,10 @@ function writableStore(ctx: Context): CredentialProvider {
  * @param ctx - the plugin context carrying the optional `ctx.credentials`.
  * @returns the store to hand `createModels()`.
  */
-export function credentialStoreFrom(ctx: Context): CredentialStore {
+export function credentialStoreFrom(ctx: Context, commit?: (record: CredentialRecord) => Promise<void>): CredentialStore {
   return {
-    async read(providerId) {
+    async read(providerId, options) {
+      options?.signal?.throwIfAborted()
       const credentials = ctx.get('credentials')
       if (credentials === undefined) return undefined
       if (!isCredentialKeySegment(providerId)) return undefined
@@ -160,7 +161,8 @@ export function credentialStoreFrom(ctx: Context): CredentialStore {
       }
       return mine
     },
-    async modify(providerId, mutate) {
+    async modify(providerId, mutate, options) {
+      options?.signal?.throwIfAborted()
       if (!isCredentialKeySegment(providerId)) {
         throw new LlmError(
           `llm-pi-ai: provider id "${providerId}" cannot address a stored credential record (a record id is a`
@@ -169,7 +171,14 @@ export function credentialStoreFrom(ctx: Context): CredentialStore {
           'UNSTORABLE_PROVIDER_ID',
         )
       }
+      if (commit !== undefined) {
+        const next = await mutate(toPiCredential(await writableStore(ctx).readRecord(recordKeyFor(providerId))))
+        if (next === undefined) throw new LlmError('Sign-in did not produce a credential', 'AUTH')
+        await commit(toRecord(next))
+        return next
+      }
       const stored = await writableStore(ctx).modifyRecord(recordKeyFor(providerId), async (current) => {
+        options?.signal?.throwIfAborted()
         const next = await mutate(toPiCredential(current))
         return next === undefined ? undefined : toRecord(next)
       })
@@ -178,7 +187,8 @@ export function credentialStoreFrom(ctx: Context): CredentialStore {
     // `async` so a missing service reaches the caller as a rejection: pi-ai's
     // store contract is promise-returning, and a synchronous throw would
     // escape the `ModelsError` wrapper every other storage failure gets.
-    async delete(providerId) {
+    async delete(providerId, options) {
+      options?.signal?.throwIfAborted()
       if (!isCredentialKeySegment(providerId)) return
       await writableStore(ctx).deleteRecord(recordKeyFor(providerId))
     },

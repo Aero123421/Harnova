@@ -12,7 +12,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { AuthorizationMethod, AuthorizationPrompt, AuthorizationSession } from '@deepseek-ai/dsh-authorization'
 import { isCredentialKeySegment } from '@deepseek-ai/dsh-credentials'
 import { catalogProvider, catalogProviderIds } from './catalog.ts'
-import { recordKeyFor } from './auth.ts'
+import { credentialStoreFrom, recordKeyFor } from './auth.ts'
 import type { PiAiAuthInjection } from './adapter.ts'
 import { createModels } from './models.ts'
 
@@ -29,7 +29,9 @@ import { createModels } from './models.ts'
 function loginMethods(provider: Provider | undefined): AuthorizationMethod[] {
   const methods: AuthorizationMethod[] = []
   const oauth = provider?.auth.oauth
-  if (oauth !== undefined) methods.push({ id: 'oauth', label: oauth.loginLabel ?? oauth.name })
+  // Pi 1.1's new OpenAI OAuth lacks identity verification and revocation.
+  // Offer the independent Codex OAuth route until that integration is complete.
+  if (oauth !== undefined && provider?.id !== 'openai') methods.push({ id: 'oauth', label: oauth.loginLabel ?? oauth.name })
   const apiKey = provider?.auth.apiKey
   if (apiKey?.login !== undefined) methods.push({ id: 'api-key', label: apiKey.name })
   return methods
@@ -143,7 +145,7 @@ export function registerPiAiFlows(ctx: Context, auth: PiAiAuthInjection): void {
         // A collection of its own, holding only the provider being signed
         // into: login is not serving requests, and the credential it produces
         // lands in the shared store either way.
-        const models = createModels(auth)
+        const models = createModels({ ...auth, credentials: credentialStoreFrom(ctx, record => session.commit(record)) })
         models.setProvider(provider)
         // Total over the two ids declared above, and the seam only ever hands
         // back one a flow declared.
@@ -154,7 +156,7 @@ export function registerPiAiFlows(ctx: Context, auth: PiAiAuthInjection): void {
           signal: session.signal,
           notify: (event) => { relay(event, session) },
           prompt: prompt => session.prompt(restate(prompt)),
-        })
+        }, { agentName: 'Harnova' })
       },
     })
   }

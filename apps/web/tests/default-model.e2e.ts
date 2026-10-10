@@ -10,6 +10,7 @@
 // fixture-less scaffold registers no adapter at all, so the routes the
 // picker offers — and the one the composer must start on — have to come from
 // somewhere, and settings profiles are the product's own way to add them.
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
@@ -57,6 +58,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY })
+    await scaffold.ctx.credentials.set(credentialRef('GATEWAY_TEST_API_KEY'), 'fixture-gateway-key')
     // Two routes so the picker has somewhere to start and somewhere to go.
     // Declared through the settings seam rather than the Models page: this
     // scenario is about the composer, and the declaring flow is covered by
@@ -64,13 +66,13 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await scaffold.ctx.settings.update('llm-pi-ai', {
       providers: {
         [START_ROUTE]: {
-          displayName: 'Origin Gateway',
+          displayName: 'Origin Gateway', apiKeyEnv: 'GATEWAY_TEST_API_KEY',
           api: 'openai-completions',
           baseURL: 'https://gateway.origin.example/v1',
           models: [{ id: START_MODEL, name: 'Origin Large' }],
         },
         [ROUTE]: {
-          displayName: 'Acme Gateway',
+          displayName: 'Acme Gateway', apiKeyEnv: 'GATEWAY_TEST_API_KEY',
           api: 'openai-completions',
           baseURL: 'https://gateway.acme.example/v1',
           models: [{ id: MODEL, name: 'Acme Large' }, { id: 'acme-small', name: 'Acme Small' }],
@@ -160,7 +162,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     }
     try {
       await page.getByRole('button', { name: /^选择模型/ }).click()
-      await page.getByRole('menuitem', { name: /^模型/ }).click()
+      await page.getByRole('button', { name: /^模型/ }).click()
       const menu = page.getByRole('group', { name: '模型与推理等级', exact: true })
       const menuSearch = page.getByRole('searchbox', { name: '搜索模型…' })
       const order = await readGroups(menu, 'menuitemradio')
@@ -191,7 +193,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     const search = page.getByRole('searchbox', { name: '搜索模型…' })
     const setModels = (expanded: boolean) => scaffold.ctx.settings.update('llm-pi-ai', {
       providers: { [ROUTE]: {
-        displayName: 'Acme Gateway', api: 'openai-completions', baseURL: 'https://gateway.acme.example/v1',
+        displayName: 'Acme Gateway', apiKeyEnv: 'GATEWAY_TEST_API_KEY', api: 'openai-completions', baseURL: 'https://gateway.acme.example/v1',
         models: expanded ? [{ id: MODEL, name: 'Acme Large' }, { id: 'acme-small', name: 'Acme Small' }]
           : [{ id: MODEL, name: 'Acme Large' }],
       } },
@@ -199,7 +201,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     try {
       await setModels(false)
       await trigger.click()
-      await page.getByRole('menuitem', { name: /模型/ }).click()
+      await page.getByRole('button', { name: /^模型/ }).click()
       await expect.poll(() => page.getByRole('menuitemradio').count()).toBe(4)
       expect(await search.count()).toBe(0)
       const current = page.getByRole('menuitemradio', { name: 'Origin Large', exact: true })
@@ -224,7 +226,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
       await page.keyboard.press('Escape')
       await setModels(true)
       await trigger.click()
-      await page.getByRole('menuitem', { name: /模型/ }).click()
+      await page.getByRole('button', { name: /^模型/ }).click()
       await expect.poll(() => page.getByRole('menuitemradio').count()).toBe(5)
       await search.waitFor()
       await search.press('Escape')
@@ -245,7 +247,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     try {
       await page.setViewportSize({ width: 1680, height: 220 })
       await trigger.click()
-      await page.getByRole('menuitem', { name: /模型/ }).click()
+      await page.getByRole('button', { name: /^模型/ }).click()
       const scroller = page.getByRole('menu', { name: '模型', exact: true })
       const headings = surface.locator('section[role="group"] > div')
       const readPinned = () => headings.evaluateAll(nodes => nodes.map(node => node.hasAttribute('data-stuck')))
@@ -293,7 +295,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
       await search.press('Escape')
       await page.keyboard.press('Escape')
       await trigger.click()
-      await page.getByRole('menuitem', { name: /模型/ }).click()
+      await page.getByRole('button', { name: /^模型/ }).click()
       expect(await search.inputValue()).toBe('')
       await resetScroll()
     } finally {
@@ -323,10 +325,10 @@ describe('web e2e: the composer model switch is the default for later sessions',
     await trigger.waitFor({ timeout: 15_000 })
     expect(await trigger.evaluate(element => getComputedStyle(element).fontWeight)).toBe('400')
     await trigger.click()
-    const modelMenuBounds = await page.getByRole('menu', { name: '模型与推理等级', exact: true }).boundingBox()
+    const modelMenuBounds = await page.getByRole('dialog', { name: '模型与推理等级', exact: true }).boundingBox()
     const composerBounds = await page.locator('[data-composer-card]').first().boundingBox()
     expect(modelMenuBounds!.width).toBeLessThan(composerBounds!.width)
-    const modelCell = page.getByRole('menuitem', { name: /模型/ })
+    const modelCell = page.getByRole('button', { name: /^模型/ })
     await trigger.press('ArrowDown')
     expect(await modelCell.evaluate(element => element.matches(':focus-visible'))).toBe(true)
     expect(await modelCell.evaluate(element => getComputedStyle(element).outlineStyle)).toBe('none')
@@ -483,7 +485,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     // Removing the selected provider preserves the other route and the saved
     // selection. A merge update would retain the removed profile.
     await scaffold.ctx.settings.replace('llm-pi-ai', { providers: {
-      [START_ROUTE]: { displayName: 'Origin Gateway', api: 'openai-completions',
+      [START_ROUTE]: { displayName: 'Origin Gateway', apiKeyEnv: 'GATEWAY_TEST_API_KEY', api: 'openai-completions',
         baseURL: 'https://gateway.origin.example/v1', models: [{ id: START_MODEL, name: 'Origin Large' }] },
     } })
 
@@ -494,7 +496,7 @@ describe('web e2e: the composer model switch is the default for later sessions',
     const aria = await captureStableAria(page, '[data-composer-card]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(fileURLToPath(new URL('./expected/default-model/unselected.expected.md', import.meta.url)), aria, webSnapshotMode())
     await seat.click()
-    await page.getByRole('menuitem', { name: /模型/ }).click()
+    await page.getByRole('button', { name: /^模型/ }).click()
     await page.getByRole('menuitemradio').first().click()
     await expect.poll(async () => box.isEnabled(), { timeout: 15_000 }).toBe(true)
     expect(tripwire.pageErrors).toEqual([])

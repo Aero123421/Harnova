@@ -1245,6 +1245,7 @@ describe('configurable-provider directory', () => {
 
     expect(ctx.llm.listConfigurableProviders()).toContainEqual({
       provider: 'openai-codex',
+      authorizationKey: 'llm-pi-ai/openai-codex',
       displayName: 'openai-codex',
       settingsNs: 'llm-pi-ai',
       settingsPath: ['providers', 'openai-codex'],

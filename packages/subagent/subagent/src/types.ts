@@ -342,6 +342,8 @@ export interface SubagentRun {
  * settlement or cleanup to a sibling.
  */
 export interface SubagentProvider {
+  /** Same-Host LLM dispatch obeys the Host's live model policy. Omission is an external route. */
+  readonly modelRouting?: 'host'
   /** Unique registry name (e.g. `spawn`, `fork`, `acp`). */
   readonly name: string
   /** The start-time features this provider supports (see {@link SubagentCapabilities}). */

@@ -93,6 +93,7 @@ function selectionOf(state: ModelDirectoryState, id: string): ModelSelection | u
       return {
         provider: group.id,
         model: model.id,
+        ...sameRoute && state.current?.speed !== undefined ? { speed: state.current.speed } : {},
         ...reasoningEffort === undefined ? {} : { reasoningEffort },
       }
     }

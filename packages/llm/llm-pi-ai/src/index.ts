@@ -65,7 +65,7 @@ import type { AdapterRegistrationHandle, DirectoryRegistrationHandle, LlmConfigu
 import type {} from '@deepseek-ai/dsh-fs'
 import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 import { PiAiAdapter } from './adapter.ts'
-import { authContextFrom, credentialStoreFrom } from './auth.ts'
+import { authContextFrom, credentialStoreFrom, recordKeyFor } from './auth.ts'
 import { catalogProviderIds } from './catalog.ts'
 import { assertServiceable, Config, resolveProfiles } from './config.ts'
 import type { ResolvedPiAiProviderProfile } from './config.ts'
@@ -126,6 +126,7 @@ function directoryEntries(
   settingsNs: string,
 ): LlmConfigurableProvider[] {
   const catalog = new Set(catalogProviderIds())
+  if (profiles.has('azure-openai-responses')) catalog.add('azure-openai-responses')
   const entries = new Map<string, LlmConfigurableProvider>()
   const declare = (provider: string, displayName: string, error?: string): void => {
     entries.set(provider, {
@@ -133,6 +134,7 @@ function directoryEntries(
       displayName,
       settingsNs,
       settingsPath: ['providers', provider],
+      ...catalog.has(provider) ? { authorizationKey: String(recordKeyFor(provider)) } : {},
       // Membership of the installed catalog, not of the settings document:
       // narrowing a shipped provider's models stores a profile too, and that
       // route is still one pi-ai knows.

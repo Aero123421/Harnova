@@ -128,6 +128,36 @@ async begin(request: AuthorizationRequest): Promise<AuthorizationOutcome>
 
 Source: [`packages/credentials/authorization/src/index.ts`](../../packages/credentials/authorization/src/index.ts)
 
+<a id="ctxauthorizationcontroller--authorizationcontroller"></a>
+
+### `ctx.authorizationController` — `AuthorizationController`
+
+No token reads, URL broadcasts, durable attempts, or provider-specific UI protocol.
+
+```ts cordis-catalog
+/** List non-secret provider sign-in choices.
+ * @returns registered flow identities, methods, and local credential presence.
+ */
+@Remote async list(): Promise<ProviderAuthorizationView[]>
+
+/** Local credential removal is distinct from provider/model OFF and server revocation.
+ * @param scope - owning credential scope.
+ * @param id - provider ID within that scope.
+ */
+@Remote async forget(scope: string, id: string): Promise<void>
+
+/** Run one sign-in through the initiating invocation's private interaction stream.
+ * @param scope - owning credential scope.
+ * @param id - provider ID within that scope.
+ * @param method - method ID advertised by the flow.
+ * @param signal - invocation cancellation.
+ * @returns notices, numbered questions, and the attempt's final status.
+ */
+@Remote({ mode: 'stream' }) async *login( scope: string, id: string, method: string, signal: AbortSignal, ): RemoteStream<ProviderAuthorizationFrame, ProviderAuthorizationAnswer>
+```
+
+Source: [`packages/api/settings-controller/src/authorization.ts`](../../packages/api/settings-controller/src/authorization.ts)
+
 <a id="ctxcredentials--credentialprovider-abstract-seam"></a>
 
 ### `ctx.credentials` — `CredentialProvider` (abstract seam)

@@ -16,4 +16,6 @@
       - img "API 密钥已配置"
       - button "编辑 minimax-cn": 编辑
       - button "删除 minimax-cn": 删除
+      - text: OFF · 0 model choices saved
+      - switch "Use minimax-cn"
   - button "添加模型提供商"

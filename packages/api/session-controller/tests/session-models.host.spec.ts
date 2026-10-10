@@ -21,7 +21,7 @@ import type { SessionId } from '@deepseek-ai/dsh-session'
 import type { SessionPromptRequest, SessionRequestId } from '../src/types.ts'
 import { ApiSessionAgentController } from '../src/agent.ts'
 import { buildModelCatalog, hasProviderApiKey } from '../src/catalog.ts'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import SystemPrompt, { renderPrompt } from '@deepseek-ai/dsh-system-prompt'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { createSessionTestController, createSessionTestRemote } from './test-remote.ts'
 
@@ -484,6 +484,46 @@ describe('Web session model selection', () => {
       id: 'string-failure', name: 'String Failure', message: 'string catalog failure',
     })
     await ctx.fiber.dispose()
+  })
+
+  it('persists speed across Remote selection and assembly without changing effort or prompt text', async () => {
+    const { ctx, agent, sessionId } = await harness()
+    onTestFinished(() => ctx.fiber.dispose())
+    ctx.llm.registerAdapter(['fast-provider'], new class extends CatalogAdapter {
+      override async resolveModel(provider: string, model: string): Promise<LlmResolvedModelInfo> {
+        return { ...await super.resolveModel(provider, model), fastMode: true }
+      }
+    }('Fast Provider', [{ provider: 'fast-provider', id: 'fast-model', name: 'Fast Model' }], REASONING))
+    ctx.systemPrompt.section({ name: 'speed-fixture', order: 0, text: 'Keep this fixture prompt stable.' })
+    const saved: unknown[] = []
+    const remote = createSessionTestRemote(ctx, {
+      defaultModelSelection: () => ({ provider: 'deepseek-official', model: 'deepseek-chat' }),
+      saveDefaultModelSelection: async (selection) => { saved.push(selection) }, cwd: '/tmp',
+    })
+    const seed: LlmCallConfig = { provider: 'seed', model: 'seed' }
+    const signal = new AbortController().signal
+    let prompt: string | undefined
+    for (const speed of ['fast', 'standard'] as const) {
+      const selection = { provider: 'fast-provider', model: 'fast-model', reasoningEffort: 'max', speed }
+      expect(expectValue(await remote.selectModel({ sessionId, ...selection })).selected).toEqual(selection)
+      expect(currentSelection(ctx, sessionId)).toEqual(selection)
+      const assembled = await ctx.systemPrompt.assemble()
+      const nextPrompt = renderPrompt(assembled)
+      expect(nextPrompt).toContain('Keep this fixture prompt stable.')
+      if (prompt !== undefined) expect(nextPrompt).toBe(prompt)
+      prompt = nextPrompt
+      expect(await agentEvents(ctx, agent).waterfall(
+        'agent/request', { turn: 1, step: 0, signal }, () => Promise.resolve(seed),
+      )).toMatchObject(selection)
+    }
+    await expect.poll(() => saved).toEqual([
+      { provider: 'fast-provider', model: 'fast-model', reasoningEffort: 'max', speed: 'fast' },
+      { provider: 'fast-provider', model: 'fast-model', reasoningEffort: 'max', speed: 'standard' },
+    ])
+    expect(agent.session.snapshotEvents().filter(event => event.type === 'model/selection').map(event => event.data.speed))
+      .toEqual(['fast', 'standard'])
+    expect((await remote.selectModel({ sessionId, provider: 'deepseek-official', model: 'deepseek-chat', speed: 'fast' })).ok)
+      .toBe(false)
   })
 
   it('rejects unlisted models and switches available models only after the next assembly', async () => {

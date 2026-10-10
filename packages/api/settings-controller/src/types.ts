@@ -32,3 +32,25 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 export interface SettingsDocumentOpenValue {
   readonly opened: true
 }
+
+/** Only public state of a credential-obtaining flow crosses to Settings. */
+export interface ProviderAuthorizationView {
+  key: string
+  label: string
+  methods: { id: string; label: string }[]
+  inFlight: boolean
+  configured: boolean
+}
+
+/** Private downlink of the initiating login window; never forwarded as Cordis events. */
+export type ProviderAuthorizationFrame =
+  | { type: 'notice'; message: string; url?: string; code?: string }
+  | { type: 'prompt'; id: number; kind: 'text' | 'secret' | 'select'; message: string; placeholder?: string; options?: { id: string; label: string }[] }
+  | { type: 'withdraw'; id: number }
+  | { type: 'result'; status: 'authorized' | 'cancelled' | 'failed' }
+
+/** A response is valid only for a question on this same Remote stream. */
+export interface ProviderAuthorizationAnswer {
+  id: number
+  value: string
+}

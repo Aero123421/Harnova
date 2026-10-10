@@ -1,5 +1,6 @@
 /** Built-profile browser coverage for sticky model groups; counts only their synchronous rect reads, not FPS or latency. */
 import { fileURLToPath } from 'node:url'
+import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type { Browser, Locator, Page } from 'playwright'
 import { chromium, webkit } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
@@ -104,10 +105,11 @@ describe.skipIf(webSnapshotMode() === 'record').each([
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold({ extraOverlayPath: OVERLAY })
+    await scaffold.ctx.credentials.set(credentialRef('GATEWAY_TEST_API_KEY'), 'fixture-gateway-key')
     // Catalog-only settings traffic: no prompt, selection, replay fixture, or model request.
     await scaffold.ctx.settings.update('llm-pi-ai', {
       providers: Object.fromEntries(PROVIDERS.map(provider => [provider.id, {
-        displayName: provider.name,
+        displayName: provider.name, apiKeyEnv: 'GATEWAY_TEST_API_KEY',
         api: 'openai-completions',
         baseURL: `https://${provider.id}.example/v1`,
         models: provider.models,
@@ -159,7 +161,7 @@ describe.skipIf(webSnapshotMode() === 'record').each([
       const open = async (): Promise<void> => {
         if (entry === 'button') {
           await page.getByRole('button', { name: /^选择模型/ }).click()
-          await page.getByRole('menuitem', { name: /^模型/ }).click()
+          await page.getByRole('button', { name: /^模型/ }).click()
         } else {
           await page.getByRole('button', { name: '添加文件或调用指令', exact: true }).click()
           await page.getByRole('option', { name: /^模型/ }).click()

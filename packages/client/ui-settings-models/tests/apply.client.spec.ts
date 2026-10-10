@@ -40,9 +40,11 @@ async function bench(isLoopback = true, mock = RemoteMock.create().load(remoteDe
       set: vi.fn(),
       unset: vi.fn(),
     },
+    authorization: { list: async () => ({ ok: true as const, value: [] }) },
     llm: {
       listProviders: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
       listConfigurableProviders: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
+      modelCandidates: vi.fn(async () => ({ ok: true as const, value: [] })),
       discoverModels: vi.fn(() => Promise.resolve({ ok: true, value: [] })),
       ...services,
     },
@@ -110,7 +112,7 @@ describe('ui-settings-models apply', () => {
 
   it('declares the services it uses', () => {
     expect(inject).toEqual([
-      'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings', 'remote.session',
+      'slots', 'locale', 'remote', 'remote.credentials', 'remote.llm', 'remote.settings', 'remote.session', 'remote.authorization',
       'configForms', 'settingsSchema',
     ])
   })
