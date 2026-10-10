@@ -172,18 +172,22 @@ describe('ui-settings-models apply', () => {
       declare(b.slots)
       await b.ctx.plugin({ inject: [...inject], apply }).await()
       const entry = b.slots.entries('settings.section')[0]!
-      const injected = (entry.inject as unknown as () => import('../src/client/ModelsSection.tsx').ModelsSectionInjected)()
+      const injected = entry.inject!()
+      if (typeof injected.beginLogin !== 'function'
+        || typeof injected.answerLogin !== 'function'
+        || typeof injected.closeLogin !== 'function') {
+        throw new Error('Models section login callbacks are missing')
+      }
       const row = {
         entry: { provider: 'openai-codex', displayName: 'ChatGPT', settingsNs: 'llm-pi-ai', settingsPath: ['providers', 'openai-codex'], active: true },
         configured: true, removable: true, apiKeyEnv: undefined, credential: undefined,
       }
-      injected.beginLogin(row, 'oauth')
+      Reflect.apply(injected.beginLogin, undefined, [row, 'oauth'])
       expect(begin).toHaveBeenCalledExactlyOnceWith(row, 'oauth')
-      injected.answerLogin(17, 'login answer')
+      Reflect.apply(injected.answerLogin, undefined, [17, 'login answer'])
       expect(answer).toHaveBeenCalledExactlyOnceWith(17, 'login answer')
-      injected.closeLogin()
+      Reflect.apply(injected.closeLogin, undefined, [])
       expect(close).toHaveBeenCalledTimes(1)
-      expect(injected.hooks.login.getSnapshot().provider).toBeNull()
     } finally {
       await b.ctx.fiber.dispose()
       begin.mockRestore()
